@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Astro Tickets · Datos de pago</title>
+<link rel="stylesheet" href="css/styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
+
+<header class="navbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <span class="material-symbols-outlined">confirmation_number</span>
+      Astro Tickets
+    </a>
+    <button class="nav-toggle btn-ghost btn" aria-label="Abrir menú">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <nav class="nav-links">
+      <a href="catalogo.html">Eventos</a>
+      <a href="historial.html">Mis compras</a>
+      <a href="index.html">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container section" style="max-width: 760px;">
+  <!-- Progreso -->
+  <div class="steps">
+    <div class="step done"><span class="node">1</span><span class="label">Evento</span></div>
+    <span class="line done"></span>
+    <div class="step active"><span class="node">2</span><span class="label">Pago</span></div>
+    <span class="line"></span>
+    <div class="step"><span class="node">3</span><span class="label">Comprobante</span></div>
+  </div>
+
+  <div class="grid-2" style="gap: 32px;">
+    <!-- Formulario de pago -->
+    <div class="glass-panel" style="padding: 32px;">
+      <div style="text-align: center; margin-bottom: 28px;">
+        <span class="material-symbols-outlined" style="font-size: 2rem; background: linear-gradient(135deg, var(--cosmic-purple), var(--stellar-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">credit_card</span>
+        <h1 style="font-size: 1.4rem; margin-top: 10px;">Información de pago</h1>
+        <p class="text-muted" style="margin-top: 6px; font-size: 0.85rem;">Tus datos se transmiten cifrados y no se almacenan.</p>
+      </div>
+
+      <!-- Payment method tabs -->
+      <div class="pay-method-tabs">
+        <button class="pay-method-tab active" data-method="card">
+          <span class="material-symbols-outlined">credit_card</span>
+          Tarjeta
+        </button>
+        <button class="pay-method-tab" data-method="paypal">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          PayPal
+        </button>
+        <button class="pay-method-tab" data-method="apple">
+          <span class="material-symbols-outlined">phone_iphone</span>
+          Apple Pay
+        </button>
+        <button class="pay-method-tab" data-method="google">
+          <span class="material-symbols-outlined">g_mobiledata</span>
+          Google Pay
+        </button>
+        <button class="pay-method-tab" data-method="transfer">
+          <span class="material-symbols-outlined">account_balance</span>
+          Transferencia
+        </button>
+      </div>
+
+      <!-- Card payment panel -->
+      <div class="pay-method-panel active" data-panel="card">
+        <!-- Live card preview -->
+        <div class="stripe-card-wrapper">
+          <div class="stripe-card" id="stripe-card">
+            <div class="stripe-card-front">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div class="stripe-card-chip"></div>
+                <div class="stripe-card-brand" id="card-brand-display">VISA</div>
+              </div>
+              <div class="stripe-card-number" id="card-number-display">•••• •••• •••• ••••</div>
+              <div class="stripe-card-bottom">
+                <div>
+                  <div class="stripe-card-label">Titular</div>
+                  <div class="stripe-card-value" id="card-name-display">NOMBRE APELLIDO</div>
+                </div>
+                <div>
+                  <div class="stripe-card-label">Vence</div>
+                  <div class="stripe-card-value" id="card-exp-display">MM/AA</div>
+                </div>
+              </div>
+            </div>
+            <div class="stripe-card-back">
+              <div class="stripe-stripe-bar"></div>
+              <div class="cvv-label">CVV</div>
+              <div class="cvv-box" id="cvv-display">•••</div>
+            </div>
+          </div>
+        </div>
+
+        <form data-redirect="comprobante.html" id="card-form">
+          <div class="field">
+            <label for="card-number">Número de tarjeta</label>
+            <div class="input-wrap">
+              <span class="material-symbols-outlined">credit_card</span>
+              <input class="input" type="text" id="card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="card-name">Nombre del titular</label>
+            <input class="input" type="text" id="card-name" placeholder="Como aparece en la tarjeta" required />
+          </div>
+
+          <div style="display: flex; gap: 16px;">
+            <div class="field" style="flex: 1;">
+              <label for="card-exp">Vencimiento</label>
+              <input class="input" type="text" id="card-exp" placeholder="MM/AA" maxlength="5" required />
+            </div>
+            <div class="field" style="flex: 1;">
+              <label for="card-cvv">CVV</label>
+              <input class="input" type="text" id="card-cvv" inputmode="numeric" placeholder="123" maxlength="4" required />
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="flex-between" style="margin-bottom: 24px;">
+            <span class="text-muted">Total a pagar</span>
+            <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="pay-total-card">RD$ 3,600</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="padding: 14px 24px; font-size: 0.95rem;">
+            <span class="material-symbols-outlined">lock</span>
+            Confirmar y pagar
+          </button>
+        </form>
+      </div>
+
+      <!-- PayPal panel -->
+      <div class="pay-method-panel" data-panel="paypal">
+        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'">
+          <span class="material-symbols-outlined" style="color: #003087;">account_balance_wallet</span>
+          Continuar con PayPal
+        </button>
+        <div class="pay-info-box">
+          <p>Serás redirigido a <strong>PayPal</strong> para completar el pago de forma segura. Necesitas una cuenta PayPal activa.</p>
+        </div>
+        <hr class="divider" />
+        <div class="flex-between" style="margin-bottom: 20px;">
+          <span class="text-muted">Total a pagar</span>
+          <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="pay-total-paypal">RD$ 3,600</span>
+        </div>
+      </div>
+
+      <!-- Apple Pay panel -->
+      <div class="pay-method-panel" data-panel="apple">
+        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'" style="background: #000; color: #fff; border-color: #000;">
+          <span class="material-symbols-outlined">phone_iphone</span>
+          Pagar con Apple Pay
+        </button>
+        <div class="pay-info-box">
+          <p>Confirma el pago con <strong>Face ID</strong> o <strong>Touch ID</strong> en tu dispositivo Apple. Rápido y seguro.</p>
+        </div>
+        <hr class="divider" />
+        <div class="flex-between" style="margin-bottom: 20px;">
+          <span class="text-muted">Total a pagar</span>
+          <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="pay-total-apple">RD$ 3,600</span>
+        </div>
+      </div>
+
+      <!-- Google Pay panel -->
+      <div class="pay-method-panel" data-panel="google">
+        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'">
+          <span class="material-symbols-outlined" style="color: #4285F4;">g_mobiledata</span>
+          Pagar con Google Pay
+        </button>
+        <div class="pay-info-box">
+          <p>Selecciona tu método de pago guardado en <strong>Google Pay</strong>. El pago se procesa de forma instantánea.</p>
+        </div>
+        <hr class="divider" />
+        <div class="flex-between" style="margin-bottom: 20px;">
+          <span class="text-muted">Total a pagar</span>
+          <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="pay-total-google">RD$ 3,600</span>
+        </div>
+      </div>
+
+      <!-- Transfer panel -->
+      <div class="pay-method-panel" data-panel="transfer">
+        <div class="pay-info-box">
+          <p><strong>Datos para transferencia bancaria:</strong></p>
+          <p>Banco: Banco Popular Dominicano</p>
+          <p>Cuenta: <strong>1234567890</strong></p>
+          <p>Titular: Astro Tickets S.R.L.</p>
+          <p>RNC: 123-45678-9</p>
+          <p style="margin-top: 10px;">Envía el comprobante a <strong>pagos@astroTickets.com</strong> con tu nombre completo.</p>
+        </div>
+        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'">
+          <span class="material-symbols-outlined">check_circle</span>
+          Ya realicé la transferencia
+        </button>
+        <hr class="divider" />
+        <div class="flex-between" style="margin-bottom: 20px;">
+          <span class="text-muted">Total a pagar</span>
+          <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="pay-total-transfer">RD$ 3,600</span>
+        </div>
+      </div>
+
+      <p style="text-align: center; font-size: 0.75rem; color: var(--color-on-surface-variant); margin-top: 12px;">
+        <span class="material-symbols-outlined" style="font-size: 0.85rem; vertical-align: middle;">shield</span>
+        Pago protegido con cifrado SSL de 256 bits
+      </p>
+    </div>
+
+    <!-- Resumen lateral -->
+    <div>
+      <div class="order-summary">
+        <h3 style="font-size: 0.95rem;">
+          <span class="material-symbols-outlined" style="font-size: 1.1rem; vertical-align: middle; margin-right: 6px; color: var(--cosmic-purple);">receipt_long</span>
+          Resumen del pedido
+        </h3>
+        <div class="order-summary-row">
+          <span class="label">Evento</span>
+          <span>Noche de Jazz</span>
+        </div>
+        <div class="order-summary-row">
+          <span class="label">Fecha</span>
+          <span>20 ago 2026</span>
+        </div>
+        <div class="order-summary-row">
+          <span class="label">Asientos</span>
+          <span id="pago-seats">—</span>
+        </div>
+        <div class="order-summary-row">
+          <span class="label">Boletos</span>
+          <span id="pago-qty">0</span>
+        </div>
+        <div class="order-summary-row">
+          <span class="label">Subtotal</span>
+          <span id="pago-subtotal">RD$ 0</span>
+        </div>
+        <div class="order-summary-row">
+          <span class="label">Cargo por servicio</span>
+          <span id="pago-fee">RD$ 0</span>
+        </div>
+        <div class="order-summary-row total">
+          <span>Total</span>
+          <span class="value" id="pago-total">RD$ 0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="bottom">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

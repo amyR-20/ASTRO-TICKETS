@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Astro Tickets · Historial de compras</title>
+<link rel="stylesheet" href="css/styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
+
+<header class="navbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <span class="material-symbols-outlined">confirmation_number</span>
+      Astro Tickets
+    </a>
+    <button class="nav-toggle btn-ghost btn" aria-label="Abrir menú">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <nav class="nav-links">
+      <a href="catalogo.html">Eventos</a>
+      <a class="active" href="historial.html">Mis compras</a>
+      <a href="index.html">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Mis compras</p>
+      <h1 style="font-size: 2rem;">Historial de compras</h1>
+      <p class="text-muted" style="margin-top: 6px;">Revisa todas tus transacciones anteriores.</p>
+    </div>
+  </div>
+
+  <!-- Resumen rápido -->
+  <div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">receipt_long</span>
+      <p class="text-muted" style="margin-top: 12px;">Total de compras</p>
+      <p class="value">3</p>
+    </div>
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">payments</span>
+      <p class="text-muted" style="margin-top: 12px;">Total gastado</p>
+      <p class="value">RD$ 17,600</p>
+    </div>
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">confirmation_number</span>
+      <p class="text-muted" style="margin-top: 12px;">Boletos comprados</p>
+      <p class="value">7</p>
+    </div>
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">event_available</span>
+      <p class="text-muted" style="margin-top: 12px;">Próximo evento</p>
+      <p class="value" style="font-size: 1.2rem;">20 ago</p>
+    </div>
+  </div>
+
+  <!-- Tabla de historial -->
+  <div class="card table-wrap">
+    <div class="flex-between" style="padding: 24px 28px; border-bottom: 1px solid rgba(108, 63, 209, 0.06);">
+      <div>
+        <h2 style="font-size: 1.15rem;">Detalle de transacciones</h2>
+        <p class="text-muted" style="font-size: 0.82rem; margin-top: 4px;">Tus compras más recientes primero.</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-ghost"><span class="material-symbols-outlined">filter_list</span> Filtrar</button>
+        <button class="btn btn-ghost"><span class="material-symbols-outlined">download</span> Exportar</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Comprobante</th>
+          <th>Evento</th>
+          <th>Fecha del evento</th>
+          <th>Fecha de compra</th>
+          <th>Boletos</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-muted">#AT-2026-08421</td>
+          <td style="font-weight: 600;">Noche de Jazz en Vivo</td>
+          <td class="text-muted">20 ago 2026</td>
+          <td class="text-muted">14 jul 2026</td>
+          <td>2</td>
+          <td style="font-weight: 600;">RD$ 3,600</td>
+          <td><span class="badge badge-success">Pagado</span></td>
+          <td class="text-right">
+            <button class="btn-ghost btn" style="padding: 6px;" title="Ver comprobante">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="text-muted">#AT-2026-07932</td>
+          <td style="font-weight: 600;">Festival Ritmo Urbano</td>
+          <td class="text-muted">5 sep 2026</td>
+          <td class="text-muted">2 jul 2026</td>
+          <td>4</td>
+          <td style="font-weight: 600;">RD$ 12,800</td>
+          <td><span class="badge badge-success">Pagado</span></td>
+          <td class="text-right">
+            <button class="btn-ghost btn" style="padding: 6px;" title="Ver comprobante">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="text-muted">#AT-2026-07110</td>
+          <td style="font-weight: 600;">Hamlet, Obra de Teatro</td>
+          <td class="text-muted">12 sep 2026</td>
+          <td class="text-muted">18 jun 2026</td>
+          <td>1</td>
+          <td style="font-weight: 600;">RD$ 1,200</td>
+          <td><span class="badge badge-error">Cancelado</span></td>
+          <td class="text-right">
+            <button class="btn-ghost btn" style="padding: 6px;" title="Ver detalles">
+              <span class="material-symbols-outlined">info</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="flex-between" style="padding: 18px 28px; border-top: 1px solid rgba(108, 63, 209, 0.06);">
+      <p class="text-muted" style="font-size: 0.78rem;">Mostrando 3 de 3 compras</p>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn-ghost btn" style="padding: 8px;" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+        <button class="btn-ghost btn" style="padding: 8px;"><span class="material-symbols-outlined">chevron_right</span></button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="bottom">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
