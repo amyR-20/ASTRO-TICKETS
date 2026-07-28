@@ -5,58 +5,44 @@
 
 const Auth = (() => {
 
-  /* ---------- Usuarios de demo (localStorage) ---------- */
-  const USERS_KEY = "astro_users";
+  /* ---------- Conexión al backend real ---------- */
+  const API_BASE = "http://localhost:3000/api";
   const SESSION_KEY = "astro_session";
+  const TOKEN_KEY = "astro_token";
 
-  const DEFAULT_USERS = [
-    { id: 1, nombre: "Administrador", email: "admin@astro.com", password: "admin123", role: "admin", avatar: "AD" },
-    { id: 2, nombre: "Aris Torres", email: "aris@correo.com", password: "12345678", role: "user", avatar: "AT" },
-    { id: 3, nombre: "Kaelen Vargas", email: "vox@correo.com", password: "12345678", role: "user", avatar: "KV" },
-  ];
-
-  function getUsers() {
-    const stored = localStorage.getItem(USERS_KEY);
-    if (!stored) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
-      return [...DEFAULT_USERS];
-    }
-    return JSON.parse(stored);
+  /**
+   * Llama a POST /api/auth/login. Devuelve { token, usuario } si es
+   * exitoso, o lanza un Error con el mensaje que mandó el backend.
+   */
+  async function loginRequest(email, password) {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Error al iniciar sesión.");
+    return data; // { token, usuario }
   }
 
-  function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
-
-  function findUser(email, password) {
-    const users = getUsers();
-    return users.find(u => u.email === email && u.password === password);
-  }
-
-  function findUserByEmail(email) {
-    const users = getUsers();
-    return users.find(u => u.email === email);
-  }
-
-  function createUser(nombre, email, password) {
-    const users = getUsers();
-    if (users.find(u => u.email === email)) return null;
-    const initials = nombre.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
-    const newUser = {
-      id: users.length + 1,
-      nombre,
-      email,
-      password,
-      role: "user",
-      avatar: initials
-    };
-    users.push(newUser);
-    saveUsers(users);
-    return newUser;
+  /**
+   * Llama a POST /api/auth/registro. Devuelve { mensaje, usuario } si es
+   * exitoso, o lanza un Error con el mensaje que mandó el backend.
+   */
+  async function registroRequest(nombre, email, password, password2) {
+    const res = await fetch(`${API_BASE}/auth/registro`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, email, password, password2 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Error al registrar la cuenta.");
+    return data; // { mensaje, usuario }
   }
 
   /* ---------- Session ---------- */
-  function setSession(user) {
+  // "user" aquí es el objeto que devuelve el backend en data.usuario
+  function setSession(user, token) {
     const session = {
       id: user.id,
       nombre: user.nombre,
@@ -66,6 +52,7 @@ const Auth = (() => {
       loginAt: Date.now()
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    if (token) localStorage.setItem(TOKEN_KEY, token);
     return session;
   }
 
@@ -75,8 +62,13 @@ const Auth = (() => {
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
   function clearSession() {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   }
 
   function isLoggedIn() {
@@ -222,17 +214,21 @@ const Auth = (() => {
     // Admin login form
     const adminForm = document.getElementById("admin-login-form");
     if (adminForm) {
-      adminForm.addEventListener("submit", (e) => {
+      adminForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("admin-email").value.trim();
         const password = document.getElementById("admin-password").value;
         const errorEl = document.getElementById("admin-login-error");
 
-        const user = findUser(email, password);
-        if (user && user.role === "admin") {
-          setSession(user);
+        try {
+          const { token, usuario } = await loginRequest(email, password);
+          if (usuario.role !== "admin") {
+            if (errorEl) errorEl.style.display = "block";
+            return;
+          }
+          setSession(usuario, token);
           window.location.href = "admin.html";
-        } else {
+        } catch (err) {
           if (errorEl) errorEl.style.display = "block";
         }
       });
@@ -244,33 +240,22 @@ const Auth = (() => {
     const loginPassword = document.getElementById("password");
 
     if (loginForm && loginEmail && loginPassword) {
-      loginForm.addEventListener("submit", (e) => {
+      loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = loginEmail.value.trim();
         const password = loginPassword.value;
-        const user = findUser(email, password);
 
-        if (user) {
-          setSession(user);
-          if (user.role === "admin") {
-            window.location.href = "admin.html";
-          } else {
-            window.location.href = "catalogo.html";
-          }
-        } else {
-          // Try creating the user if coming from registration
-          // For login, show error (simple alert for demo)
+        try {
+          const { token, usuario } = await loginRequest(email, password);
+          setSession(usuario, token);
+          window.location.href = usuario.role === "admin" ? "admin.html" : "catalogo.html";
+        } catch (err) {
           const errorDiv = loginForm.querySelector(".login-error");
           if (errorDiv) {
+            errorDiv.textContent = err.message;
             errorDiv.style.display = "block";
           } else {
-            // Check if user doesn't exist, suggest registration
-            const existing = findUserByEmail(email);
-            if (!existing) {
-              alert("No existe una cuenta con este correo. Regístrate primero.");
-            } else {
-              alert("Contraseña incorrecta. Intenta de nuevo.");
-            }
+            alert(err.message);
           }
         }
       });
@@ -284,30 +269,30 @@ const Auth = (() => {
     const regPassword2 = document.getElementById("password2");
 
     if (regForm && regName && regEmail && regPassword && regPassword2) {
-      regForm.addEventListener("submit", (e) => {
+      regForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nombre = regName.value.trim();
         const email = regEmail.value.trim();
         const password = regPassword.value;
         const password2 = regPassword2.value;
 
+        // Estas dos validaciones se pueden dejar en el cliente para dar
+        // feedback inmediato, pero el backend las vuelve a validar igual.
         if (password !== password2) {
           alert("Las contraseñas no coinciden.");
           return;
         }
-
         if (password.length < 8) {
           alert("La contraseña debe tener al menos 8 caracteres.");
           return;
         }
 
-        const newUser = createUser(nombre, email, password);
-        if (newUser) {
-          alert("¡Cuenta creada! Ahora inicia sesión.");
+        try {
+          const data = await registroRequest(nombre, email, password, password2);
+          alert(data.mensaje || "¡Cuenta creada! Ahora inicia sesión.");
           window.location.href = "index.html";
-        } else {
-          alert("Este correo ya está registrado. Inicia sesión.");
-          window.location.href = "index.html";
+        } catch (err) {
+          alert(err.message);
         }
       });
     }
@@ -323,12 +308,11 @@ const Auth = (() => {
   return {
     init,
     getSession,
+    getToken,
     isLoggedIn,
     isAdmin,
     logout,
     setSession,
-    getUsers,
-    createUser,
     buildUserPanel
   };
 
