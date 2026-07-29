@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Astro Tickets · Noche de Jazz en Vivo</title>
-<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
-<link rel="stylesheet" href="css/styles.css" />
+<title>Astro Tickets · Festival Ritmo Urbano</title>
+<link rel="stylesheet" href="../css/styles.css" />
+<link rel="icon" type="image/png" href="../multimedia/favicon.svg" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
@@ -14,26 +14,33 @@
 
 <header class="navbar">
   <div class="container">
-    <a class="brand" href="catalogo.html">
-      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
+    <a class="brand" href="../catalogo.html">
+      <img src="../multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
     </a>
     <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
       <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
     <nav class="nav-links">
-      <a class="active" href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
-      <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
-      <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+      <a class="active" href="../catalogo.html" data-i18n="nav.eventos">Eventos</a>
+      <a href="../historial.html" data-i18n="nav.boletos">Mis compras</a>
+      <a href="../index.html" data-i18n="nav.login">Iniciar sesión</a>
     </nav>
   </div>
 </header>
 
-<main class="container section">
-  <a href="catalogo.html" class="text-muted" style="display: inline-flex; align-items: center; gap: 6px; margin-bottom: 24px; font-size: 0.88rem; color: var(--color-primary); font-weight: 500; transition: gap 0.2s;" onmouseover="this.style.gap='10px'" onmouseout="this.style.gap='6px'">
+<main class="container section"
+  data-event-name="Festival Ritmo Urbano"
+  data-event-img="multimedia/urbano.jpg"
+  data-event-date="5 de septiembre, 2026 · 7:00 pm"
+  data-event-venue="Estadio Olímpico, Santo Domingo"
+  data-event-category="Concierto"
+  data-price-platino="5500"
+  data-price-vip="3800"
+  data-price-general="2200">
+  <a href="../catalogo.html" class="text-muted" style="display: inline-flex; align-items: center; gap: 6px; margin-bottom: 24px; font-size: 0.88rem; color: var(--color-primary); font-weight: 500; transition: gap 0.2s;" onmouseover="this.style.gap='10px'" onmouseout="this.style.gap='6px'">
     <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_back</span> <span data-i18n="event.back">Volver al catálogo</span>
   </a>
 
-  <!-- Indicador de progreso -->
   <div class="steps">
     <div class="step active"><span class="node">1</span><span class="label" data-i18n="event.step1">Evento</span></div>
     <span class="line"></span>
@@ -45,47 +52,42 @@
   <div class="grid-2">
     <div>
       <div class="detail-image">
-        <img src="multimedia/jazz.jpg" alt="Noche de Jazz en Vivo" />
+        <img src="../multimedia/urbano.jpg" alt="Festival Ritmo Urbano" />
       </div>
       <p class="eyebrow">Concierto</p>
-      <h1 style="font-size: 2rem; margin: 8px 0 16px;">Noche de Jazz en Vivo</h1>
+      <h1 style="font-size: 2rem; margin: 8px 0 16px;">Festival Ritmo Urbano</h1>
       <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
         <span class="text-muted" style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
           <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">calendar_month</span>
-          20 de agosto, 2026 · 8:00 pm
+          5 de septiembre, 2026 · 7:00 pm
         </span>
         <span class="text-muted" style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
           <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">location_on</span>
-          Teatro Nacional, Santo Domingo
+          Estadio Olímpico, Santo Domingo
         </span>
       </div>
       <div class="card" style="padding: 24px; line-height: 1.7;">
-        <p class="text-muted">Una velada íntima con los mejores exponentes del jazz contemporáneo. Incluye acceso a zona de lounge y una hora de puertas abiertas antes del inicio del espectáculo.</p>
+        <p class="text-muted">El festival de música urbana más esperado del año. Artistas nacionales e internacionales se darán cita en una noche llena de energía, ritmo y espectáculo. Zona VIP con acceso a backstage.</p>
       </div>
     </div>
 
-    <!-- Compra de boletas -->
     <div class="glass-panel purchase-panel">
       <h2 style="font-size: 1.25rem; margin-bottom: 20px; font-weight: 700;" data-i18n="event.select">Selecciona tus asientos</h2>
 
-      <!-- Seat map -->
       <div class="seat-stage" data-i18n="event.stage">Escenario</div>
 
-      <div class="seat-zone-label"><span data-i18n="event.platinum">Platino</span> · RD$ 4,500</div>
+      <div class="seat-zone-label"><span data-i18n="event.platinum">Platino</span> · RD$ 5,500</div>
       <div class="seat-grid" id="seat-grid-platino">
-        <!-- JS will populate -->
       </div>
 
       <div class="seat-zone-divider"></div>
-      <div class="seat-zone-label"><span data-i18n="event.vip">VIP</span> · RD$ 3,200</div>
+      <div class="seat-zone-label"><span data-i18n="event.vip">VIP</span> · RD$ 3,800</div>
       <div class="seat-grid" id="seat-grid-vip">
-        <!-- JS will populate -->
       </div>
 
       <div class="seat-zone-divider"></div>
-      <div class="seat-zone-label"><span data-i18n="event.general">General</span> · RD$ 1,800</div>
+      <div class="seat-zone-label"><span data-i18n="event.general">General</span> · RD$ 2,200</div>
       <div class="seat-grid" id="seat-grid-general">
-        <!-- JS will populate -->
       </div>
 
       <div class="seat-legend">
@@ -112,7 +114,7 @@
         <span id="purchase-total" style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">RD$ 0</span>
       </div>
 
-      <form data-redirect="pago.html" id="seat-form">
+      <form data-redirect="../pago.html" id="seat-form">
         <input type="hidden" id="selected-seats-input" name="selected-seats" />
         <button type="submit" class="btn btn-primary btn-block" style="padding: 14px 24px; font-size: 0.95rem;" id="btn-continuar" disabled>
           <span data-i18n="event.continue">Continuar al pago</span>
@@ -123,16 +125,14 @@
   </div>
 </main>
 
-
-
 <footer class="site-footer">
   <div class="container">
-    <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+    <img src="../multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
     <p class="bottom" data-i18n="footer">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
   </div>
 </footer>
 
-<script src="js/i18n.js"></script>
-<script src="js/main.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/main.js"></script>
 </body>
 </html>

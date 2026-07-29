@@ -3,113 +3,172 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Astro Tickets · Comprobante de compra</title>
+<title>Astro Tickets · Abordaje Confirmado</title>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
 <body>
-<div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
 
 <header class="navbar">
-  <div class="container">
-    <a class="brand" href="index.html">
-      <span class="material-symbols-outlined">confirmation_number</span>
-      Astro Tickets
+  <div class="container" style="max-width: 1200px;">
+    <a class="brand" href="catalogo.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
     </a>
-    <button class="nav-toggle btn-ghost btn" aria-label="Abrir menú">
-      <span class="material-symbols-outlined">menu</span>
+    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
     <nav class="nav-links">
-      <a href="catalogo.html">Eventos</a>
-      <a href="historial.html">Mis compras</a>
-      <a href="index.html">Iniciar sesión</a>
+      <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+      <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
     </nav>
   </div>
 </header>
 
-<main class="container section" style="max-width: 640px;">
-  <!-- Progreso -->
-  <div class="steps">
-    <div class="step done"><span class="node">1</span><span class="label">Evento</span></div>
-    <span class="line done"></span>
-    <div class="step done"><span class="node">2</span><span class="label">Pago</span></div>
-    <span class="line done"></span>
-    <div class="step active"><span class="node">3</span><span class="label">Comprobante</span></div>
-  </div>
+<div class="receipt-bg" style="padding-top: 24px;">
+  <main class="receipt-card" role="main" aria-label="Resumen de compra">
 
-  <!-- Comprobante de compra -->
-  <div class="glass-panel confirm-hero" style="margin-bottom: 24px;">
-    <div class="check-icon">
+    <!-- Small rocket decor (24-30px) -->
+    <div class="receipt-rocket" aria-hidden="true">
+      <span class="material-symbols-outlined">rocket_launch</span>
+    </div>
+
+    <!-- Success Icon -->
+    <div class="success-icon" id="success-icon" aria-hidden="true">
       <span class="material-symbols-outlined">check</span>
     </div>
-    <h1 style="font-size: 1.6rem;">¡Compra exitosa!</h1>
-    <p class="text-muted" style="margin-top: 8px;">Tu comprobante fue enviado a tu correo electrónico.</p>
-  </div>
 
-  <div class="card" style="padding: 32px; border: 1px solid rgba(108, 63, 209, 0.1);">
-    <div class="flex-between" style="margin-bottom: 24px;">
+    <!-- Title -->
+    <h1 class="receipt-title" data-i18n="receipt.boarding">¡Abordaje Confirmado!</h1>
+
+    <!-- Description -->
+    <p class="receipt-desc">
+      <span data-i18n="receipt.boarding_desc1">Tu pasaje para la experiencia orbital</span><br />
+      <span data-i18n="receipt.boarding_desc2">ha sido reservado con éxito.</span>
+    </p>
+
+    <!-- Order header -->
+    <div class="receipt-order-header">
       <div>
-        <p class="eyebrow">Comprobante</p>
-        <h2 style="font-size: 1.3rem;">#AT-2026-08421</h2>
+        <span class="receipt-order-label" data-i18n="receipt.order_number">Orden</span>
+        <span class="receipt-order-value" id="receipt-order-number">#TXN-000000</span>
       </div>
-      <span class="badge badge-success">Pagado</span>
+      <div style="text-align:right;">
+        <span class="receipt-order-label" data-i18n="receipt.status">Estado</span>
+        <span class="receipt-order-badge" id="receipt-status-badge">Pagado</span>
+      </div>
     </div>
 
-    <hr class="divider" />
+    <!-- Three columns -->
+    <div class="receipt-details">
+      <div class="receipt-detail-card receipt-image-col">
+        <img id="receipt-image" src="" alt="Imagen del evento" />
+      </div>
+      <div class="receipt-detail-card receipt-event-col">
+        <span class="label-rose" data-i18n="receipt.next_dest">PRÓXIMO DESTINO</span>
+        <h2 id="receipt-event-name">Nombre del Evento</h2>
+        <div class="info-block">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+          <div>
+            <span id="receipt-date">Fecha del evento</span>
+            <span class="info-sub" id="receipt-time"><span data-i18n="receipt.time_label">Apertura de esclusas:</span> <span id="receipt-time-value">19:30</span></span>
+          </div>
+        </div>
+        <div class="info-block">
+          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+          <div>
+            <span id="receipt-venue-name">Lugar del evento</span>
+            <span class="info-sub" id="receipt-venue-detail">Detalle del lugar</span>
+          </div>
+        </div>
+      </div>
+      <div class="receipt-detail-card receipt-purchase-col">
+        <span class="label-sky" data-i18n="receipt.resv_code">CÓDIGO DE RESERVA</span>
+        <h3 id="receipt-reservation-code">AST-9920X</h3>
+        <div class="purchase-row">
+          <span id="receipt-qty-type">2x Entradas</span>
+          <span id="receipt-price">RD$ 0</span>
+        </div>
+        <div class="purchase-row tax">
+          <span data-i18n="receipt.taxes">Impuestos Galácticos</span>
+          <span data-i18n="receipt.taxes_included">Incluidos</span>
+        </div>
+      </div>
+    </div>
 
-    <table>
-      <tbody>
-        <tr><td class="text-muted">Evento</td><td class="text-right" style="font-weight: 600;">Noche de Jazz en Vivo</td></tr>
-        <tr><td class="text-muted">Fecha</td><td class="text-right">20 de agosto, 2026 · 8:00 pm</td></tr>
-        <tr><td class="text-muted">Lugar</td><td class="text-right">Teatro Nacional</td></tr>
-        <tr><td class="text-muted">Tipo de asiento</td><td class="text-right">General</td></tr>
-        <tr><td class="text-muted">Cantidad</td><td class="text-right">2 boletos</td></tr>
-        <tr><td class="text-muted">Método de pago</td><td class="text-right">Tarjeta terminada en 4821</td></tr>
-        <tr>
-          <td style="font-weight: 700; padding-top: 16px;">Total pagado</td>
-          <td class="text-right" style="font-weight: 800; font-size: 1.1rem; color: var(--cosmic-purple); padding-top: 16px;">RD$ 3,600</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Extra details row: payment + transaction -->
+    <div class="receipt-extra-grid">
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.payment_method">Método de pago</span>
+        <span class="receipt-extra-value" id="receipt-payment-method">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.transaction_id">ID de transacción</span>
+        <span class="receipt-extra-value" id="receipt-transaction-id">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.purchase_date">Fecha de compra</span>
+        <span class="receipt-extra-value" id="receipt-purchase-date">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.email_sent">Correo de confirmación</span>
+        <span class="receipt-extra-value" id="receipt-email-sent">usuario@ejemplo.com</span>
+      </div>
+    </div>
 
-    <div style="display: flex; gap: 12px; margin-top: 28px;">
-      <button class="btn btn-secondary" style="flex: 1; padding: 12px;">
-        <span class="material-symbols-outlined">download</span> Descargar PDF
+    <!-- Message -->
+    <p class="receipt-message" data-i18n="receipt.digital_ready">Tu boleto digital está listo para ser escaneado.</p>
+
+    <!-- Primary button -->
+    <button class="btn-ticket" id="btn-view-ticket" aria-label="Ver mi boleto digital">
+      🎟 <span data-i18n="receipt.view_ticket">Ver mi Boleto</span>
+    </button>
+
+    <!-- Progress indicator -->
+    <div class="progress-steps" id="receipt-progress" role="progressbar" aria-label="Progreso de compra">
+      <div class="progress-step completed">
+        <div class="progress-dot"><span class="material-symbols-outlined">check</span></div>
+        <span data-i18n="event.step1">Selección</span>
+      </div>
+      <div class="progress-line completed"></div>
+      <div class="progress-step completed">
+        <div class="progress-dot"><span class="material-symbols-outlined">check</span></div>
+        <span data-i18n="event.step2">Pago</span>
+      </div>
+      <div class="progress-line completed"></div>
+      <div class="progress-step active">
+        <div class="progress-dot active"><span class="material-symbols-outlined">check</span></div>
+        <span data-i18n="event.step3">Éxito</span>
+      </div>
+    </div>
+
+    <!-- Bottom buttons -->
+    <div class="receipt-actions">
+      <button class="btn-outline-blue" id="btn-resend" aria-label="Reenviar confirmación por correo">
+        <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+        <span data-i18n="receipt.resend">Reenviar Confirmación</span>
       </button>
-      <a href="historial.html" class="btn btn-primary" style="flex: 1; padding: 12px;">
-        Ver mis compras
+      <a href="historial.html" class="btn-outline-primary" id="btn-my-purchases" aria-label="Ver mis compras">
+        <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+        <span data-i18n="receipt.my_purchases">Mis Compras</span>
       </a>
     </div>
-  </div>
 
-  <!-- Vista previa del correo -->
-  <div class="email-preview" style="margin-top: 32px;">
-    <div class="email-head">
-      <div><strong>De:</strong> notificaciones@astrotickets.com</div>
-      <div><strong>Para:</strong> usuario@correo.com</div>
-      <div><strong>Asunto:</strong> Confirmación de compra — Noche de Jazz en Vivo</div>
-    </div>
-    <hr class="divider" style="margin: 12px 0;" />
-    <p style="font-size: 0.88rem; line-height: 1.7;">Hola, tu compra fue confirmada. Adjuntamos tu comprobante #AT-2026-08421 para 2 boletos de "Noche de Jazz en Vivo" el 20 de agosto de 2026. Preséntalo en la entrada del evento.</p>
-  </div>
-</main>
+  </main>
+</div>
 
 <!-- Toast notificación -->
 <div class="toast" id="purchase-toast">
   <span class="material-symbols-outlined">notifications_active</span>
   <div>
-    <strong>Notificación enviada</strong>
-    <p style="font-size: 0.84rem; margin-top: 4px; opacity: 0.8;">Confirmamos tu compra por correo electrónico.</p>
+    <strong data-i18n="receipt.toasttitle">Notificación enviada</strong>
+    <p style="font-size: 0.84rem; margin-top: 4px; opacity: 0.8;" data-i18n="receipt.toastmsg">Confirmamos tu compra por correo electrónico.</p>
   </div>
 </div>
 
-<footer class="site-footer">
-  <div class="container">
-    <p class="bottom">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
-  </div>
-</footer>
-
+<script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

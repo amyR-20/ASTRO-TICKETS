@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · Catálogo de eventos</title>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -13,17 +14,16 @@
 
 <header class="navbar">
   <div class="container">
-    <a class="brand" href="index.html">
-      <span class="material-symbols-outlined">confirmation_number</span>
-      Astro Tickets
+    <a class="brand" href="catalogo.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
     </a>
-    <button class="nav-toggle btn-ghost btn" aria-label="Abrir menú">
-      <span class="material-symbols-outlined">menu</span>
+    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
     <nav class="nav-links">
-      <a class="active" href="catalogo.html">Eventos</a>
-      <a href="historial.html">Mis compras</a>
-      <a href="index.html">Iniciar sesión</a>
+      <a class="active" href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+      <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
     </nav>
   </div>
 </header>
@@ -31,9 +31,9 @@
 <main class="container section">
   <div class="section-head">
     <div>
-      <p class="eyebrow">Listado de eventos disponibles</p>
-      <h1 style="font-size: 2.2rem;">Encuentra tu próximo evento</h1>
-      <p class="text-muted" style="margin-top: 6px;">Explora conciertos, teatro, deportes y más.</p>
+      <p class="eyebrow" data-i18n="catalog.eyebrow">Listado de eventos disponibles</p>
+      <h1 style="font-size: 2.2rem;" data-i18n="catalog.title">Encuentra tu próximo evento</h1>
+      <p class="text-muted" style="margin-top: 6px;" data-i18n="catalog.subtitle">Explora conciertos, teatro, deportes y más.</p>
     </div>
   </div>
 
@@ -41,118 +41,104 @@
   <div class="glass-panel search-panel">
     <div class="input-wrap" style="flex: 2; min-width: 220px;">
       <span class="material-symbols-outlined">search</span>
-      <input class="input" type="text" id="event-search" placeholder="Buscar por nombre o lugar..." />
+      <input class="input" type="text" id="event-search" placeholder="Buscar por nombre o lugar..." data-i18n="catalog.search" />
     </div>
     <select class="input" id="event-category" style="flex: 1; min-width: 180px;">
-      <option value="todas">Todas las categorías</option>
-      <option value="concierto">Conciertos</option>
-      <option value="teatro">Teatro</option>
-      <option value="deportes">Deportes</option>
-      <option value="conferencia">Conferencias</option>
+      <option value="todas" data-i18n="catalog.all">Todas las categorías</option>
+      <option value="concierto" data-i18n="catalog.concerts">Conciertos</option>
+      <option value="teatro" data-i18n="catalog.theater">Teatro</option>
+      <option value="deportes" data-i18n="catalog.sports">Deportes</option>
+      <option value="conferencia" data-i18n="catalog.conferences">Conferencias</option>
     </select>
   </div>
 
   <div class="events-grid">
 
-    <a class="card event-card" href="evento.html" data-event-name="Noche de Jazz en Vivo" data-event-place="Teatro Nacional" data-event-category="concierto">
+    <a class="card event-card" href="eventos/jazz.html" data-event-name="Noche de Jazz en Vivo" data-event-place="Teatro Nacional" data-event-category="concierto">
       <div class="thumb">
-        <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&q=80" alt="Concierto de jazz" />
-        <span class="badge badge-info">Disponible</span>
+        <img src="multimedia/jazz.jpg" alt="Concierto de jazz" />
+        <span class="badge badge-info" data-i18n="catalog.available">Disponible</span>
       </div>
       <div class="body">
-        <h3 style="font-size: 1.08rem;">Noche de Jazz en Vivo</h3>
-        <p class="meta">Teatro Nacional · 20 ago 2026</p>
-        <div class="price-row">
-          <span class="price">RD$ 1,800</span>
-          <span class="text-muted" style="font-size: 0.82rem;">450 boletos disp.</span>
-        </div>
+        <h3 style="font-size: 1.08rem;" data-i18n="event.jazz.name">Noche de Jazz en Vivo</h3>
+        <p class="meta" data-i18n="event.jazz.meta">Teatro Nacional · 20 ago 2026</p>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" data-i18n="event.jazz.desc">Jazz en vivo con los mejores exponentes del género.</p>
       </div>
     </a>
 
-    <a class="card event-card" href="evento.html" data-event-name="Festival Ritmo Urbano" data-event-place="Estadio Olímpico" data-event-category="concierto">
+    <a class="card event-card" href="eventos/urbano.html" data-event-name="Festival Ritmo Urbano" data-event-place="Estadio Olímpico" data-event-category="concierto">
       <div class="thumb">
-        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80" alt="Festival de música" />
-        <span class="badge badge-warning">Vendiéndose rápido</span>
+        <img src="multimedia/urbano.jpg" alt="Festival de música" />
+        <span class="badge badge-warning" data-i18n="catalog.sellingfast">Vendiéndose rápido</span>
       </div>
       <div class="body">
-        <h3 style="font-size: 1.08rem;">Festival Ritmo Urbano</h3>
-        <p class="meta">Estadio Olímpico · 5 sep 2026</p>
-        <div class="price-row">
-          <span class="price">RD$ 3,200</span>
-          <span class="text-muted" style="font-size: 0.82rem;">120 boletos disp.</span>
-        </div>
+        <h3 style="font-size: 1.08rem;" data-i18n="event.urbano.name">Festival Ritmo Urbano</h3>
+        <p class="meta" data-i18n="event.urbano.meta">Estadio Olímpico · 5 sep 2026</p>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" data-i18n="event.urbano.desc">La música urbana más vibrante en un solo escenario.</p>
       </div>
     </a>
 
-    <a class="card event-card" href="evento.html" data-event-name="Hamlet, Obra de Teatro" data-event-place="Casa de Teatro" data-event-category="teatro">
+    <a class="card event-card" href="eventos/hamlet.html" data-event-name="Hamlet, Obra de Teatro" data-event-place="Casa de Teatro" data-event-category="teatro">
       <div class="thumb">
-        <img src="https://images.unsplash.com/photo-1503095396549-807759245b35?w=600&q=80" alt="Obra de teatro" />
-        <span class="badge badge-info">Disponible</span>
+        <img src="multimedia/hamlet.jpg" alt="Obra de teatro" />
+        <span class="badge badge-info" data-i18n="catalog.available">Disponible</span>
       </div>
       <div class="body">
-        <h3 style="font-size: 1.08rem;">Hamlet, Obra de Teatro</h3>
-        <p class="meta">Casa de Teatro · 12 sep 2026</p>
-        <div class="price-row">
-          <span class="price">RD$ 1,200</span>
-          <span class="text-muted" style="font-size: 0.82rem;">210 boletos disp.</span>
-        </div>
+        <h3 style="font-size: 1.08rem;" data-i18n="event.hamlet.name">Hamlet, Obra de Teatro</h3>
+        <p class="meta" data-i18n="event.hamlet.meta">Casa de Teatro · 12 sep 2026</p>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" data-i18n="event.hamlet.desc">La obra clásica de Shakespeare reinventada.</p>
       </div>
     </a>
 
-    <a class="card event-card" href="evento.html" data-event-name="Clásico de Baloncesto" data-event-place="Palacio de los Deportes" data-event-category="deportes">
+    <a class="card event-card" href="eventos/baloncesto.html" data-event-name="Clásico de Baloncesto" data-event-place="Palacio de los Deportes" data-event-category="deportes">
       <div class="thumb">
-        <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80" alt="Partido de baloncesto" />
-        <span class="badge badge-info">Disponible</span>
+        <img src="multimedia/baloncesto.jpg" alt="Partido de baloncesto" />
+        <span class="badge badge-info" data-i18n="catalog.available">Disponible</span>
       </div>
       <div class="body">
-        <h3 style="font-size: 1.08rem;">Clásico de Baloncesto</h3>
-        <p class="meta">Palacio de los Deportes · 18 sep 2026</p>
-        <div class="price-row">
-          <span class="price">RD$ 900</span>
-          <span class="text-muted" style="font-size: 0.82rem;">600 boletos disp.</span>
-        </div>
+        <h3 style="font-size: 1.08rem;" data-i18n="event.baloncesto.name">Clásico de Baloncesto</h3>
+        <p class="meta" data-i18n="event.baloncesto.meta">Palacio de los Deportes · 18 sep 2026</p>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" data-i18n="event.baloncesto.desc">La emoción del baloncesto profesional en vivo.</p>
       </div>
     </a>
 
-    <a class="card event-card" href="evento.html" data-event-name="Conferencia de Innovación Digital" data-event-place="Centro de Convenciones" data-event-category="conferencia">
+    <a class="card event-card" href="eventos/conferencia.html" data-event-name="Conferencia de Innovación Digital" data-event-place="Centro de Convenciones" data-event-category="conferencia">
       <div class="thumb">
-        <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" alt="Conferencia" />
-        <span class="badge badge-info">Disponible</span>
+        <img src="multimedia/conferencia.jpg" alt="Conferencia" />
+        <span class="badge badge-info" data-i18n="catalog.available">Disponible</span>
       </div>
       <div class="body">
-        <h3 style="font-size: 1.08rem;">Conferencia de Innovación Digital</h3>
-        <p class="meta">Centro de Convenciones · 30 sep 2026</p>
-        <div class="price-row">
-          <span class="price">RD$ 2,500</span>
-          <span class="text-muted" style="font-size: 0.82rem;">80 boletos disp.</span>
-        </div>
+        <h3 style="font-size: 1.08rem;" data-i18n="event.conferencia.name">Conferencia de Innovación Digital</h3>
+        <p class="meta" data-i18n="event.conferencia.meta">Centro de Convenciones · 30 sep 2026</p>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" data-i18n="event.conferencia.desc">Tendencias digitales que transforman el futuro.</p>
       </div>
     </a>
 
-    <a class="card event-card" href="evento.html" data-event-name="Sinfónica de Otoño" data-event-place="Teatro Nacional" data-event-category="concierto">
+    <a class="card event-card" href="eventos/sinfonica.html" data-event-name="Sinfónica de Otoño" data-event-place="Teatro Nacional" data-event-category="concierto">
       <div class="thumb">
-        <img src="https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600&q=80" alt="Orquesta sinfónica" />
-        <span class="badge badge-info">Disponible</span>
+        <img src="multimedia/sinfonica.jpg" alt="Orquesta sinfónica" />
+        <span class="badge badge-info" data-i18n="catalog.available">Disponible</span>
       </div>
       <div class="body">
-        <h3 style="font-size: 1.08rem;">Sinfónica de Otoño</h3>
-        <p class="meta">Teatro Nacional · 10 oct 2026</p>
-        <div class="price-row">
-          <span class="price">RD$ 1,500</span>
-          <span class="text-muted" style="font-size: 0.82rem;">300 boletos disp.</span>
-        </div>
+        <h3 style="font-size: 1.08rem;" data-i18n="event.sinfonica.name">Sinfónica de Otoño</h3>
+        <p class="meta" data-i18n="event.sinfonica.meta">Teatro Nacional · 10 oct 2026</p>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" data-i18n="event.sinfonica.desc">La orquesta sinfónica en una velada inolvidable.</p>
       </div>
     </a>
 
   </div>
 </main>
 
+
+
 <footer class="site-footer">
   <div class="container">
-    <p class="bottom">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
+    <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+    <p class="bottom" data-i18n="footer">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
   </div>
 </footer>
 
+<script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

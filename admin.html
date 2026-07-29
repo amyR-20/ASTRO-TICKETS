@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · Panel de administración</title>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -13,19 +14,19 @@
 
 <header class="navbar">
   <div class="container">
-    <a class="brand" href="admin.html">
-      <span class="material-symbols-outlined">confirmation_number</span>
-      Astro Tickets <span class="text-muted" style="font-weight: 400; font-size: 0.85rem;">/ Admin</span>
+    <a class="brand" href="catalogo.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
+      <span class="text-muted" style="font-weight: 400; font-size: 0.85rem;">/ Admin</span>
     </a>
-    <button class="nav-toggle btn-ghost btn" aria-label="Abrir menú">
-      <span class="material-symbols-outlined">menu</span>
+    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
     <nav class="nav-links">
-      <a class="active" href="#resumen">Resumen</a>
-      <a href="#eventos">Gestión de eventos</a>
-      <a href="#usuarios">Usuarios</a>
-      <a href="#transacciones">Transacciones</a>
-      <a href="index.html">Salir</a>
+      <a class="active" href="#resumen" data-i18n="admin.dashboard">Resumen</a>
+      <a href="#eventos" data-i18n="admin.eventos">Gestión de eventos</a>
+      <a href="#usuarios" data-i18n="admin.usuarios">Usuarios</a>
+      <a href="#transacciones" data-i18n="admin.ventas">Transacciones</a>
+      <a href="index.html" data-i18n="admin.salir">Salir</a>
     </nav>
   </div>
 </header>
@@ -38,12 +39,12 @@
 
   <div class="section-head">
     <div>
-      <p class="eyebrow">Panel de administración</p>
-      <h1 style="font-size: 2.2rem;">Resumen general</h1>
+      <p class="eyebrow" data-i18n="admin.panel">Panel de administración</p>
+      <h1 style="font-size: 2.2rem;" data-i18n="admin.resumen">Resumen general</h1>
     </div>
     <div style="display: flex; gap: 12px;">
-      <button class="btn btn-secondary"><span class="material-symbols-outlined">description</span> Reporte de boletos</button>
-      <button class="btn btn-primary" data-open-event-modal><span class="material-symbols-outlined">add</span> Nuevo evento</button>
+      <button class="btn btn-secondary"><span class="material-symbols-outlined">description</span> <span data-i18n="admin.report">Reporte de boletos</span></button>
+      <button class="btn btn-primary" data-open-event-modal><span class="material-symbols-outlined">add</span> <span data-i18n="admin.newevent">Nuevo evento</span></button>
     </div>
   </div>
 
@@ -51,25 +52,25 @@
   <div class="stats-grid" style="margin-bottom: 36px;">
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">payments</span>
-      <p class="text-muted" style="margin-top: 12px;">Ingresos totales</p>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.ingresos">Ingresos totales</p>
       <p class="value">RD$ 1.2M</p>
       <p class="delta">+12.4% este mes</p>
     </div>
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">confirmation_number</span>
-      <p class="text-muted" style="margin-top: 12px;">Boletos emitidos</p>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.emitidos">Boletos emitidos</p>
       <p class="value">48,290</p>
       <p class="delta">+5.2% este mes</p>
     </div>
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">groups</span>
-      <p class="text-muted" style="margin-top: 12px;">Usuarios registrados</p>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.registrados">Usuarios registrados</p>
       <p class="value">12,492</p>
       <p class="delta">+3.1% este mes</p>
     </div>
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">event_available</span>
-      <p class="text-muted" style="margin-top: 12px;">Eventos activos</p>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.activos">Eventos activos</p>
       <p class="value">18</p>
       <p class="delta">99.9% del tiempo operativo</p>
     </div>
@@ -78,10 +79,10 @@
   <!-- Gráfico de ventas -->
   <div class="card" style="padding: 32px; margin-bottom: 36px;">
     <div class="flex-between" style="margin-bottom: 28px;">
-      <h2 style="font-size: 1.25rem;">Reporte de ventas por evento</h2>
+      <h2 style="font-size: 1.25rem;" data-i18n="admin.saleschart">Reporte de ventas por evento</h2>
       <select class="input" style="width: auto;">
-        <option>Últimos 30 días</option>
-        <option>Últimos 12 meses</option>
+        <option data-i18n="admin.last30">Últimos 30 días</option>
+        <option data-i18n="admin.last12">Últimos 12 meses</option>
       </select>
     </div>
     <div class="bar-chart">
@@ -97,13 +98,13 @@
   <!-- Gestión de eventos -->
   <div id="eventos" style="margin-bottom: 36px;">
     <div class="section-head">
-      <h2 style="font-size: 1.3rem;">Gestión de eventos</h2>
+      <h2 style="font-size: 1.3rem;" data-i18n="admin.manageevents">Gestión de eventos</h2>
     </div>
     <div class="events-grid">
       <div class="card event-card">
         <div class="thumb">
-          <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&q=80" alt="Noche de Jazz en Vivo" />
-          <span class="badge badge-success">Activo</span>
+          <img src="multimedia/jazz.jpg" alt="Noche de Jazz en Vivo" />
+          <span class="badge badge-success" data-i18n="admin.active">Activo</span>
         </div>
         <div class="body">
           <div class="flex-between" style="margin-bottom: 6px;">
@@ -112,7 +113,7 @@
           </div>
           <p class="meta">Teatro Nacional · 20 ago 2026</p>
           <div class="price-row">
-            <span class="text-muted" style="font-size: 0.82rem;">1,240 / 1,500 vendidos</span>
+            <span class="text-muted" style="font-size: 0.82rem;">1,240 / 1,500 <span data-i18n="admin.sold">vendidos</span></span>
             <span class="price">RD$ 1,800</span>
           </div>
         </div>
@@ -120,8 +121,8 @@
 
       <div class="card event-card">
         <div class="thumb">
-          <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80" alt="Festival Ritmo Urbano" />
-          <span class="badge badge-warning">Vendiéndose rápido</span>
+          <img src="multimedia/urbano.jpg" alt="Festival Ritmo Urbano" />
+          <span class="badge badge-warning" data-i18n="admin.sellingfast">Vendiéndose rápido</span>
         </div>
         <div class="body">
           <div class="flex-between" style="margin-bottom: 6px;">
@@ -130,7 +131,7 @@
           </div>
           <p class="meta">Estadio Olímpico · 5 sep 2026</p>
           <div class="price-row">
-            <span class="text-muted" style="font-size: 0.82rem;">4,890 / 5,000 vendidos</span>
+            <span class="text-muted" style="font-size: 0.82rem;">4,890 / 5,000 <span data-i18n="admin.sold">vendidos</span></span>
             <span class="price">RD$ 3,200</span>
           </div>
         </div>
@@ -138,8 +139,8 @@
 
       <button class="card" data-open-event-modal style="border: 2px dashed var(--color-outline-variant); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px; gap: 10px; background: transparent; cursor: pointer; transition: all 0.25s;">
         <span class="material-symbols-outlined" style="font-size: 2.2rem; color: var(--color-outline);">add_circle</span>
-        <span style="font-weight: 600;">Crear nuevo evento</span>
-        <span class="text-muted" style="font-size: 0.82rem; text-align: center;">Define nombre, fecha, lugar, precio y boletos disponibles.</span>
+        <span style="font-weight: 600;" data-i18n="admin.createnew">Crear nuevo evento</span>
+        <span class="text-muted" style="font-size: 0.82rem; text-align: center;" data-i18n="admin.createnewsub">Define nombre, fecha, lugar, precio y boletos disponibles.</span>
       </button>
     </div>
   </div>
@@ -147,16 +148,16 @@
   <!-- Boletos disponibles -->
   <div class="card table-wrap" style="margin-bottom: 36px;">
     <div style="padding: 28px 28px 0;">
-      <h2 style="font-size: 1.25rem;">Boletos disponibles por evento</h2>
+      <h2 style="font-size: 1.25rem;" data-i18n="admin.ticketsbyevent">Boletos disponibles por evento</h2>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Evento</th>
-          <th>Capacidad</th>
-          <th>Vendidos</th>
-          <th>Disponibles</th>
-          <th>Estado</th>
+          <th data-i18n="admin.col_evento">Evento</th>
+          <th data-i18n="admin.capacity">Capacidad</th>
+          <th data-i18n="admin.soldlabel">Vendidos</th>
+          <th data-i18n="admin.available">Disponibles</th>
+          <th data-i18n="admin.status">Estado</th>
         </tr>
       </thead>
       <tbody>
@@ -165,21 +166,21 @@
           <td>1,500</td>
           <td>1,240</td>
           <td>260</td>
-          <td><span class="badge badge-success">Disponible</span></td>
+          <td><span class="badge badge-success" data-i18n="admin.available">Disponible</span></td>
         </tr>
         <tr>
           <td style="font-weight: 600;">Festival Ritmo Urbano</td>
           <td>5,000</td>
           <td>4,890</td>
           <td>110</td>
-          <td><span class="badge badge-warning">Vendiéndose rápido</span></td>
+          <td><span class="badge badge-warning" data-i18n="admin.sellingfast">Vendiéndose rápido</span></td>
         </tr>
         <tr>
           <td style="font-weight: 600;">Hamlet, Obra de Teatro</td>
           <td>400</td>
           <td>190</td>
           <td>210</td>
-          <td><span class="badge badge-success">Disponible</span></td>
+          <td><span class="badge badge-success" data-i18n="admin.available">Disponible</span></td>
         </tr>
       </tbody>
     </table>
@@ -189,22 +190,22 @@
   <div class="card table-wrap" id="usuarios" style="margin-bottom: 36px;">
     <div class="flex-between" style="padding: 28px;">
       <div>
-        <h2 style="font-size: 1.25rem;">Listado de usuarios registrados</h2>
-        <p class="text-muted" style="margin-top: 4px;">Gestiona las cuentas registradas en la plataforma.</p>
+        <h2 style="font-size: 1.25rem;" data-i18n="admin.userslist">Listado de usuarios registrados</h2>
+        <p class="text-muted" style="margin-top: 4px;" data-i18n="admin.userssub">Gestiona las cuentas registradas en la plataforma.</p>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-ghost"><span class="material-symbols-outlined">filter_list</span> Filtrar</button>
-        <button class="btn btn-ghost"><span class="material-symbols-outlined">download</span> Exportar</button>
+        <button class="btn btn-ghost"><span class="material-symbols-outlined">filter_list</span> <span data-i18n="admin.filter">Filtrar</span></button>
+        <button class="btn btn-ghost"><span class="material-symbols-outlined">download</span> <span data-i18n="admin.export">Exportar</span></button>
       </div>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Usuario</th>
-          <th>ID</th>
-          <th>Estado</th>
-          <th>Última conexión</th>
-          <th class="text-right">Acciones</th>
+          <th data-i18n="admin.user">Usuario</th>
+          <th data-i18n="admin.uid">ID</th>
+          <th data-i18n="admin.status">Estado</th>
+          <th data-i18n="admin.lastlogin">Última conexión</th>
+          <th class="text-right" data-i18n="admin.actions">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -219,7 +220,7 @@
             </div>
           </td>
           <td class="text-muted">#0942</td>
-          <td><span class="badge badge-success">Verificado</span></td>
+          <td><span class="badge badge-success" data-i18n="admin.verified">Verificado</span></td>
           <td class="text-muted">Hace 2.4 h</td>
           <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
         </tr>
@@ -234,7 +235,7 @@
             </div>
           </td>
           <td class="text-muted">#1123</td>
-          <td><span class="badge badge-success">Verificado</span></td>
+          <td><span class="badge badge-success" data-i18n="admin.verified">Verificado</span></td>
           <td class="text-muted">Hace 12.1 h</td>
           <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
         </tr>
@@ -249,14 +250,14 @@
             </div>
           </td>
           <td class="text-muted">#0387</td>
-          <td><span class="badge badge-warning">Pendiente</span></td>
+          <td><span class="badge badge-warning" data-i18n="admin.pending">Pendiente</span></td>
           <td class="text-muted">Justo ahora</td>
           <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
         </tr>
       </tbody>
     </table>
     <div class="flex-between" style="padding: 18px 28px; border-top: 1px solid rgba(108, 63, 209, 0.06);">
-      <p class="text-muted" style="font-size: 0.78rem;">Mostrando 3 de 12,492 usuarios</p>
+      <p class="text-muted" style="font-size: 0.78rem;"><span data-i18n="admin.showing">Mostrando</span> 3 <span data-i18n="admin.of">de</span> 12,492 <span data-i18n="admin.users">usuarios</span></p>
       <div style="display: flex; gap: 6px;">
         <button class="btn-ghost btn" style="padding: 8px;" disabled><span class="material-symbols-outlined">chevron_left</span></button>
         <button class="btn-ghost btn" style="padding: 8px;"><span class="material-symbols-outlined">chevron_right</span></button>
@@ -267,18 +268,18 @@
   <!-- Transacciones diarias -->
   <div class="card table-wrap" id="transacciones">
     <div style="padding: 28px 28px 0;">
-      <h2 style="font-size: 1.25rem;">Reporte de transacciones diarias</h2>
-      <p class="text-muted" style="margin-top: 4px;">Movimientos registrados el día de hoy.</p>
+      <h2 style="font-size: 1.25rem;" data-i18n="admin.transactions">Reporte de transacciones diarias</h2>
+      <p class="text-muted" style="margin-top: 4px;" data-i18n="admin.transsub">Movimientos registrados el día de hoy.</p>
     </div>
     <table style="margin-top: 16px;">
       <thead>
         <tr>
-          <th>Transacción</th>
-          <th>Usuario</th>
-          <th>Evento</th>
-          <th>Monto</th>
-          <th>Hora</th>
-          <th>Estado</th>
+          <th data-i18n="admin.txn_col">Transacción</th>
+          <th data-i18n="admin.user">Usuario</th>
+          <th data-i18n="admin.txn_evento">Evento</th>
+          <th data-i18n="admin.txn_monto">Monto</th>
+          <th data-i18n="admin.txn_hora">Hora</th>
+          <th data-i18n="admin.status">Estado</th>
         </tr>
       </thead>
       <tbody>
@@ -288,7 +289,7 @@
           <td style="font-weight: 500;">Noche de Jazz en Vivo</td>
           <td style="font-weight: 600;">RD$ 3,600</td>
           <td class="text-muted">10:42 am</td>
-          <td><span class="badge badge-success">Completada</span></td>
+          <td><span class="badge badge-success" data-i18n="admin.completed">Completada</span></td>
         </tr>
         <tr>
           <td class="text-muted">#TXN-3392</td>
@@ -296,7 +297,7 @@
           <td style="font-weight: 500;">Festival Ritmo Urbano</td>
           <td style="font-weight: 600;">RD$ 12,800</td>
           <td class="text-muted">11:15 am</td>
-          <td><span class="badge badge-success">Completada</span></td>
+          <td><span class="badge badge-success" data-i18n="admin.completed">Completada</span></td>
         </tr>
         <tr>
           <td class="text-muted">#TXN-3393</td>
@@ -304,16 +305,18 @@
           <td style="font-weight: 500;">Hamlet, Obra de Teatro</td>
           <td style="font-weight: 600;">RD$ 1,200</td>
           <td class="text-muted">1:03 pm</td>
-          <td><span class="badge badge-warning">Pendiente</span></td>
+          <td><span class="badge badge-warning" data-i18n="admin.pending">Pendiente</span></td>
         </tr>
       </tbody>
     </table>
   </div>
 </main>
 
+
 <footer class="site-footer">
   <div class="container">
-    <p class="bottom">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
+    <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+    <p class="bottom" data-i18n="footer">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
   </div>
 </footer>
 
@@ -321,39 +324,40 @@
 <div class="modal-overlay" id="event-modal">
   <div class="glass-panel modal-box">
     <div class="modal-head">
-      <h2 style="font-size: 1.15rem;">Registrar evento</h2>
+      <h2 style="font-size: 1.15rem;" data-i18n="admin.modal">Registrar evento</h2>
       <button class="btn-ghost btn" style="padding: 6px;" data-close-event-modal>
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
     <form data-redirect="admin.html">
       <div class="field">
-        <label for="ev-nombre">Nombre del evento</label>
+        <label for="ev-nombre" data-i18n="admin.modal_nombre">Nombre del evento</label>
         <input class="input" type="text" id="ev-nombre" placeholder="Ej. Noche de Jazz en Vivo" required />
       </div>
       <div style="display: flex; gap: 16px;">
         <div class="field" style="flex: 1;">
-          <label for="ev-fecha">Fecha</label>
+          <label for="ev-fecha" data-i18n="admin.modal_fecha">Fecha</label>
           <input class="input" type="date" id="ev-fecha" required />
         </div>
         <div class="field" style="flex: 1;">
-          <label for="ev-precio">Precio (RD$)</label>
+          <label for="ev-precio" data-i18n="admin.modal_precio">Precio (RD$)</label>
           <input class="input" type="number" id="ev-precio" placeholder="1800" required />
         </div>
       </div>
       <div class="field">
-        <label for="ev-lugar">Lugar</label>
+        <label for="ev-lugar" data-i18n="admin.modal_lugar">Lugar</label>
         <input class="input" type="text" id="ev-lugar" placeholder="Ej. Teatro Nacional" required />
       </div>
       <div class="field">
-        <label for="ev-cantidad">Cantidad de boletos disponibles</label>
+        <label for="ev-cantidad" data-i18n="admin.modal_cantidad">Cantidad de boletos disponibles</label>
         <input class="input" type="number" id="ev-cantidad" placeholder="1500" required />
       </div>
-      <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">Guardar evento</button>
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;" data-i18n="admin.modalsave">Guardar evento</button>
     </form>
   </div>
 </div>
 
+<script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 </body>

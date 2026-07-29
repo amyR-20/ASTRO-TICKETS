@@ -242,6 +242,12 @@ const Auth = (() => {
     if (loginForm && loginEmail && loginPassword) {
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        const remember = document.getElementById("remember")?.checked;
+        if (remember) {
+          loginForm.autocomplete = "on";
+          loginEmail.autocomplete = "email";
+          loginPassword.autocomplete = "current-password";
+        }
         const email = loginEmail.value.trim();
         const password = loginPassword.value;
 

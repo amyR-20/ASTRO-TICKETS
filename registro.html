@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · Crear cuenta</title>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -13,16 +14,15 @@
 
 <header class="navbar">
   <div class="container">
-    <a class="brand" href="index.html">
-      <span class="material-symbols-outlined">confirmation_number</span>
-      Astro Tickets
+    <a class="brand" href="catalogo.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
     </a>
-    <button class="nav-toggle btn-ghost btn" aria-label="Abrir menú">
-      <span class="material-symbols-outlined">menu</span>
+    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
     <nav class="nav-links">
-      <a href="registro.html" class="active">Crear cuenta</a>
-      <a href="index.html">Iniciar sesión</a>
+      <a href="registro.html" class="active" data-i18n="nav.crear">Crear cuenta</a>
+      <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
     </nav>
   </div>
 </header>
@@ -30,9 +30,9 @@
 <main class="center-page">
   <div class="glass-panel auth-card" style="max-width: 440px; padding: 48px 40px;">
     <div style="text-align: center; margin-bottom: 32px;">
-      <span class="material-symbols-outlined" style="font-size: 2.5rem; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">person_add</span>
-      <h1 style="font-size: 1.8rem; margin-top: 12px;">Crea tu cuenta</h1>
-      <p class="text-muted" style="margin-top: 8px; font-size: 0.9rem;">Es rápido y gratuito. Empieza a disfrutar tus eventos favoritos.</p>
+      <img src="multimedia/logo.svg" alt="Astro Tickets" style="height: 100px; width: auto; margin-bottom: 16px;" />
+      <h1 style="font-size: 1.8rem;" data-i18n="register.title">Crea tu cuenta</h1>
+      <p class="text-muted" style="margin-top: 8px; font-size: 0.9rem;" data-i18n="register.subtitle">Es rápido y gratuito. Empieza a disfrutar tus eventos favoritos.</p>
     </div>
 
     <div class="social-buttons">
@@ -43,19 +43,19 @@
           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
         </svg>
-        Google
+        <span data-i18n="register.google">Google</span>
       </button>
       <button type="button" class="social-btn" onclick="window.location.href='index.html'">
         <span class="apple-icon">&#63743;</span>
-        Apple
+        <span data-i18n="register.apple">Apple</span>
       </button>
     </div>
 
-    <div class="auth-divider"><span>o regístrate con email</span></div>
+    <div class="auth-divider"><span data-i18n="register.or">o regístrate con email</span></div>
 
-    <form data-redirect="index.html">
+    <form data-redirect="index.html" autocomplete="off">
       <div class="field">
-        <label for="nombre">Nombre completo</label>
+        <label for="nombre" data-i18n="register.name">Nombre completo</label>
         <div class="input-wrap">
           <span class="material-symbols-outlined">person</span>
           <input class="input" type="text" id="nombre" name="nombre" placeholder="Tu nombre y apellido" required />
@@ -63,7 +63,7 @@
       </div>
 
       <div class="field">
-        <label for="email">Correo electrónico</label>
+        <label for="email" data-i18n="register.email">Correo electrónico</label>
         <div class="input-wrap">
           <span class="material-symbols-outlined">mail</span>
           <input class="input" type="email" id="email" name="email" placeholder="nombre@correo.com" required />
@@ -71,10 +71,10 @@
       </div>
 
       <div class="field">
-        <label for="password">Contraseña</label>
+        <label for="password" data-i18n="register.password">Contraseña</label>
         <div class="input-wrap">
           <span class="material-symbols-outlined">lock</span>
-          <input class="input" type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" required minlength="8" />
+          <input class="input" type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" required minlength="8" data-i18n="register.minchars" autocomplete="new-password" />
           <button type="button" class="toggle-visibility" aria-label="Mostrar contraseña">
             <span class="material-symbols-outlined">visibility</span>
           </button>
@@ -89,31 +89,34 @@
       </div>
 
       <div class="field">
-        <label for="password2">Confirmar contraseña</label>
+        <label for="password2" data-i18n="register.confirm">Confirmar contraseña</label>
         <div class="input-wrap">
           <span class="material-symbols-outlined">lock_reset</span>
-          <input class="input" type="password" id="password2" name="password2" placeholder="Repite tu contraseña" required minlength="8" />
+          <input class="input" type="password" id="password2" name="password2" placeholder="Repite tu contraseña" required minlength="8" data-i18n="register.repeat" autocomplete="new-password" />
         </div>
       </div>
 
       <div class="auth-terms">
         <input type="checkbox" id="terms" required />
-        <label for="terms">Acepto los <a href="#">términos de servicio</a> y la <a href="#">política de privacidad</a>.</label>
+        <label for="terms"><span data-i18n="register.accept">Acepto los</span> <a href="#" data-i18n="register.terms">términos de servicio</a> y la <a href="#" data-i18n="register.privacy">política de privacidad</a>.</label>
       </div>
 
       <button type="submit" class="btn btn-primary btn-block auth-submit">
-        Crear mi cuenta
+        <span data-i18n="register.btn">Crear mi cuenta</span>
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
     </form>
 
     <p class="auth-footer-link">
-      ¿Ya tienes una cuenta?
-      <a href="index.html">Inicia sesión</a>
+      <span data-i18n="register.haveaccount">¿Ya tienes una cuenta?</span>
+      <a href="index.html" data-i18n="register.signin">Inicia sesión</a>
     </p>
   </div>
+
+
 </main>
 
+<script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 </body>
