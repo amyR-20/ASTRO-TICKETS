@@ -14,17 +14,65 @@ const Auth = (() => {
    * Llama a POST /api/auth/login. Devuelve { token, usuario } si es
    * exitoso, o lanza un Error con el mensaje que mandó el backend.
    */
-  async function loginRequest(email, password) {
+ async function loginRequest(email, password) {
+  try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password
+      })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Error al iniciar sesión.");
-    return data; // { token, usuario }
-  }
 
+    const contentType = res.headers.get("content-type") || "";
+    let data;
+
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      throw new Error(
+        text || "El servidor devolvió una respuesta inválida."
+      );
+    }
+
+    if (!res.ok) {
+      throw new Error(
+        data.error ||
+        data.mensaje ||
+        "Correo o contraseña incorrectos."
+      );
+    }
+
+    if (!data.usuario) {
+      throw new Error(
+        "El servidor no devolvió los datos del usuario."
+      );
+    }
+
+    if (!data.token) {
+      throw new Error(
+        "El servidor no devolvió el token de acceso."
+      );
+    }
+
+    return data;
+
+  } catch (err) {
+    console.error("Error en loginRequest:", err);
+
+    if (err instanceof TypeError) {
+      throw new Error(
+        "No se pudo conectar con el servidor. Verifica que npm run dev esté ejecutándose."
+      );
+    }
+
+    throw err;
+  }
+}
   /**
    * Llama a POST /api/auth/registro. Devuelve { mensaje, usuario } si es
    * exitoso, o lanza un Error con el mensaje que mandó el backend.
@@ -212,27 +260,74 @@ const Auth = (() => {
   /* ---------- Init on DOMContentLoaded ---------- */
   function init() {
     // Admin login form
-    const adminForm = document.getElementById("admin-login-form");
-    if (adminForm) {
-      adminForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("admin-email").value.trim();
-        const password = document.getElementById("admin-password").value;
-        const errorEl = document.getElementById("admin-login-error");
+   const adminForm = document.getElementById("admin-login-form");
 
-        try {
-          const { token, usuario } = await loginRequest(email, password);
-          if (usuario.role !== "admin") {
-            if (errorEl) errorEl.style.display = "block";
-            return;
-          }
-          setSession(usuario, token);
-          window.location.href = "admin.html";
-        } catch (err) {
-          if (errorEl) errorEl.style.display = "block";
-        }
-      });
+if (adminForm) {
+  adminForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const emailInput = document.getElementById("admin-email");
+    const passwordInput = document.getElementById("admin-password");
+    const errorEl = document.getElementById("admin-login-error");
+
+    const email = emailInput?.value.trim().toLowerCase();
+    const password = passwordInput?.value;
+
+    if (errorEl) {
+      errorEl.textContent = "";
+      errorEl.style.display = "none";
     }
+
+    if (!email || !password) {
+      if (errorEl) {
+        errorEl.textContent =
+          "Ingresa el correo y la contraseña.";
+        errorEl.style.display = "block";
+      }
+      return;
+    }
+
+    try {
+      const { token, usuario } =
+        await loginRequest(email, password);
+
+      console.log("Usuario recibido:", usuario);
+
+      const role = String(usuario?.role || "")
+        .trim()
+        .toLowerCase();
+
+      if (role !== "admin") {
+        throw new Error(
+          `Esta cuenta tiene el rol "${usuario?.role || "sin rol"}" y no es administradora.`
+        );
+      }
+
+      setSession(
+        {
+          ...usuario,
+          role
+        },
+        token
+      );
+
+      window.location.href = "admin.html";
+
+    } catch (err) {
+      console.error("Error en login admin:", err);
+
+      if (errorEl) {
+        errorEl.textContent =
+          err.message || "No fue posible iniciar sesión.";
+        errorEl.style.display = "block";
+      } else {
+        alert(
+          err.message || "No fue posible iniciar sesión."
+        );
+      }
+    }
+  });
+}
 
     // Regular login form
     const loginForm = document.querySelector('form[data-redirect="catalogo.html"]');
