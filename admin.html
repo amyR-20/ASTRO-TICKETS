@@ -14,7 +14,7 @@
 
 <header class="navbar">
   <div class="container">
-    <a class="brand" href="catalogo.html">
+    <a class="brand" href="admin.html">
       <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
       <span class="text-muted" style="font-weight: 400; font-size: 0.85rem;">/ Admin</span>
     </a>
@@ -24,6 +24,7 @@
     <nav class="nav-links">
       <a class="active" href="#resumen" data-i18n="admin.dashboard">Resumen</a>
       <a href="#eventos" data-i18n="admin.eventos">Gestión de eventos</a>
+      <a href="#crear-evento" data-i18n="admin.crearevento">Crear evento</a>
       <a href="#usuarios" data-i18n="admin.usuarios">Usuarios</a>
       <a href="#transacciones" data-i18n="admin.ventas">Transacciones</a>
       <a href="index.html" data-i18n="admin.salir">Salir</a>
@@ -100,47 +101,11 @@
     <div class="section-head">
       <h2 style="font-size: 1.3rem;" data-i18n="admin.manageevents">Gestión de eventos</h2>
     </div>
-    <div class="events-grid">
-      <div class="card event-card">
-        <div class="thumb">
-          <img src="multimedia/jazz.jpg" alt="Noche de Jazz en Vivo" />
-          <span class="badge badge-success" data-i18n="admin.active">Activo</span>
-        </div>
-        <div class="body">
-          <div class="flex-between" style="margin-bottom: 6px;">
-            <h3 style="font-size: 1rem;">Noche de Jazz en Vivo</h3>
-            <button class="btn-ghost btn" style="padding: 6px;" data-open-event-modal><span class="material-symbols-outlined">edit</span></button>
-          </div>
-          <p class="meta">Teatro Nacional · 20 ago 2026</p>
-          <div class="price-row">
-            <span class="text-muted" style="font-size: 0.82rem;">1,240 / 1,500 <span data-i18n="admin.sold">vendidos</span></span>
-            <span class="price">RD$ 1,800</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card event-card">
-        <div class="thumb">
-          <img src="multimedia/urbano.jpg" alt="Festival Ritmo Urbano" />
-          <span class="badge badge-warning" data-i18n="admin.sellingfast">Vendiéndose rápido</span>
-        </div>
-        <div class="body">
-          <div class="flex-between" style="margin-bottom: 6px;">
-            <h3 style="font-size: 1rem;">Festival Ritmo Urbano</h3>
-            <button class="btn-ghost btn" style="padding: 6px;" data-open-event-modal><span class="material-symbols-outlined">edit</span></button>
-          </div>
-          <p class="meta">Estadio Olímpico · 5 sep 2026</p>
-          <div class="price-row">
-            <span class="text-muted" style="font-size: 0.82rem;">4,890 / 5,000 <span data-i18n="admin.sold">vendidos</span></span>
-            <span class="price">RD$ 3,200</span>
-          </div>
-        </div>
-      </div>
-
+    <div class="events-grid" id="events-grid">
       <button class="card" data-open-event-modal style="border: 2px dashed var(--color-outline-variant); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px; gap: 10px; background: transparent; cursor: pointer; transition: all 0.25s;">
         <span class="material-symbols-outlined" style="font-size: 2.2rem; color: var(--color-outline);">add_circle</span>
         <span style="font-weight: 600;" data-i18n="admin.createnew">Crear nuevo evento</span>
-        <span class="text-muted" style="font-size: 0.82rem; text-align: center;" data-i18n="admin.createnewsub">Define nombre, fecha, lugar, precio y boletos disponibles.</span>
+        <span class="text-muted" style="font-size: 0.82rem; text-align: center;" data-i18n="admin.createnewsub">Define nombre, fecha, lugar, zonas, filas y asientos.</span>
       </button>
     </div>
   </div>
@@ -313,6 +278,305 @@
 </main>
 
 
+<!-- ============================================================
+     CREAR EVENTO — Full-page creator
+     ============================================================ -->
+<div class="ev-creator" id="ev-creator">
+  <div class="container">
+
+    <div class="ev-breadcrumb">
+      <a href="#eventos" data-i18n="admin.eventos">Gesti&oacute;n de eventos</a>
+      <span class="material-symbols-outlined">chevron_right</span>
+      <span data-i18n="admin.crearevento">Crear Evento</span>
+    </div>
+
+    <div class="ev-header">
+      <h1 data-i18n="admin.ev_title">Crear Nuevo Evento</h1>
+      <p data-i18n="admin.ev_sub">Configura todos los detalles del evento, distribuci&oacute;n de asientos y precios antes de publicarlo.</p>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="ev-progress" id="ev-progress">
+      <div class="ev-progress-step active" data-step="1">
+        <span class="step-node">1</span>
+        <span class="step-label" data-i18n="admin.ev_step1">Informaci&oacute;n</span>
+      </div>
+      <span class="ev-progress-line" data-line="1"></span>
+      <div class="ev-progress-step" data-step="2">
+        <span class="step-node">2</span>
+        <span class="step-label" data-i18n="admin.ev_step2">Recinto</span>
+      </div>
+      <span class="ev-progress-line" data-line="2"></span>
+      <div class="ev-progress-step" data-step="3">
+        <span class="step-node">3</span>
+        <span class="step-label" data-i18n="admin.ev_step3">Asientos</span>
+      </div>
+      <span class="ev-progress-line" data-line="3"></span>
+      <div class="ev-progress-step" data-step="4">
+        <span class="step-node">4</span>
+        <span class="step-label" data-i18n="admin.ev_step4">Precios</span>
+      </div>
+      <span class="ev-progress-line" data-line="4"></span>
+      <div class="ev-progress-step" data-step="5">
+        <span class="step-node">5</span>
+        <span class="step-label" data-i18n="admin.ev_step5">Publicar</span>
+      </div>
+    </div>
+
+    <div class="ev-creator-layout">
+      <!-- LEFT COLUMN -->
+      <div class="ev-creator-main">
+
+        <!-- SECTION 1: Informaci&oacute;n General -->
+        <div class="ev-section-card" data-section="1">
+          <div class="section-title">
+            <span class="material-symbols-outlined">info</span>
+            <span data-i18n="admin.ev_sec1">Informaci&oacute;n del evento</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec1_sub">Completa los datos principales del evento.</p>
+
+          <div class="ev-field">
+            <label data-i18n="admin.ev_name">Nombre del evento</label>
+            <input class="ev-input" type="text" id="ce-name" placeholder="Ej. Noche de Jazz en Vivo" />
+          </div>
+          <div class="ev-field">
+            <label data-i18n="admin.ev_desc">Descripci&oacute;n</label>
+            <textarea class="ev-input" id="ce-desc" rows="3" placeholder="Describe el evento..."></textarea>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_category">Categor&iacute;a</label>
+              <select class="ev-input" id="ce-category">
+                <option value="Concierto">Concierto</option>
+                <option value="Teatro">Teatro</option>
+                <option value="Deportes">Deportes</option>
+                <option value="Conferencia">Conferencia</option>
+              </select>
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_status">Estado</label>
+              <div class="ev-status-row">
+                <button type="button" class="ev-status-btn active-draft" id="ce-status-draft" data-i18n="admin.ev_draft">Borrador</button>
+                <button type="button" class="ev-status-btn" id="ce-status-publish" data-i18n="admin.ev_published">Publicado</button>
+              </div>
+            </div>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_date">Fecha</label>
+              <input class="ev-input" type="date" id="ce-date" />
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_time">Hora</label>
+              <input class="ev-input" type="time" id="ce-time" value="20:00" />
+            </div>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_venue">Lugar</label>
+              <input class="ev-input" type="text" id="ce-venue" placeholder="Ej. Teatro Nacional" />
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_city">Ciudad</label>
+              <input class="ev-input" type="text" id="ce-city" placeholder="Ej. Santo Domingo" />
+            </div>
+          </div>
+          <div class="ev-field">
+            <label data-i18n="admin.ev_address">Direcci&oacute;n</label>
+            <input class="ev-input" type="text" id="ce-address" placeholder="Ej. Av. 27 de Febrero esq. Winston Churchill" />
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_image">Imagen del evento</label>
+              <div class="ev-dropzone" id="ce-dropzone-img">
+                <span class="material-symbols-outlined">image</span>
+                <p data-i18n="admin.ev_dropzone">Arrastra una imagen aqu&iacute; o haz clic para seleccionar</p>
+                <p class="small" data-i18n="admin.ev_dropzone_sub">JPG, PNG o WebP</p>
+                <input type="file" accept="image/*" style="display:none" id="ce-img-input" />
+              </div>
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_banner">Banner del evento</label>
+              <div class="ev-dropzone" id="ce-dropzone-banner">
+                <span class="material-symbols-outlined">panorama</span>
+                <p data-i18n="admin.ev_dropzone_banner">Arrastra un banner o haz clic</p>
+                <input type="file" accept="image/*" style="display:none" id="ce-banner-input" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Distribuci&oacute;n del Recinto -->
+        <div class="ev-section-card" data-section="2">
+          <div class="section-title">
+            <span class="material-symbols-outlined">meeting_room</span>
+            <span data-i18n="admin.ev_sec2">Distribuci&oacute;n del Recinto</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec2_sub">Configura el mapa de asientos del recinto.</p>
+
+          <div class="ev-gen-controls">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_rows">N&uacute;mero de filas</label>
+              <input class="ev-input" type="number" id="ce-rows" value="8" min="1" max="26" />
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_cols">N&uacute;mero de columnas</label>
+              <input class="ev-input" type="number" id="ce-cols" value="10" min="1" max="30" />
+            </div>
+            <div class="ev-field">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" id="ce-gen-seats" style="height:44px;padding:0 24px;border-radius:12px;">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">auto_awesome</span>
+                <span data-i18n="admin.ev_generate">Generar Asientos</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="ev-field">
+            <label data-i18n="admin.ev_capacity_total">Capacidad total</label>
+            <input class="ev-input" type="number" id="ce-capacity" readonly style="background:var(--color-surface-container-low);font-weight:600;" />
+          </div>
+
+          <div class="seat-grid-visual" id="ce-seat-grid">
+            <div class="sg-stage" data-i18n="admin.ev_stage">Escenario</div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Tipos de Asiento -->
+        <div class="ev-section-card" data-section="3">
+          <div class="section-title">
+            <span class="material-symbols-outlined">category</span>
+            <span data-i18n="admin.ev_sec3">Tipos de Asiento</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec3_sub">Define las categor&iacute;as de asientos disponibles.</p>
+
+          <div class="st-types-grid" id="ce-types-grid"></div>
+          <button class="btn btn-secondary" id="ce-add-type" style="border-radius:12px;">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;">add</span>
+            <span data-i18n="admin.ev_add_type">Agregar Tipo de Asiento</span>
+          </button>
+        </div>
+
+        <!-- SECTION 4: Asignaci&oacute;n de Asientos -->
+        <div class="ev-section-card" data-section="4">
+          <div class="section-title">
+            <span class="material-symbols-outlined">touch_app</span>
+            <span data-i18n="admin.ev_sec4">Asignaci&oacute;n de Asientos</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec4_sub">Selecciona asientos y asigna un tipo. Usa Ctrl para m&uacute;ltiples.</p>
+
+          <div class="seat-grid-visual" id="ce-assign-grid">
+            <div class="sg-stage" data-i18n="admin.ev_stage">Escenario</div>
+          </div>
+
+          <div class="seat-assign-panel" id="ce-assign-panel">
+            <div class="sa-title" data-i18n="admin.ev_assign_title">Configurar asientos seleccionados</div>
+            <div class="sa-row">
+              <span class="sa-label" data-i18n="admin.ev_assign_type">Tipo:</span>
+              <select class="ev-input-sm" id="ce-assign-type" style="flex:1;"></select>
+            </div>
+            <div class="sa-row">
+              <span class="sa-label" data-i18n="admin.ev_assign_status">Estado:</span>
+              <select class="ev-input-sm" id="ce-assign-status" style="flex:1;">
+                <option value="available" data-i18n="admin.ev_avail">Disponible</option>
+                <option value="reserved" data-i18n="admin.ev_reserved">Reservado</option>
+                <option value="blocked" data-i18n="admin.ev_blocked">Bloqueado</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn btn-primary" id="ce-assign-save" style="flex:1;padding:10px;border-radius:10px;font-size:0.82rem;" data-i18n="admin.ev_assign_save">Guardar</button>
+              <button class="btn btn-ghost" id="ce-assign-clear" style="padding:10px;border-radius:10px;font-size:0.82rem;" data-i18n="admin.ev_assign_clear">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 5: Precios -->
+        <div class="ev-section-card" data-section="5">
+          <div class="section-title">
+            <span class="material-symbols-outlined">attach_money</span>
+            <span data-i18n="admin.ev_sec5">Precios</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec5_sub">Resumen de precios por tipo de asiento.</p>
+
+          <table class="ev-pricing-table" id="ce-pricing-table">
+            <thead>
+              <tr>
+                <th data-i18n="admin.ev_ptype">Tipo</th>
+                <th data-i18n="admin.ev_pprice">Precio</th>
+                <th data-i18n="admin.ev_pqty">Cantidad</th>
+                <th data-i18n="admin.ev_ptotal">Total</th>
+              </tr>
+            </thead>
+            <tbody id="ce-pricing-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Actions -->
+        <div class="ev-actions">
+          <button class="btn btn-primary" id="ce-publish" style="border-radius:12px;">
+            <span class="material-symbols-outlined">rocket_launch</span>
+            <span data-i18n="admin.ev_publish_btn">Publicar Evento</span>
+          </button>
+          <button class="btn btn-secondary" id="ce-save-draft" style="border-radius:12px;">
+            <span class="material-symbols-outlined">save</span>
+            <span data-i18n="admin.ev_save_draft">Guardar como Borrador</span>
+          </button>
+          <button class="btn btn-ghost" id="ce-preview-btn" style="border-radius:12px;">
+            <span class="material-symbols-outlined">visibility</span>
+            <span data-i18n="admin.ev_preview_btn">Vista Previa</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Live Preview -->
+      <div class="ev-creator-sidebar">
+        <div class="ev-preview-card" id="ce-preview">
+          <div class="preview-img" id="preview-img">
+            <img src="multimedia/logo.svg" alt="" id="preview-img-src" />
+          </div>
+          <div class="preview-body">
+            <div class="preview-name" id="preview-name">Nombre del Evento</div>
+            <div class="preview-info">
+              <div class="preview-info-row">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <span id="preview-date">Selecciona una fecha</span>
+              </div>
+              <div class="preview-info-row">
+                <span class="material-symbols-outlined">schedule</span>
+                <span id="preview-time">20:00</span>
+              </div>
+              <div class="preview-info-row">
+                <span class="material-symbols-outlined">location_on</span>
+                <span id="preview-venue">Lugar del evento</span>
+              </div>
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-capacity">
+              <span class="label" data-i18n="admin.ev_capacity_label">Capacidad</span>
+              <span class="value" id="preview-capacity">0</span>
+            </div>
+            <div class="preview-capacity">
+              <span class="label" data-i18n="admin.ev_available_label">Disponibles</span>
+              <span class="value" id="preview-available">0</span>
+            </div>
+            <div class="preview-capacity">
+              <span class="label" data-i18n="admin.ev_price_range">Precio</span>
+              <span class="value" id="preview-price">RD$ 0</span>
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-legend">
+              <div class="preview-legend-title" data-i18n="admin.ev_legend">Tipos de asiento</div>
+              <div id="preview-legend-items"></div>
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-mini-map" id="preview-mini-map"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer class="site-footer">
   <div class="container">
     <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
@@ -320,40 +584,30 @@
   </div>
 </footer>
 
-<!-- Modal -->
-<div class="modal-overlay" id="event-modal">
-  <div class="glass-panel modal-box">
-    <div class="modal-head">
-      <h2 style="font-size: 1.15rem;" data-i18n="admin.modal">Registrar evento</h2>
-      <button class="btn-ghost btn" style="padding: 6px;" data-close-event-modal>
-        <span class="material-symbols-outlined">close</span>
-      </button>
+<div class="ev-preview-modal-overlay" id="ev-preview-modal">
+  <div class="ev-preview-modal">
+    <div class="ev-preview-modal-head">
+      <span data-i18n="admin.ev_preview_title">Vista previa en catálogo</span>
+      <button class="ev-preview-modal-close" id="ev-preview-close"><span class="material-symbols-outlined">close</span></button>
     </div>
-    <form data-redirect="admin.html">
-      <div class="field">
-        <label for="ev-nombre" data-i18n="admin.modal_nombre">Nombre del evento</label>
-        <input class="input" type="text" id="ev-nombre" placeholder="Ej. Noche de Jazz en Vivo" required />
-      </div>
-      <div style="display: flex; gap: 16px;">
-        <div class="field" style="flex: 1;">
-          <label for="ev-fecha" data-i18n="admin.modal_fecha">Fecha</label>
-          <input class="input" type="date" id="ev-fecha" required />
+    <div class="ev-preview-modal-body">
+      <div class="events-grid">
+        <div class="card event-card" id="catalog-preview-card">
+          <div class="thumb">
+            <img src="multimedia/logo.svg" alt="" id="preview-card-img" />
+            <span class="badge badge-info">Disponible</span>
+          </div>
+          <div class="body">
+            <h3 style="font-size: 1.08rem;" id="preview-card-name">Nombre del Evento</h3>
+            <p class="meta" id="preview-card-meta">Lugar · Fecha</p>
+            <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" id="preview-card-desc">Descripción del evento</p>
+            <div class="price-row" style="margin-top:12px;">
+              <span class="price" id="preview-card-price">RD$ 0</span>
+            </div>
+          </div>
         </div>
-        <div class="field" style="flex: 1;">
-          <label for="ev-precio" data-i18n="admin.modal_precio">Precio (RD$)</label>
-          <input class="input" type="number" id="ev-precio" placeholder="1800" required />
-        </div>
       </div>
-      <div class="field">
-        <label for="ev-lugar" data-i18n="admin.modal_lugar">Lugar</label>
-        <input class="input" type="text" id="ev-lugar" placeholder="Ej. Teatro Nacional" required />
-      </div>
-      <div class="field">
-        <label for="ev-cantidad" data-i18n="admin.modal_cantidad">Cantidad de boletos disponibles</label>
-        <input class="input" type="number" id="ev-cantidad" placeholder="1500" required />
-      </div>
-      <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;" data-i18n="admin.modalsave">Guardar evento</button>
-    </form>
+    </div>
   </div>
 </div>
 
