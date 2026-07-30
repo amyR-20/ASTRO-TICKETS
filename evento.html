@@ -134,5 +134,53 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
+<script>
+/* Load event from localStorage if ?id=EVT_ID is provided */
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get('id');
+  if (!eventId) return;
+
+  const events = JSON.parse(localStorage.getItem('astro_events') || '[]');
+  const evt = events.find(e => e.id === eventId);
+  if (!evt) return;
+
+  const main = document.querySelector('main');
+  if (!main) return;
+
+  main.dataset.eventName = evt.name;
+  main.dataset.eventImg = evt.image || 'multimedia/logo.svg';
+  main.dataset.eventCategory = evt.category || '';
+
+  const dateObj = new Date(evt.date + 'T' + (evt.time || '20:00'));
+  const dateStr = dateObj.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + (evt.time || '20:00');
+  main.dataset.eventDate = dateStr;
+  main.dataset.eventVenue = evt.venue || '';
+
+  const defaultPrices = { platino: 4500, vip: 3200, general: 1800 };
+  main.dataset.pricePlatino = defaultPrices.platino;
+  main.dataset.priceVip = defaultPrices.vip;
+  main.dataset.priceGeneral = defaultPrices.general;
+
+  document.title = 'Astro Tickets · ' + evt.name;
+  const img = document.querySelector('.detail-image img');
+  if (img) img.src = evt.image || 'multimedia/logo.svg';
+  const catEl = document.querySelector('.eyebrow');
+  if (catEl) catEl.textContent = evt.category || '';
+  const titleEl = document.querySelector('h1');
+  if (titleEl) titleEl.textContent = evt.name;
+  const dateSpan = document.querySelector('.text-muted .material-symbols-outlined');
+  if (dateSpan) {
+    const parent = dateSpan.parentElement;
+    if (parent) parent.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">calendar_month</span> ' + dateStr;
+  }
+  const venueSpan = document.querySelectorAll('.text-muted')[1];
+  if (venueSpan) {
+    venueSpan.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">location_on</span> ' + (evt.venue || '');
+  }
+  const descCard = document.querySelector('.card p');
+  if (descCard) descCard.textContent = evt.description || '';
+})();
+</script>
 </body>
 </html>

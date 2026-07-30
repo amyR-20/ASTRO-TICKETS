@@ -944,19 +944,771 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => toast.classList.remove("show"), 5500);
   }
 
-  /* ---------- Modal admin ---------- */
-  const eventModal = document.getElementById("event-modal");
-  document.querySelectorAll("[data-open-event-modal]").forEach((btn) => {
-    btn.addEventListener("click", () => eventModal && eventModal.classList.add("show"));
-  });
-  document.querySelectorAll("[data-close-event-modal]").forEach((btn) => {
-    btn.addEventListener("click", () => eventModal && eventModal.classList.remove("show"));
-  });
-  if (eventModal) {
-    eventModal.addEventListener("click", (e) => {
-      if (e.target === eventModal) eventModal.classList.remove("show");
+  /* ============================================================
+     EVENT CREATOR — Full-page event creation form
+     ============================================================ */
+  const ev = {
+    creator: document.getElementById("ev-creator"),
+    main: document.getElementById("resumen"),
+    // General info
+    name: document.getElementById("ce-name"),
+    desc: document.getElementById("ce-desc"),
+    category: document.getElementById("ce-category"),
+    date: document.getElementById("ce-date"),
+    time: document.getElementById("ce-time"),
+    venue: document.getElementById("ce-venue"),
+    city: document.getElementById("ce-city"),
+    address: document.getElementById("ce-address"),
+    imgInput: document.getElementById("ce-img-input"),
+    bannerInput: document.getElementById("ce-banner-input"),
+    dropzoneImg: document.getElementById("ce-dropzone-img"),
+    dropzoneBanner: document.getElementById("ce-dropzone-banner"),
+    statusDraft: document.getElementById("ce-status-draft"),
+    statusPublish: document.getElementById("ce-status-publish"),
+    // Venue
+    rows: document.getElementById("ce-rows"),
+    cols: document.getElementById("ce-cols"),
+    capacity: document.getElementById("ce-capacity"),
+    genBtn: document.getElementById("ce-gen-seats"),
+    seatGrid: document.getElementById("ce-seat-grid"),
+    // Types
+    typesGrid: document.getElementById("ce-types-grid"),
+    addTypeBtn: document.getElementById("ce-add-type"),
+    // Assign
+    assignGrid: document.getElementById("ce-assign-grid"),
+    assignPanel: document.getElementById("ce-assign-panel"),
+    assignType: document.getElementById("ce-assign-type"),
+    assignStatus: document.getElementById("ce-assign-status"),
+    assignSave: document.getElementById("ce-assign-save"),
+    assignClear: document.getElementById("ce-assign-clear"),
+    // Pricing
+    pricingBody: document.getElementById("ce-pricing-body"),
+    // Preview
+    previewImg: document.getElementById("preview-img-src"),
+    previewName: document.getElementById("preview-name"),
+    previewDate: document.getElementById("preview-date"),
+    previewTime: document.getElementById("preview-time"),
+    previewVenue: document.getElementById("preview-venue"),
+    previewCapacity: document.getElementById("preview-capacity"),
+    previewAvailable: document.getElementById("preview-available"),
+    previewPrice: document.getElementById("preview-price"),
+    previewLegend: document.getElementById("preview-legend-items"),
+    previewMiniMap: document.getElementById("preview-mini-map"),
+    // Actions
+    publishBtn: document.getElementById("ce-publish"),
+    saveDraftBtn: document.getElementById("ce-save-draft"),
+    previewBtn: document.getElementById("ce-preview-btn")
+  };
+
+  // ---- Catalog render (runs on any page) ----
+  function renderCatalogEvents() {
+    const grid = document.getElementById("catalog-events");
+    if (!grid) return;
+    const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+    const published = events.filter(e => e.status === "published" || !e.status);
+
+    // Remove previously inserted dynamic cards
+    grid.querySelectorAll("[data-dynamic]").forEach(el => el.remove());
+
+    published.forEach(evt => {
+      const dateObj = new Date(evt.date + "T" + (evt.time || "20:00"));
+      const dateDisplay = dateObj.toLocaleDateString("es-DO", { day: "numeric", month: "short", year: "numeric" });
+      const venueShort = (evt.venue || "").split(",")[0].trim();
+      const cat = evt.category || "";
+
+      const card = document.createElement("a");
+      card.className = "card event-card";
+      card.href = "evento.html?id=" + evt.id;
+      card.setAttribute("data-dynamic", "true");
+      card.setAttribute("data-event-name", evt.name.toLowerCase());
+      card.setAttribute("data-event-place", (venueShort || "").toLowerCase());
+      card.setAttribute("data-event-category", cat.toLowerCase());
+
+      card.innerHTML = `
+        <div class="thumb">
+          <img src="${evt.image}" alt="${evt.name}" loading="lazy" onerror="this.src='multimedia/logo.svg'" />
+          <span class="badge badge-info">${t('catalog.available')}</span>
+        </div>
+        <div class="body">
+          <h3 style="font-size: 1.08rem;">${evt.name}</h3>
+          <p class="meta">${venueShort ? venueShort + ' · ' : ''}${dateDisplay}</p>
+          <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;">${evt.description || ''}</p>
+        </div>
+      `;
+      grid.appendChild(card);
     });
   }
+
+  renderCatalogEvents();
+
+  // ---- Seed demo events (runs on any page) ----
+  function seedDemoEvents() {
+    const existing = localStorage.getItem("astro_events");
+    if (existing) return;
+    const demos = [
+      { id: "evt-demo-jazz", name: "Noche de Jazz en Vivo", date: "2026-08-20", time: "20:00", venue: "Teatro Nacional, Santo Domingo", category: "Concierto", description: "Una velada íntima con los mejores exponentes del jazz contemporáneo.", image: "multimedia/jazz.jpg", zones: [{ name: "Platino", color: "#ef4444", price: 4500, qty: 20, desc: "" }, { name: "VIP", color: "#d63384", price: 3200, qty: 30, desc: "" }, { name: "General", color: "#10b981", price: 1800, qty: 30, desc: "" }], seats: [], rows: 8, cols: 10, capacity: 80, status: "published", createdAt: "2026-01-01T00:00:00.000Z" },
+      { id: "evt-demo-urbano", name: "Festival Ritmo Urbano", date: "2026-09-05", time: "21:00", venue: "Estadio Olímpico, Santo Domingo", category: "Concierto", description: "La música urbana más vibrante en un solo escenario.", image: "multimedia/urbano.jpg", zones: [{ name: "Platino", color: "#ef4444", price: 5500, qty: 36, desc: "" }, { name: "VIP", color: "#d63384", price: 3800, qty: 48, desc: "" }, { name: "General", color: "#10b981", price: 2200, qty: 60, desc: "" }], seats: [], rows: 12, cols: 12, capacity: 144, status: "published", createdAt: "2026-01-02T00:00:00.000Z" },
+      { id: "evt-demo-hamlet", name: "Hamlet, Obra de Teatro", date: "2026-09-12", time: "19:30", venue: "Casa de Teatro, Santo Domingo", category: "Teatro", description: "La obra clásica de Shakespeare reinventada.", image: "multimedia/hamlet.jpg", zones: [{ name: "Platino", color: "#ef4444", price: 3500, qty: 16, desc: "" }, { name: "VIP", color: "#d63384", price: 2500, qty: 16, desc: "" }, { name: "General", color: "#10b981", price: 1400, qty: 24, desc: "" }], seats: [], rows: 7, cols: 8, capacity: 56, status: "published", createdAt: "2026-01-03T00:00:00.000Z" },
+      { id: "evt-demo-baloncesto", name: "Clásico de Baloncesto", date: "2026-09-18", time: "20:00", venue: "Palacio de los Deportes, Santo Domingo", category: "Deportes", description: "La emoción del baloncesto profesional en vivo.", image: "multimedia/baloncesto.jpg", zones: [{ name: "Platino", color: "#ef4444", price: 3800, qty: 30, desc: "" }, { name: "VIP", color: "#d63384", price: 2800, qty: 30, desc: "" }, { name: "General", color: "#10b981", price: 1600, qty: 40, desc: "" }], seats: [], rows: 10, cols: 10, capacity: 100, status: "published", createdAt: "2026-01-04T00:00:00.000Z" },
+      { id: "evt-demo-conferencia", name: "Conferencia de Innovación Digital", date: "2026-09-30", time: "09:00", venue: "Centro de Convenciones, Santo Domingo", category: "Conferencia", description: "Tendencias digitales que transforman el futuro.", image: "multimedia/conferencia.jpg", zones: [{ name: "VIP", color: "#d63384", price: 3200, qty: 40, desc: "" }, { name: "General", color: "#10b981", price: 2000, qty: 60, desc: "" }], seats: [], rows: 10, cols: 10, capacity: 100, status: "published", createdAt: "2026-01-05T00:00:00.000Z" },
+      { id: "evt-demo-sinfonica", name: "Sinfónica de Otoño", date: "2026-10-10", time: "20:00", venue: "Teatro Nacional, Santo Domingo", category: "Concierto", description: "La orquesta sinfónica en una velada inolvidable.", image: "multimedia/sinfonica.jpg", zones: [{ name: "Platino", color: "#ef4444", price: 4800, qty: 20, desc: "" }, { name: "VIP", color: "#d63384", price: 3500, qty: 30, desc: "" }, { name: "General", color: "#10b981", price: 2200, qty: 30, desc: "" }], seats: [], rows: 8, cols: 10, capacity: 80, status: "published", createdAt: "2026-01-06T00:00:00.000Z" }
+    ];
+    localStorage.setItem("astro_events", JSON.stringify(demos));
+  }
+
+  seedDemoEvents();
+
+  // If not on admin page, skip creator init
+  if (!ev.creator) { /* skip */ } else {
+
+  const COLOR_PRESETS = ["#6c3fd1","#d63384","#0ea5e9","#f59e0b","#10b981","#ef4444","#8b5cf6","#ec4899","#14b8a6","#f97316"];
+  const DEFAULT_TYPES = [
+    { name: "General", color: "#10b981", price: 25, qty: 300, desc: "Acceso general al evento" },
+    { name: "VIP", color: "#d63384", price: 75, qty: 80, desc: "Acceso VIP con beneficios" },
+    { name: "Palco", color: "#6c3fd1", price: 120, qty: 40, desc: "Palco privado con vista preferencial" },
+    { name: "Preferencial", color: "#f59e0b", price: 50, qty: 120, desc: "Asientos preferenciales" },
+    { name: "Platinum", color: "#ef4444", price: 200, qty: 20, desc: "Experiencia Platinum completa" },
+    { name: "Front Stage", color: "#8b5cf6", price: 150, qty: 30, desc: "Primeras filas frente al escenario" },
+    { name: "Backstage", color: "#0ea5e9", price: 250, qty: 10, desc: "Acceso backstage incluido" }
+  ];
+
+  let evSeats = [];
+  let evSelectedSeats = new Set();
+  let evSeatTypes = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+  let editingEventId = null;
+
+  // ---- Navigation ----
+  document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
+    a.addEventListener("click", (e) => {
+      const id = a.getAttribute("href").slice(1);
+      if (id === "crear-evento") {
+        e.preventDefault();
+        showCreator();
+      }
+    });
+  });
+
+  // "Nuevo evento" & "Crear nuevo evento"
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-open-event-modal]");
+    if (!btn) return;
+    showCreator(btn.dataset.eventId || null);
+  });
+
+  window.showCreator = function(editId) {
+    editingEventId = editId || null;
+    if (ev.creator) ev.creator.classList.add("active");
+    if (ev.main) ev.main.style.display = "none";
+    document.querySelectorAll(".site-footer").forEach(f => f.style.display = "none");
+    if (editId) {
+      const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+      const event = events.find(e => e.id === editId);
+      if (event) loadEventForEditing(event);
+    } else {
+      resetCreator();
+    }
+    updatePreview();
+  };
+
+  window.hideCreator = function() {
+    if (ev.creator) ev.creator.classList.remove("active");
+    if (ev.main) ev.main.style.display = "";
+    document.querySelectorAll(".site-footer").forEach(f => f.style.display = "");
+    window.location.hash = "#eventos";
+  };
+
+  function resetCreator() {
+    editingEventId = null;
+    ev.name.value = "";
+    ev.desc.value = "";
+    ev.category.value = "Concierto";
+    ev.date.value = "";
+    ev.time.value = "20:00";
+    ev.venue.value = "";
+    ev.city.value = "";
+    ev.address.value = "";
+    ev.rows.value = 8;
+    ev.cols.value = 10;
+    ev.capacity.value = "";
+    evSeats = [];
+    evSelectedSeats.clear();
+    evSeatTypes = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+    setStatus("draft");
+    ev.previewImg.src = "multimedia/logo.svg";
+    ev.seatGrid.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
+    ev.assignGrid.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
+    ev.assignPanel.classList.remove("show");
+    renderTypes();
+    updateProgress();
+  }
+
+  function loadEventForEditing(event) {
+    ev.name.value = event.name || "";
+    ev.desc.value = event.description || "";
+    ev.category.value = event.category || "Concierto";
+    ev.date.value = event.date || "";
+    ev.time.value = event.time || "20:00";
+    ev.address.value = event.address || "";
+    // Split combined venue string into venue / city if city is not stored separately
+    const rawVenue = event.venue || "";
+    if (event.city) {
+      const suffix = ", " + event.city;
+      ev.venue.value = rawVenue.endsWith(suffix) ? rawVenue.slice(0, -suffix.length) : rawVenue;
+      ev.city.value = event.city;
+    } else {
+      const parts = rawVenue.split(",").map(s => s.trim());
+      ev.venue.value = parts[0] || "";
+      ev.city.value = parts[1] || "";
+    }
+    ev.previewImg.src = event.image || "multimedia/logo.svg";
+    setStatus(event.status || "draft");
+    if (event.zones && event.zones.length) {
+      evSeatTypes = event.zones.map(z => ({
+        name: z.name,
+        color: z.color || COLOR_PRESETS[evSeatTypes.findIndex(t => t.name === z.name) % COLOR_PRESETS.length] || COLOR_PRESETS[0],
+        price: z.price,
+        qty: z.qty || (z.rows * z.cols),
+        desc: z.desc || ""
+      }));
+    }
+    // Restore seats if saved
+    if (event.seats && event.seats.length) {
+      evSeats = JSON.parse(JSON.stringify(event.seats));
+      ev.rows.value = event.rows || 8;
+      ev.cols.value = event.cols || 10;
+      renderSeatGrid(ev.seatGrid, evSeats, event.cols || 10);
+      renderSeatGrid(ev.assignGrid, evSeats, event.cols || 10);
+      updateCapacity();
+    }
+    renderTypes();
+    updateProgress();
+  }
+
+  // ---- Status toggle ----
+  function setStatus(status) {
+    ev.statusDraft.classList.toggle("active-draft", status === "draft");
+    ev.statusPublish.classList.toggle("active-published", status === "published");
+  }
+  if (ev.statusDraft) ev.statusDraft.addEventListener("click", () => setStatus("draft"));
+  if (ev.statusPublish) ev.statusPublish.addEventListener("click", () => setStatus("published"));
+
+  // ---- Image drag & drop ----
+  function setupDropzone(dz, input, isBanner) {
+    if (!dz) return;
+    dz.addEventListener("click", () => input.click());
+    input.addEventListener("change", () => {
+      const file = input.files[0];
+      if (file) handleImageFile(file, dz, isBanner);
+    });
+    dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("dragover"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dz.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) handleImageFile(file, dz, isBanner);
+    });
+  }
+
+  function handleImageFile(file, dz, isBanner) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      dz.classList.add("has-image");
+      dz.innerHTML = `<img src="${e.target.result}" alt="" />`;
+      if (!isBanner) ev.previewImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  setupDropzone(ev.dropzoneImg, ev.imgInput, false);
+  setupDropzone(ev.dropzoneBanner, ev.bannerInput, true);
+
+  // ---- Seat Generation ----
+  function generateSeats() {
+    const numRows = parseInt(ev.rows.value) || 8;
+    const numCols = parseInt(ev.cols.value) || 10;
+    evSeats = [];
+    for (let r = 0; r < numRows; r++) {
+      const rowLetter = String.fromCharCode(65 + r);
+      for (let c = 1; c <= numCols; c++) {
+        evSeats.push({
+          id: rowLetter + c,
+          row: rowLetter,
+          col: c,
+          type: null,
+          status: "available"
+        });
+      }
+    }
+    renderSeatGrid(ev.seatGrid, evSeats, numCols);
+    renderSeatGrid(ev.assignGrid, evSeats, numCols);
+    updateCapacity();
+    updatePreview();
+    updateProgress();
+  }
+
+  function renderSeatGrid(container, seats, cols) {
+    if (!container) return;
+    const numRows = seats.length > 0 ? (seats[seats.length - 1].row.charCodeAt(0) - 65 + 1) : 0;
+    container.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
+    const aisleAfter = Math.floor(cols / 2);
+
+    for (let r = 0; r < numRows; r++) {
+      const rowLetter = String.fromCharCode(65 + r);
+      const rowEl = document.createElement("div");
+      rowEl.className = "sg-row";
+      rowEl.innerHTML = `<span class="sg-row-label">${rowLetter}</span>`;
+
+      for (let c = 1; c <= cols; c++) {
+        if (c === aisleAfter + 1) {
+          const aisle = document.createElement("div");
+          aisle.className = "sg-aisle";
+          rowEl.appendChild(aisle);
+        }
+        const seatId = rowLetter + c;
+        const seatData = seats.find(s => s.id === seatId);
+        const seat = document.createElement("div");
+        seat.className = "sg-seat";
+        seat.dataset.id = seatId;
+        seat.textContent = c;
+
+        if (seatData && seatData.type) {
+          const type = evSeatTypes.find(t => t.name === seatData.type);
+          if (type) {
+            seat.classList.add("assigned");
+            seat.style.background = type.color;
+            seat.style.borderColor = type.color;
+          }
+          if (seatData.status === "reserved") seat.style.opacity = "0.6";
+          if (seatData.status === "blocked") { seat.style.background = "#ccc"; seat.style.borderColor = "#ccc"; seat.style.color = "#999"; seat.style.cursor = "not-allowed"; }
+        }
+
+        if (container === ev.assignGrid) {
+          seat.addEventListener("click", () => toggleAssignSeat(seatId));
+          if (evSelectedSeats.has(seatId)) seat.classList.add("selected");
+        }
+
+        rowEl.appendChild(seat);
+      }
+      container.appendChild(rowEl);
+    }
+  }
+
+  function updateCapacity() {
+    const total = evSeats.length;
+    if (ev.capacity) ev.capacity.value = total;
+  }
+
+  if (ev.genBtn) {
+    ev.genBtn.addEventListener("click", generateSeats);
+  }
+
+  // ---- Seat Types ----
+  function renderTypes() {
+    if (!ev.typesGrid) return;
+    ev.typesGrid.innerHTML = "";
+    evSeatTypes.forEach((type, i) => {
+      const card = document.createElement("div");
+      card.className = "st-type-card";
+      card.innerHTML = `
+        <div class="st-header">
+          <span class="st-name">
+            <span class="st-color-dot" style="background:${type.color}"></span>
+            <input class="ev-input-sm st-name-input" value="${type.name}" style="width:auto;display:inline;margin:0;font-weight:600;" />
+          </span>
+          <button class="st-remove" data-idx="${i}"><span class="material-symbols-outlined" style="font-size:1rem;">close</span></button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+          <div style="flex:1;min-width:60px;">
+            <div style="font-size:0.65rem;color:var(--color-on-surface-variant);margin-bottom:2px;">${t('admin.ev_pprice')}</div>
+            <input class="ev-input-sm st-price-input" type="number" value="${type.price}" style="font-weight:700;color:var(--cosmic-purple);" />
+          </div>
+          <div style="flex:1;min-width:60px;">
+            <div style="font-size:0.65rem;color:var(--color-on-surface-variant);margin-bottom:2px;">${t('admin.ev_pqty')}</div>
+            <input class="ev-input-sm st-qty-input" type="number" value="${type.qty}" />
+          </div>
+        </div>
+        <input class="ev-input-sm st-desc-input" value="${type.desc}" placeholder="Descripci&oacute;n" style="margin-top:6px;" />
+        <div class="color-presets">
+          ${COLOR_PRESETS.map(c => `<span class="color-preset${c === type.color ? ' selected' : ''}" style="background:${c}" data-color="${c}"></span>`).join('')}
+        </div>
+      `;
+
+      // Wire up inputs
+      const nameInput = card.querySelector(".st-name-input");
+      nameInput.addEventListener("input", () => { evSeatTypes[i].name = nameInput.value; updatePricing(); updatePreview(); });
+      const priceInput = card.querySelector(".st-price-input");
+      priceInput.addEventListener("input", () => { evSeatTypes[i].price = parseInt(priceInput.value) || 0; updatePricing(); updatePreview(); });
+      const qtyInput = card.querySelector(".st-qty-input");
+      qtyInput.addEventListener("input", () => { evSeatTypes[i].qty = parseInt(qtyInput.value) || 0; updatePricing(); updatePreview(); });
+      const descInput = card.querySelector(".st-desc-input");
+      descInput.addEventListener("input", () => { evSeatTypes[i].desc = descInput.value; });
+      card.querySelector(".st-remove").addEventListener("click", () => {
+        evSeatTypes.splice(i, 1);
+        renderTypes();
+        updatePricing();
+        updatePreview();
+        updateProgress();
+      });
+      card.querySelectorAll(".color-preset").forEach(el => {
+        el.addEventListener("click", () => {
+          card.querySelectorAll(".color-preset").forEach(p => p.classList.remove("selected"));
+          el.classList.add("selected");
+          evSeatTypes[i].color = el.dataset.color;
+          renderSeatGrid(ev.assignGrid, evSeats, parseInt(ev.cols.value) || 10);
+          updatePreview();
+        });
+      });
+
+      ev.typesGrid.appendChild(card);
+    });
+    updateAssignTypeOptions();
+    updatePricing();
+  }
+
+  if (ev.addTypeBtn) {
+    ev.addTypeBtn.addEventListener("click", () => {
+      evSeatTypes.push({
+        name: "Nuevo Tipo",
+        color: COLOR_PRESETS[evSeatTypes.length % COLOR_PRESETS.length],
+        price: 30,
+        qty: 50,
+        desc: ""
+      });
+      renderTypes();
+      updateProgress();
+    });
+  }
+
+  function updateAssignTypeOptions() {
+    if (!ev.assignType) return;
+    ev.assignType.innerHTML = evSeatTypes.map(t => `<option value="${t.name}">${t.name} - RD$ ${t.price}</option>`).join("");
+  }
+
+  // ---- Seat Assignment ----
+  function toggleAssignSeat(seatId) {
+    if (evSelectedSeats.has(seatId)) {
+      evSelectedSeats.delete(seatId);
+    } else {
+      evSelectedSeats.add(seatId);
+    }
+    renderSeatGrid(ev.assignGrid, evSeats, parseInt(ev.cols.value) || 10);
+    ev.assignPanel.classList.toggle("show", evSelectedSeats.size > 0);
+    if (evSelectedSeats.size > 0) {
+      ev.assignPanel.querySelector(".sa-title").textContent = t('admin.ev_assign_title') + " (" + evSelectedSeats.size + ")";
+    }
+  }
+
+  if (ev.assignSave) {
+    ev.assignSave.addEventListener("click", () => {
+      const typeName = ev.assignType.value;
+      const status = ev.assignStatus.value;
+      evSelectedSeats.forEach(id => {
+        const seat = evSeats.find(s => s.id === id);
+        if (seat) { seat.type = typeName; seat.status = status; }
+      });
+      evSelectedSeats.clear();
+      renderSeatGrid(ev.assignGrid, evSeats, parseInt(ev.cols.value) || 10);
+      ev.assignPanel.classList.remove("show");
+      updatePreview();
+      updateProgress();
+    });
+  }
+
+  if (ev.assignClear) {
+    ev.assignClear.addEventListener("click", () => {
+      evSelectedSeats.clear();
+      renderSeatGrid(ev.assignGrid, evSeats, parseInt(ev.cols.value) || 10);
+      ev.assignPanel.classList.remove("show");
+    });
+  }
+
+  // ---- Pricing Table ----
+  function updatePricing() {
+    if (!ev.pricingBody) return;
+    ev.pricingBody.innerHTML = "";
+    let grandTotal = 0;
+    evSeatTypes.forEach(type => {
+      const total = type.price * type.qty;
+      grandTotal += total;
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><span class="pt-color-dot" style="background:${type.color}"></span>${type.name}</td>
+        <td class="pt-price">RD$ ${type.price.toLocaleString("es-DO")}</td>
+        <td>${type.qty.toLocaleString("es-DO")}</td>
+        <td style="font-weight:600;">RD$ ${total.toLocaleString("es-DO")}</td>
+      `;
+      ev.pricingBody.appendChild(row);
+    });
+    const totalRow = document.createElement("tr");
+    totalRow.style.background = "var(--color-surface-container-low)";
+    totalRow.innerHTML = `
+      <td style="font-weight:700;">Total</td>
+      <td></td>
+      <td style="font-weight:600;">${evSeatTypes.reduce((s,t) => s + t.qty, 0).toLocaleString("es-DO")}</td>
+      <td style="font-weight:700;color:var(--cosmic-purple);font-size:1rem;">RD$ ${grandTotal.toLocaleString("es-DO")}</td>
+    `;
+    ev.pricingBody.appendChild(totalRow);
+  }
+
+  // ---- Live Preview ----
+  function updatePreview() {
+    if (!ev.previewName) return;
+    ev.previewName.textContent = ev.name.value.trim() || "Nombre del Evento";
+    if (ev.date.value) {
+      const d = new Date(ev.date.value + "T" + (ev.time.value || "20:00"));
+      ev.previewDate.textContent = d.toLocaleDateString("es-DO", { day: "numeric", month: "long", year: "numeric" });
+    } else { ev.previewDate.textContent = "Selecciona una fecha"; }
+    ev.previewTime.textContent = ev.time.value || "20:00";
+    const venueParts = [ev.venue.value, ev.city.value].filter(Boolean);
+    ev.previewVenue.textContent = venueParts.join(", ") || "Lugar del evento";
+
+    const total = evSeats.length || evSeatTypes.reduce((s,t) => s + t.qty, 0);
+    const assigned = evSeats.filter(s => s.type).length;
+    ev.previewCapacity.textContent = total;
+    ev.previewAvailable.textContent = total - assigned;
+
+    const prices = evSeatTypes.map(t => t.price).filter(p => p > 0);
+    if (prices.length) {
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      ev.previewPrice.textContent = min === max ? "RD$ " + min.toLocaleString("es-DO") : "RD$ " + min.toLocaleString("es-DO") + " - RD$ " + max.toLocaleString("es-DO");
+    } else { ev.previewPrice.textContent = "RD$ 0"; }
+
+    // Legend
+    if (ev.previewLegend) {
+      ev.previewLegend.innerHTML = evSeatTypes.map(t =>
+        `<div class="preview-legend-item"><span class="dot" style="background:${t.color}"></span>${t.name}</div>`
+      ).join("");
+    }
+
+    // Mini map
+    if (ev.previewMiniMap) {
+      const numCols = parseInt(ev.cols.value) || 10;
+      const numRows = evSeats.length > 0 ? (evSeats[evSeats.length-1].row.charCodeAt(0) - 65 + 1) : 0;
+      ev.previewMiniMap.innerHTML = "";
+      const mapScale = Math.min(1, 140 / (numCols * 10));
+      for (let r = 0; r < Math.min(numRows, 10); r++) {
+        const rowEl = document.createElement("div");
+        rowEl.className = "pm-row";
+        for (let c = 1; c <= Math.min(numCols, 16); c++) {
+          const seatId = String.fromCharCode(65 + r) + c;
+          const seat = evSeats.find(s => s.id === seatId);
+          const pm = document.createElement("div");
+          pm.className = "pm-seat";
+          if (seat && seat.type) {
+            const type = evSeatTypes.find(t => t.name === seat.type);
+            if (type) { pm.style.background = type.color; pm.classList.add("assigned"); }
+          }
+          rowEl.appendChild(pm);
+        }
+        ev.previewMiniMap.appendChild(rowEl);
+      }
+    }
+  }
+
+  // ---- Real-time preview updates ----
+  ["name","desc","category","date","time","venue","city","address"].forEach(field => {
+    if (ev[field]) ev[field].addEventListener("input", updatePreview);
+    if (ev[field] && ev[field].tagName === "SELECT") ev[field].addEventListener("change", updatePreview);
+  });
+
+  // ---- Progress bar ----
+  function updateProgress() {
+    const steps = document.querySelectorAll(".ev-progress-step");
+    const lines = document.querySelectorAll(".ev-progress-line");
+    let done = 0;
+    // Step 1: name + date
+    if (ev.name.value.trim() && ev.date.value) done = 1;
+    // Step 2: seats generated
+    if (done === 1 && evSeats.length > 0) done = 2;
+    // Step 3: at least one seat assigned
+    if (done === 2 && evSeats.some(s => s.type)) done = 3;
+    // Step 4: pricing (all types have prices)
+    if (done === 3 && evSeatTypes.every(t => t.price > 0)) done = 4;
+
+    steps.forEach((step, i) => {
+      const idx = i + 1;
+      step.classList.remove("active", "done");
+      if (idx <= done) step.classList.add("done");
+      else if (idx === done + 1) step.classList.add("active");
+    });
+    lines.forEach((line, i) => {
+      line.classList.toggle("done", i + 1 <= done);
+    });
+  }
+
+  // ---- Live input progress ----
+  ["name","date","rows","cols"].forEach(field => {
+    if (ev[field]) ev[field].addEventListener("input", updateProgress);
+    if (ev[field] && ev[field].tagName === "SELECT") ev[field].addEventListener("change", updateProgress);
+  });
+
+  // ---- Save / Publish ----
+  function collectEventData(status) {
+    const name = ev.name.value.trim();
+    const date = ev.date.value;
+    const time = ev.time.value;
+    const venueParts = [ev.venue.value.trim(), ev.city.value.trim()].filter(Boolean).join(", ");
+    const address = ev.address.value.trim();
+    const fullVenue = address ? venueParts + " - " + address : venueParts || ev.venue.value.trim();
+
+    return {
+      id: editingEventId || "evt-" + Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+      name,
+      description: ev.desc.value.trim(),
+      category: ev.category.value,
+      date,
+      time,
+      venue: fullVenue,
+      city: ev.city.value.trim(),
+      address,
+      image: ev.previewImg.src || "multimedia/logo.svg",
+      status: status || (ev.statusDraft.classList.contains("active-draft") ? "draft" : "published"),
+      rows: parseInt(ev.rows.value) || 8,
+      cols: parseInt(ev.cols.value) || 10,
+      zones: evSeatTypes.map(t => ({
+        name: t.name,
+        color: t.color,
+        price: t.price,
+        qty: t.qty,
+        desc: t.desc,
+        rows: t.qty ? Math.ceil(t.qty / (parseInt(ev.cols.value) || 10)) : 0,
+        cols: t.qty ? Math.min(t.qty, parseInt(ev.cols.value) || 10) : 0
+      })),
+      seats: evSeats,
+      capacity: evSeats.length,
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  function saveEvent(eventData) {
+    const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+    const idx = events.findIndex(e => e.id === eventData.id);
+    if (idx !== -1) {
+      events[idx] = { ...events[idx], ...eventData };
+    } else {
+      events.push(eventData);
+    }
+    localStorage.setItem("astro_events", JSON.stringify(events));
+    renderAdminEvents();
+  }
+
+  if (ev.publishBtn) {
+    ev.publishBtn.addEventListener("click", () => {
+      const name = ev.name.value.trim();
+      if (!name || !ev.date.value) {
+        alert(t('admin.ev_required'));
+        return;
+      }
+      const data = collectEventData("published");
+      saveEvent(data);
+      showToast(t('admin.ev_published_toast'));
+      hideCreator();
+    });
+  }
+
+  if (ev.saveDraftBtn) {
+    ev.saveDraftBtn.addEventListener("click", () => {
+      const name = ev.name.value.trim();
+      if (!name) {
+        alert(t('admin.ev_required_name'));
+        return;
+      }
+      const data = collectEventData("draft");
+      saveEvent(data);
+      showToast(t('admin.ev_draft_toast'));
+      hideCreator();
+    });
+  }
+
+  if (ev.previewBtn) {
+    ev.previewBtn.addEventListener("click", () => {
+      updatePreview();
+      updateCatalogPreview();
+      const modal = document.getElementById("ev-preview-modal");
+      if (modal) modal.classList.add("show");
+    });
+  }
+  document.addEventListener("click", (e) => {
+    const closeBtn = e.target.closest("#ev-preview-close");
+    const modal = document.getElementById("ev-preview-modal");
+    if (closeBtn && modal) modal.classList.remove("show");
+    if (e.target === modal) modal.classList.remove("show");
+  });
+
+  function updateCatalogPreview() {
+    const name = ev.name.value.trim() || "Nombre del Evento";
+    const venueShort = (ev.venue.value || "").split(",")[0].trim() || "Lugar";
+    const dateObj = ev.date.value ? new Date(ev.date.value + "T" + (ev.time.value || "20:00")) : null;
+    const dateDisplay = dateObj ? dateObj.toLocaleDateString("es-DO", { day: "numeric", month: "short", year: "numeric" }) : "Fecha";
+    const desc = ev.desc.value.trim() || "Descripción del evento";
+    const prices = evSeatTypes.map(t => t.price).filter(p => p > 0);
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+
+    const img = document.getElementById("preview-card-img");
+    if (img) img.src = ev.previewImg.src || "multimedia/logo.svg";
+    const nameEl = document.getElementById("preview-card-name");
+    if (nameEl) nameEl.textContent = name;
+    const metaEl = document.getElementById("preview-card-meta");
+    if (metaEl) metaEl.textContent = venueShort + " · " + dateDisplay;
+    const descEl = document.getElementById("preview-card-desc");
+    if (descEl) descEl.textContent = desc;
+    const priceEl = document.getElementById("preview-card-price");
+    if (priceEl) priceEl.textContent = minPrice ? "RD$ " + minPrice.toLocaleString("es-DO") : "RD$ 0";
+  }
+
+  function showToast(msg) {
+    const existing = document.querySelector(".ev-toast");
+    if (existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.className = "ev-toast";
+    toast.style.cssText = "position:fixed;bottom:24px;right:24px;padding:14px 24px;background:#1a1425;color:#fff;border-radius:14px;font-size:0.85rem;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:300;animation:fadeIn 0.3s ease;";
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; toast.style.transition = "opacity 0.3s"; setTimeout(() => toast.remove(), 400); }, 2500);
+  }
+
+  // ---- Render admin events ----
+  function renderAdminEvents() {
+    const grid = document.getElementById("events-grid");
+    if (!grid) return;
+    const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+    const createBtn = grid.querySelector('[data-open-event-modal]:last-child');
+    grid.querySelectorAll(".event-card").forEach(c => c.remove());
+
+    events.forEach(evt => {
+      const minPrice = Math.min(...(evt.zones || []).map(z => z.price).filter(p => p > 0));
+      const totalSeats = evt.capacity || (evt.zones || []).reduce((sum, z) => sum + (z.qty || z.rows * z.cols || 0), 0);
+      const dateObj = new Date(evt.date + "T" + (evt.time || "20:00"));
+      const dateDisplay = dateObj.toLocaleDateString("es-DO", { day: "numeric", month: "short", year: "numeric" });
+      const statusBadge = evt.status === "draft" ? "badge-info" : "badge-success";
+      const statusLabel = evt.status === "draft" ? t('admin.ev_draft') : t('admin.active');
+
+      const card = document.createElement("div");
+      card.className = "card event-card";
+      card.innerHTML = `
+        <div class="thumb">
+          <img src="${evt.image}" alt="${evt.name}" loading="lazy" onerror="this.src='multimedia/logo.svg'" />
+          <span class="badge ${statusBadge}">${statusLabel}</span>
+        </div>
+        <div class="body">
+          <div class="flex-between" style="margin-bottom: 6px;">
+            <h3 style="font-size: 1rem;">${evt.name}</h3>
+            <button class="btn-ghost btn" style="padding: 6px;" data-event-id="${evt.id}" data-open-event-modal><span class="material-symbols-outlined">edit</span></button>
+          </div>
+          <p class="meta">${evt.venue || ''} · ${dateDisplay}</p>
+          <div class="price-row">
+            <span class="text-muted" style="font-size: 0.82rem;">${(evt.zones || []).map(z => z.name).join(' · ')}</span>
+            <span class="price">${minPrice ? 'RD$ ' + minPrice.toLocaleString("es-DO") : '—'}</span>
+          </div>
+        </div>
+      `;
+      grid.insertBefore(card, createBtn);
+    });
+  }
+
+  renderAdminEvents();
+  } // end if (!ev.creator) bail
 
   /* ============================================================
      DECORACIONES Y ANIMACIONES
@@ -1210,6 +1962,10 @@ document.addEventListener("DOMContentLoaded", () => {
         font-size: 0.72rem;
         padding: 6px 12px;
       }
+    }
+    @media (max-width: 560px) {
+      .zone-row { flex-wrap: wrap; }
+      .zone-row .field { flex: 1 1 calc(50% - 10px) !important; min-width: 0; }
     }
   `;
   document.head.appendChild(style);
