@@ -106,8 +106,7 @@ document.querySelectorAll('.admin-profile-option').forEach((option) => {
     document.getElementById('admin-password').focus();
   });
 });
-const requestedProfile = new URLSearchParams(location.search).get('profile');
-if (requestedProfile) document.querySelector(`.admin-profile-option[data-admin-email="${CSS.escape(requestedProfile)}"]`)?.click();
+// No se preselecciona ningun perfil: cada administrador debe elegir su cuenta.
 </script>
 </body>
 </html>

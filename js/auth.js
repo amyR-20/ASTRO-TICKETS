@@ -298,6 +298,14 @@ const Auth = (() => {
     const requiereAdmin = page === "admin.html";
     const requiereSesion = page === "historial.html";
 
+    // La pantalla administrativa siempre comienza con una eleccion explicita.
+    // Evita que una sesion anterior (por ejemplo, Victor) entre de forma
+    // automatica cuando Amy o Sarah quieren usar su propia cuenta.
+    if (page === "admin-login.html") {
+      clearSession();
+      try { sessionStorage.removeItem("astro_admin_entry"); } catch (_) {}
+    }
+
     if (requiereAdmin) {
       // Solo administradores pueden abrir admin.html (un usuario normal
       // o un visitante sin sesión sale inmediatamente al login).
@@ -378,6 +386,8 @@ if (adminForm) {
         },
         token
       );
+
+      try { sessionStorage.setItem("astro_admin_entry", "selected"); } catch (_) {}
 
       window.location.href = "admin.html";
 

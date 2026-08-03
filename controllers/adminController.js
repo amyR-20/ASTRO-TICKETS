@@ -192,7 +192,14 @@ async function reportePdf(req, res) {
     doc.end();
   } catch(err) {
     console.error('Error generando PDF ejecutivo:',err);
-    if(!res.headersSent) return res.status(500).json({error:'No se pudo generar el PDF.'});
+    // El reporte ejecutivo usa tablas de funciones y auditoria que pueden no
+    // existir todavia en instalaciones antiguas. Si esa consulta falla antes
+    // de enviar contenido, generar el reporte general compatible en vez de
+    // dejar el boton sin descarga.
+    if(!res.headersSent) {
+      console.warn('Usando reporte PDF compatible como respaldo.');
+      return reportePdfLegacy(req, res);
+    }
     return res.end();
   }
 }
