@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Astro Tickets · Panel de administración</title>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
+<link rel="stylesheet" href="css/styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+</head>
+<body class="admin-page">
+<div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
+
+<header class="navbar">
+  <div class="container">
+    <a class="brand" href="admin.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
+      <span class="text-muted" style="font-weight: 400; font-size: 0.85rem;">/ Admin</span>
+    </a>
+    <div class="admin-topbar">
+      <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
+      </button>
+      <div class="theme-switch" role="group" aria-label="Cambiar tema">
+        <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro">
+          <span class="material-symbols-outlined">light_mode</span>
+          <span class="txt" data-i18n="theme.light">Claro</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro">
+          <span class="material-symbols-outlined">dark_mode</span>
+          <span class="txt" data-i18n="theme.dark">Oscuro</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático">
+          <span class="material-symbols-outlined">brightness_auto</span>
+          <span class="txt" data-i18n="theme.auto">Auto</span>
+        </button>
+      </div>
+      <div class="admin-user-chip" id="admin-user-chip" aria-label="Administrador">
+        <span class="admin-user-avatar" id="admin-user-avatar">A</span>
+        <span class="admin-user-info">
+          <span class="admin-user-name" id="admin-user-name">—</span>
+          <span class="admin-user-email" id="admin-user-email">—</span>
+        </span>
+      </div>
+    </div>
+    <button class="btn-ghost btn nav-toggle" id="nav-toggle" aria-label="Menú" aria-expanded="false">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <nav class="nav-links">
+      <a class="active" href="#resumen" data-i18n="admin.dashboard">Resumen</a>
+      <a href="#eventos" data-i18n="admin.eventos">Gestión de eventos</a>
+      <a href="#crear-evento" data-i18n="admin.crearevento">Crear evento</a>
+      <a href="#usuarios" data-i18n="admin.usuarios">Usuarios</a>
+      <a href="#transacciones" data-i18n="admin.ventas">Transacciones</a>
+      <a href="index.html" data-i18n="admin.salir">Salir</a>
+    </nav>
+  </div>
+</header>
+
+<main id="resumen">
+  <div class="container section admin-layout">
+    <!-- Sidebar administrativa -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <img src="multimedia/logo.svg" alt="" class="admin-sidebar-logo" />
+        <span class="admin-sidebar-brand-name">Astro Tickets</span>
+      </div>
+      <p class="admin-sidebar-title" data-i18n="admin.panel">Panel de administración</p>
+      <nav class="admin-nav">
+        <a class="active" href="#resumen"><span class="material-symbols-outlined">dashboard</span><span class="txt" data-i18n="admin.dashboard">Resumen</span></a>
+        <a href="#eventos"><span class="material-symbols-outlined">event</span><span class="txt" data-i18n="admin.eventos">Gestión de eventos</span></a>
+        <a href="#crear-evento"><span class="material-symbols-outlined">add_circle</span><span class="txt" data-i18n="admin.crearevento">Crear evento</span></a>
+        <a href="#usuarios"><span class="material-symbols-outlined">group</span><span class="txt" data-i18n="admin.usuarios">Usuarios</span></a>
+        <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
+        <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt">Validar QR</span></a>
+        <a href="#reportes"><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
+        <a href="perfil.html"><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
+      </nav>
+      <div class="admin-sidebar-foot">
+        <a href="index.html"><span class="material-symbols-outlined">logout</span><span class="txt" data-i18n="admin.salir">Salir</span></a>
+      </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <div class="admin-content">
+  <!-- User panel -->
+  <div class="card admin-user-card" id="user-panel-container">
+    <!-- JS will populate -->
+  </div>
+
+  <div class="section-head">
+    <div>
+      <p class="eyebrow" data-i18n="admin.panel">Panel de administración</p>
+      <h1 style="font-size: 2.2rem;" data-i18n="admin.resumen">Resumen general</h1>
+      <p class="admin-welcome"><span data-i18n="admin.welcome">Bienvenido,</span> <strong id="admin-welcome-name"></strong></p>
+    </div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <a class="btn btn-secondary" href="#reportes"><span class="material-symbols-outlined">description</span> <span data-i18n="admin.report">Abrir reportes</span></a>
+      <button class="btn btn-primary" data-open-event-modal><span class="material-symbols-outlined">add</span> <span data-i18n="admin.newevent">Nuevo evento</span></button>
+    </div>
+  </div>
+
+  <section class="admin-team-panel" aria-labelledby="admin-team-title">
+    <div><p class="eyebrow">EQUIPO ADMINISTRATIVO</p><h2 id="admin-team-title">Perfiles del panel</h2><p class="text-muted">Cada administrador conserva su propia contraseña, actividad y perfil.</p></div>
+    <div class="admin-team-grid">
+      <article class="admin-team-card" data-admin-card="amy@gmail.com"><span class="admin-profile-avatar amy">A</span><div><strong>Amy</strong><small>@amy · Administración general</small></div><a class="btn btn-ghost" href="admin-login.html?profile=amy@gmail.com">Cambiar</a></article>
+      <article class="admin-team-card" data-admin-card="admin@astro.com"><span class="admin-profile-avatar victor">V</span><div><strong>Víctor</strong><small>@victor · Operaciones</small></div><a class="btn btn-ghost" href="admin-login.html?profile=admin@astro.com">Cambiar</a></article>
+      <article class="admin-team-card" data-admin-card="sarahtapiamercedes22@gmail.com"><span class="admin-profile-avatar sarah">S</span><div><strong>Sarah</strong><small>@sarah · Eventos</small></div><a class="btn btn-ghost" href="admin-login.html?profile=sarahtapiamercedes22@gmail.com">Cambiar</a></article>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-bottom: 36px;">
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">payments</span>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.ingresos">Ingresos totales</p>
+      <p class="value" id="stat-ingresos">RD$ 0</p>
+      <p class="delta" id="stat-ingresos-delta">Sin ventas todavía</p>
+    </div>
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">confirmation_number</span>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.emitidos">Boletos emitidos</p>
+      <p class="value" id="stat-boletos">0</p>
+      <p class="delta" id="stat-boletos-delta">Entradas vendidas</p>
+    </div>
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">groups</span>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.registrados">Usuarios registrados</p>
+      <p class="value" id="stat-usuarios">0</p>
+      <p class="delta" id="stat-usuarios-delta">Cuentas activas</p>
+    </div>
+    <div class="card stat-card">
+      <span class="icon material-symbols-outlined">event_available</span>
+      <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.activos">Eventos activos</p>
+      <p class="value" id="stat-eventos">0</p>
+      <p class="delta" id="stat-eventos-delta">Publicados</p>
+    </div>
+  </div>
+
+  <!-- Gráfico de ventas -->
+  <div class="card" style="padding: 32px; margin-bottom: 36px;">
+    <div class="flex-between" style="margin-bottom: 28px;">
+      <h2 style="font-size: 1.25rem;" data-i18n="admin.saleschart">Reporte de ventas por evento</h2>
+      <select class="input" style="width: auto;">
+        <option data-i18n="admin.last30">Últimos 30 días</option>
+        <option data-i18n="admin.last12">Últimos 12 meses</option>
+      </select>
+    </div>
+    <div class="bar-chart" id="bar-chart">
+      <div class="bar-col"><div class="bar" style="height: 8%;"></div><span class="bar-label">Sin ventas</span></div>
+    </div>
+  </div>
+
+  <!-- Gestión de eventos -->
+  <div id="eventos" style="margin-bottom: 36px;">
+    <div class="section-head">
+      <h2 style="font-size: 1.3rem;" data-i18n="admin.manageevents">Gestión de eventos</h2>
+    </div>
+    <div class="events-grid" id="events-grid">
+      <button class="card" data-open-event-modal style="border: 2px dashed var(--color-outline-variant); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px; gap: 10px; background: transparent; cursor: pointer; transition: all 0.25s;">
+        <span class="material-symbols-outlined" style="font-size: 2.2rem; color: var(--color-outline);">add_circle</span>
+        <span style="font-weight: 600;" data-i18n="admin.createnew">Crear nuevo evento</span>
+        <span class="text-muted" style="font-size: 0.82rem; text-align: center;" data-i18n="admin.createnewsub">Define nombre, fecha, lugar, zonas, filas y asientos.</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Validación de acceso -->
+  <div class="card table-wrap" id="validar" style="margin-bottom: 36px;">
+    <div style="padding: 28px;">
+      <div class="flex-between" style="align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h2 style="font-size: 1.25rem;">Validación de accesos</h2>
+          <p class="text-muted" style="margin-top: 4px;">Escanea o pega el código QR de una entrada para verificar el acceso al evento.</p>
+        </div>
+        <button class="btn btn-ghost" id="qr-reset-btn" style="display: none;"><span class="material-symbols-outlined">refresh</span> Nueva validación</button>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+        <input class="input" id="qr-input" placeholder="Código QR de la entrada" style="flex: 1; min-width: 240px;" />
+        <button class="btn btn-primary" id="qr-validate-btn" style="border-radius: 12px; padding: 0 22px;">
+          <span class="material-symbols-outlined">qr_code_scanner</span> Validar QR
+        </button>
+        <button class="btn btn-ghost" id="qr-camera-btn"><span class="material-symbols-outlined">photo_camera</span> Escanear con cámara</button>
+      </div>
+      <div class="qr-camera" id="qr-camera" hidden><video id="qr-video" playsinline muted></video><p class="text-muted">Apunta la cámara al código QR de la entrada.</p></div>
+      <div id="qr-result" style="margin-top: 16px;"></div>
+    </div>
+  </div>
+
+  <!-- Boletos disponibles -->
+  <div class="card table-wrap" style="margin-bottom: 36px;">
+    <div style="padding: 28px 28px 0;">
+      <h2 style="font-size: 1.25rem;" data-i18n="admin.ticketsbyevent">Boletos disponibles por evento</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="admin.col_evento">Evento</th>
+          <th data-i18n="admin.capacity">Capacidad</th>
+          <th data-i18n="admin.soldlabel">Vendidos</th>
+          <th data-i18n="admin.available">Disponibles</th>
+          <th data-i18n="admin.status">Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tickets-table">
+        <tr><td colspan="5" class="text-muted">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Listado de usuarios -->
+  <div class="card table-wrap" id="usuarios" style="margin-bottom: 36px;">
+    <div class="flex-between" style="padding: 28px;">
+      <div>
+        <h2 style="font-size: 1.25rem;" data-i18n="admin.userslist">Listado de usuarios registrados</h2>
+        <p class="text-muted" style="margin-top: 4px;" data-i18n="admin.userssub">Gestiona las cuentas registradas en la plataforma.</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-ghost" id="users-filter-btn"><span class="material-symbols-outlined">filter_list</span> <span data-i18n="admin.filter">Filtrar</span></button>
+        <button class="btn btn-ghost" id="users-export-btn"><span class="material-symbols-outlined">download</span> <span data-i18n="admin.export">Exportar</span></button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="admin.user">Usuario</th>
+          <th data-i18n="admin.uid">ID</th>
+          <th data-i18n="admin.status">Estado</th>
+          <th data-i18n="admin.lastlogin">Última conexión</th>
+          <th class="text-right" data-i18n="admin.actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="users-table">
+        <tr><td colspan="5" class="text-muted">Cargando…</td></tr>
+      </tbody>
+    </table>
+    <div class="flex-between" style="padding: 18px 28px; border-top: 1px solid rgba(108, 63, 209, 0.06);">
+      <p class="text-muted" style="font-size: 0.78rem;"><span id="users-count">Mostrando 0 usuarios</span></p>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn-ghost btn" style="padding: 8px;" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+        <button class="btn-ghost btn" style="padding: 8px;"><span class="material-symbols-outlined">chevron_right</span></button>
+      </div>
+    </div>
+  </div>
+
+  <section class="card" id="reportes" style="margin-bottom:36px;padding:24px;">
+    <h2 style="font-size:1.25rem;" data-i18n="admin.reports_title">Centro de reportes</h2>
+    <p class="text-muted" data-i18n="admin.reports_sub">Descarga un PDF consolidado o archivos compatibles con Excel.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+      <button class="btn btn-primary" data-report="/admin/reportes/general.pdf" data-file="astro-tickets_reporte-general.pdf"><span class="material-symbols-outlined">picture_as_pdf</span><span data-i18n="admin.report_pdf">Reporte general PDF</span></button>
+      <button class="btn btn-ghost" data-report="/admin/reportes/usuarios.csv" data-file="usuarios.csv"><span class="material-symbols-outlined">table_view</span><span data-i18n="admin.report_users">Usuarios para Excel</span></button>
+      <button class="btn btn-ghost" data-report="/admin/reportes/accesos.csv" data-file="accesos.csv"><span class="material-symbols-outlined">table_view</span><span data-i18n="admin.report_access">Accesos para Excel</span></button>
+      <button class="btn btn-ghost" data-report="/admin/reportes/transacciones.csv" data-file="transacciones.csv"><span class="material-symbols-outlined">table_view</span><span data-i18n="admin.report_txns">Transacciones para Excel</span></button>
+    </div>
+  </section>
+
+  <section class="card table-wrap" id="accesos" style="margin-bottom:36px;">
+    <div style="padding:22px 24px 12px;"><h2 style="font-size:1.25rem;" data-i18n="admin.access_title">Historial de accesos</h2><p class="text-muted" data-i18n="admin.access_sub">Cada inicio de sesión aparece por separado, del más reciente al más antiguo.</p></div>
+    <table><thead><tr><th data-i18n="admin.access_date">Fecha</th><th data-i18n="admin.user">Usuario</th><th data-i18n="admin.access_result">Resultado</th><th>IP</th><th data-i18n="admin.access_device">Dispositivo</th></tr></thead><tbody id="access-table"><tr><td colspan="5" class="text-muted">Cargando…</td></tr></tbody></table>
+  </section>
+
+  <!-- Transacciones diarias -->
+  <div class="card table-wrap" id="transacciones">
+    <div style="padding: 28px 28px 0;">
+      <h2 style="font-size: 1.25rem;" data-i18n="admin.transactions">Reporte de transacciones diarias</h2>
+      <p class="text-muted" style="margin-top: 4px;" data-i18n="admin.transsub">Movimientos registrados el día de hoy.</p>
+    </div>
+    <table style="margin-top: 16px;">
+      <thead>
+        <tr>
+          <th data-i18n="admin.txn_col">Transacción</th>
+          <th data-i18n="admin.user">Usuario</th>
+          <th data-i18n="admin.txn_evento">Evento</th>
+          <th data-i18n="admin.txn_monto">Monto</th>
+          <th data-i18n="admin.txn_hora">Hora</th>
+          <th data-i18n="admin.status">Estado</th>
+        </tr>
+      </thead>
+      <tbody id="txns-table">
+        <tr><td colspan="6" class="text-muted">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+    </div><!-- /.admin-content -->
+  </div><!-- /.container.admin-layout -->
+</main>
+
+
+<!-- ============================================================
+     CREAR EVENTO — Full-page creator
+     ============================================================ -->
+<div class="ev-creator" id="ev-creator">
+  <div class="container">
+
+    <div class="ev-breadcrumb">
+      <a href="#eventos" data-i18n="admin.eventos">Gesti&oacute;n de eventos</a>
+      <span class="material-symbols-outlined">chevron_right</span>
+      <span data-i18n="admin.crearevento">Crear Evento</span>
+    </div>
+
+    <div class="ev-header">
+      <h1 data-i18n="admin.ev_title">Crear Nuevo Evento</h1>
+      <p data-i18n="admin.ev_sub">Configura todos los detalles del evento, distribuci&oacute;n de asientos y precios antes de publicarlo.</p>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="ev-progress" id="ev-progress">
+      <div class="ev-progress-step active" data-step="1">
+        <span class="step-node">1</span>
+        <span class="step-label" data-i18n="admin.ev_step1">Informaci&oacute;n</span>
+      </div>
+      <span class="ev-progress-line" data-line="1"></span>
+      <div class="ev-progress-step" data-step="2">
+        <span class="step-node">2</span>
+        <span class="step-label" data-i18n="admin.ev_step2">Recinto</span>
+      </div>
+      <span class="ev-progress-line" data-line="2"></span>
+      <div class="ev-progress-step" data-step="3">
+        <span class="step-node">3</span>
+        <span class="step-label" data-i18n="admin.ev_step3">Asientos</span>
+      </div>
+      <span class="ev-progress-line" data-line="3"></span>
+      <div class="ev-progress-step" data-step="4">
+        <span class="step-node">4</span>
+        <span class="step-label" data-i18n="admin.ev_step4">Precios</span>
+      </div>
+      <span class="ev-progress-line" data-line="4"></span>
+      <div class="ev-progress-step" data-step="5">
+        <span class="step-node">5</span>
+        <span class="step-label" data-i18n="admin.ev_step5">Publicar</span>
+      </div>
+    </div>
+
+    <div class="ev-creator-layout">
+      <!-- LEFT COLUMN -->
+      <div class="ev-creator-main">
+
+        <!-- SECTION 1: Informaci&oacute;n General -->
+        <div class="ev-section-card" data-section="1">
+          <div class="section-title">
+            <span class="material-symbols-outlined">info</span>
+            <span data-i18n="admin.ev_sec1">Informaci&oacute;n del evento</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec1_sub">Completa los datos principales del evento.</p>
+
+          <div class="ev-field">
+            <label data-i18n="admin.ev_name">Nombre del evento</label>
+            <input class="ev-input" type="text" id="ce-name" placeholder="Ej. Noche de Jazz en Vivo" />
+          </div>
+          <div class="ev-field">
+            <label data-i18n="admin.ev_desc">Descripci&oacute;n</label>
+            <textarea class="ev-input" id="ce-desc" rows="3" placeholder="Describe el evento..."></textarea>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_category">Categor&iacute;a</label>
+              <select class="ev-input" id="ce-category">
+                <option value="Concierto">Concierto</option>
+                <option value="Teatro">Teatro</option>
+                <option value="Deportes">Deportes</option>
+                <option value="Conferencia">Conferencia</option>
+              </select>
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_status">Estado</label>
+              <div class="ev-status-row">
+                <button type="button" class="ev-status-btn active-draft" id="ce-status-draft" data-i18n="admin.ev_draft">Borrador</button>
+                <button type="button" class="ev-status-btn" id="ce-status-publish" data-i18n="admin.ev_published">Publicado</button>
+              </div>
+            </div>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_date">Fecha</label>
+              <input class="ev-input" type="date" id="ce-date" />
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_time">Hora</label>
+              <input class="ev-input" type="time" id="ce-time" value="20:00" />
+            </div>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_venue">Lugar</label>
+              <input class="ev-input" type="text" id="ce-venue" placeholder="Ej. Teatro Nacional" />
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_city">Ciudad</label>
+              <input class="ev-input" type="text" id="ce-city" placeholder="Ej. Santo Domingo" />
+            </div>
+          </div>
+          <div class="ev-field">
+            <label data-i18n="admin.ev_address">Direcci&oacute;n</label>
+            <input class="ev-input" type="text" id="ce-address" placeholder="Ej. Av. 27 de Febrero esq. Winston Churchill" />
+          </div>
+          <div class="ev-row">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_image">Imagen del evento</label>
+              <div class="ev-dropzone" id="ce-dropzone-img">
+                <span class="material-symbols-outlined">image</span>
+                <p data-i18n="admin.ev_dropzone">Arrastra una imagen aqu&iacute; o haz clic para seleccionar</p>
+                <p class="small" data-i18n="admin.ev_dropzone_sub">JPG, PNG o WebP</p>
+                <input type="file" accept="image/*" style="display:none" id="ce-img-input" />
+              </div>
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_banner">Banner del evento</label>
+              <div class="ev-dropzone" id="ce-dropzone-banner">
+                <span class="material-symbols-outlined">panorama</span>
+                <p data-i18n="admin.ev_dropzone_banner">Arrastra un banner o haz clic</p>
+                <input type="file" accept="image/*" style="display:none" id="ce-banner-input" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Distribuci&oacute;n del Recinto -->
+        <div class="ev-section-card" data-section="2">
+          <div class="section-title">
+            <span class="material-symbols-outlined">meeting_room</span>
+            <span data-i18n="admin.ev_sec2">Distribuci&oacute;n del Recinto</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec2_sub">Configura el mapa de asientos del recinto.</p>
+
+          <div class="ev-gen-controls">
+            <div class="ev-field">
+              <label data-i18n="admin.ev_rows">N&uacute;mero de filas</label>
+              <input class="ev-input" type="number" id="ce-rows" value="8" min="1" max="26" />
+            </div>
+            <div class="ev-field">
+              <label data-i18n="admin.ev_cols">N&uacute;mero de columnas</label>
+              <input class="ev-input" type="number" id="ce-cols" value="10" min="1" max="30" />
+            </div>
+            <div class="ev-field">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" id="ce-gen-seats" style="height:44px;padding:0 24px;border-radius:12px;">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">auto_awesome</span>
+                <span data-i18n="admin.ev_generate">Generar Asientos</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="ev-field">
+            <label data-i18n="admin.ev_capacity_total">Capacidad total</label>
+            <input class="ev-input" type="number" id="ce-capacity" readonly style="background:var(--color-surface-container-low);font-weight:600;" />
+          </div>
+
+          <div class="seat-grid-visual" id="ce-seat-grid">
+            <div class="sg-stage" data-i18n="admin.ev_stage">Escenario</div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Tipos de Asiento -->
+        <div class="ev-section-card" data-section="3">
+          <div class="section-title">
+            <span class="material-symbols-outlined">category</span>
+            <span data-i18n="admin.ev_sec3">Tipos de Asiento</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec3_sub">Define las categor&iacute;as de asientos disponibles.</p>
+
+          <div class="st-types-grid" id="ce-types-grid"></div>
+          <button class="btn btn-secondary" id="ce-add-type" style="border-radius:12px;">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;">add</span>
+            <span data-i18n="admin.ev_add_type">Agregar Tipo de Asiento</span>
+          </button>
+        </div>
+
+        <!-- SECTION 4: Asignaci&oacute;n de Asientos -->
+        <div class="ev-section-card" data-section="4">
+          <div class="section-title">
+            <span class="material-symbols-outlined">touch_app</span>
+            <span data-i18n="admin.ev_sec4">Asignaci&oacute;n de Asientos</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec4_sub">Selecciona asientos y asigna un tipo. Usa Ctrl para m&uacute;ltiples.</p>
+
+          <div class="seat-grid-visual" id="ce-assign-grid">
+            <div class="sg-stage" data-i18n="admin.ev_stage">Escenario</div>
+          </div>
+
+          <div class="seat-assign-panel" id="ce-assign-panel">
+            <div class="sa-title" data-i18n="admin.ev_assign_title">Configurar asientos seleccionados</div>
+            <div class="sa-row">
+              <span class="sa-label" data-i18n="admin.ev_assign_type">Tipo:</span>
+              <select class="ev-input-sm" id="ce-assign-type" style="flex:1;"></select>
+            </div>
+            <div class="sa-row">
+              <span class="sa-label" data-i18n="admin.ev_assign_status">Estado:</span>
+              <select class="ev-input-sm" id="ce-assign-status" style="flex:1;">
+                <option value="available" data-i18n="admin.ev_avail">Disponible</option>
+                <option value="reserved" data-i18n="admin.ev_reserved">Reservado</option>
+                <option value="blocked" data-i18n="admin.ev_blocked">Bloqueado</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn btn-primary" id="ce-assign-save" style="flex:1;padding:10px;border-radius:10px;font-size:0.82rem;" data-i18n="admin.ev_assign_save">Guardar</button>
+              <button class="btn btn-ghost" id="ce-assign-clear" style="padding:10px;border-radius:10px;font-size:0.82rem;" data-i18n="admin.ev_assign_clear">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 5: Precios -->
+        <div class="ev-section-card" data-section="5">
+          <div class="section-title">
+            <span class="material-symbols-outlined">attach_money</span>
+            <span data-i18n="admin.ev_sec5">Precios</span>
+          </div>
+          <p class="section-sub" data-i18n="admin.ev_sec5_sub">Resumen de precios por tipo de asiento.</p>
+
+          <table class="ev-pricing-table" id="ce-pricing-table">
+            <thead>
+              <tr>
+                <th data-i18n="admin.ev_ptype">Tipo</th>
+                <th data-i18n="admin.ev_pprice">Precio</th>
+                <th data-i18n="admin.ev_pqty">Cantidad</th>
+                <th data-i18n="admin.ev_ptotal">Total</th>
+              </tr>
+            </thead>
+            <tbody id="ce-pricing-body"></tbody>
+          </table>
+        </div>
+
+        <!-- Actions -->
+        <div class="ev-actions">
+          <button class="btn btn-primary" id="ce-publish" style="border-radius:12px;">
+            <span class="material-symbols-outlined">rocket_launch</span>
+            <span data-i18n="admin.ev_publish_btn">Publicar Evento</span>
+          </button>
+          <button class="btn btn-secondary" id="ce-save-draft" style="border-radius:12px;">
+            <span class="material-symbols-outlined">save</span>
+            <span data-i18n="admin.ev_save_draft">Guardar como Borrador</span>
+          </button>
+          <button class="btn btn-ghost" id="ce-preview-btn" style="border-radius:12px;">
+            <span class="material-symbols-outlined">visibility</span>
+            <span data-i18n="admin.ev_preview_btn">Vista Previa</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Live Preview -->
+      <div class="ev-creator-sidebar">
+        <div class="ev-preview-card" id="ce-preview">
+          <div class="preview-img" id="preview-img">
+            <img src="multimedia/logo.svg" alt="" id="preview-img-src" />
+          </div>
+          <div class="preview-body">
+            <div class="preview-name" id="preview-name">Nombre del Evento</div>
+            <div class="preview-info">
+              <div class="preview-info-row">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <span id="preview-date">Selecciona una fecha</span>
+              </div>
+              <div class="preview-info-row">
+                <span class="material-symbols-outlined">schedule</span>
+                <span id="preview-time">20:00</span>
+              </div>
+              <div class="preview-info-row">
+                <span class="material-symbols-outlined">location_on</span>
+                <span id="preview-venue">Lugar del evento</span>
+              </div>
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-capacity">
+              <span class="label" data-i18n="admin.ev_capacity_label">Capacidad</span>
+              <span class="value" id="preview-capacity">0</span>
+            </div>
+            <div class="preview-capacity">
+              <span class="label" data-i18n="admin.ev_available_label">Disponibles</span>
+              <span class="value" id="preview-available">0</span>
+            </div>
+            <div class="preview-capacity">
+              <span class="label" data-i18n="admin.ev_price_range">Precio</span>
+              <span class="value" id="preview-price">RD$ 0</span>
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-legend">
+              <div class="preview-legend-title" data-i18n="admin.ev_legend">Tipos de asiento</div>
+              <div id="preview-legend-items"></div>
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-mini-map" id="preview-mini-map"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+        <p class="footer-name" data-i18n="brand">Astro Tickets</p>
+        <p class="footer-tag" data-i18n="footer.tag">Tu viaje comienza aquí.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.explore">Explora</h4>
+        <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+        <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.account">Cuenta</h4>
+        <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+        <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
+        <a href="admin-login.html" data-i18n="nav.admin">Cambiar perfil</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.support">Soporte</h4>
+        <a href="#" data-i18n="footer.terms">Términos del servicio</a>
+        <a href="#" data-i18n="footer.privacy">Política de privacidad</a>
+        <a href="#" data-i18n="footer.help">Centro de ayuda</a>
+      </div>
+    </div>
+    <p class="bottom">© <span class="footer-year"></span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
+  </div>
+</footer>
+
+<div class="ev-preview-modal-overlay" id="ev-preview-modal">
+  <div class="ev-preview-modal">
+    <div class="ev-preview-modal-head">
+      <span data-i18n="admin.ev_preview_title">Vista previa en catálogo</span>
+      <button class="ev-preview-modal-close" id="ev-preview-close"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="ev-preview-modal-body">
+      <div class="events-grid">
+        <div class="card event-card" id="catalog-preview-card">
+          <div class="thumb">
+            <img src="multimedia/logo.svg" alt="" id="preview-card-img" />
+            <span class="badge badge-info">Disponible</span>
+          </div>
+          <div class="body">
+            <h3 style="font-size: 1.08rem;" id="preview-card-name">Nombre del Evento</h3>
+            <p class="meta" id="preview-card-meta">Lugar · Fecha</p>
+            <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;" id="preview-card-desc">Descripción del evento</p>
+            <div class="price-row" style="margin-top:12px;">
+              <span class="price" id="preview-card-price">RD$ 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
+<script src="js/main.js"></script>
+<script>
+/* ============================================================
+   Panel admin — datos reales del backend + validación de QR
+   ============================================================ */
+(function () {
+  const fmt = (n) => (Number(n) || 0).toLocaleString('es-DO');
+  const fmtMoney = (n) => 'RD$ ' + fmt(Math.round(Number(n) || 0));
+  const currentAdmin = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+  document.querySelectorAll('[data-admin-card]').forEach((card) => {
+    if (currentAdmin && card.dataset.adminCard.toLowerCase() === String(currentAdmin.email || '').toLowerCase()) {
+      card.classList.add('current');
+      const link = card.querySelector('a'); link.href = 'perfil.html'; link.textContent = 'Editar mi perfil';
+      card.insertAdjacentHTML('beforeend','<span class="admin-current-badge">Sesión actual</span>');
+    }
+  });
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  async function cargarDashboard() {
+    if (typeof Api === 'undefined' || !Api.getAdminDashboard) return;
+    try {
+      const data = await Api.getAdminDashboard();
+      const st = data.stats || {};
+
+      const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      set('stat-ingresos', fmtMoney(st.ingresos));
+      set('stat-boletos', fmt(st.boletos));
+      set('stat-usuarios', fmt(st.usuarios));
+      set('stat-eventos', fmt(st.eventosActivos));
+      set('stat-ingresos-delta', (st.transacciones || 0) + ' transacciones');
+      set('stat-boletos-delta', 'Entradas vendidas');
+      set('stat-usuarios-delta', 'Cuentas activas');
+      set('stat-eventos-delta', 'Publicados');
+
+      // Gráfico de ventas por evento
+      const chart = document.getElementById('bar-chart');
+      const ventas = (data.ventasPorEvento || []).filter(v => (v.boletos || 0) > 0);
+      if (chart && ventas.length) {
+        const max = Math.max(...ventas.map(v => Number(v.boletos) || 0)) || 1;
+        chart.innerHTML = ventas.slice(0, 8).map(v => {
+          const h = Math.max(4, Math.round((Number(v.boletos) / max) * 100));
+          const name = (v.nombre || '').split(' ').slice(0, 2).join(' ');
+          return `<div class="bar-col"><div class="bar" style="height:${h}%;" title="${esc(v.nombre)} · ${fmt(v.boletos)} boletos · ${fmtMoney(v.ingresos)}"></div><span class="bar-label">${esc(name)}</span></div>`;
+        }).join('');
+      }
+
+      // Boletos disponibles por evento
+      try {
+        const res = await Api.getAdminResumen();
+        const tbody = document.getElementById('tickets-table');
+        if (tbody && res.eventos && res.eventos.length) {
+          const filas = [];
+          res.eventos.forEach((item) => {
+            const ev = item.evento || {};
+            const funcs = item.funciones || [];
+            funcs.forEach((f) => {
+              const stats = f.stats || {};
+              const cap = stats.capacidad != null ? stats.capacidad : (ev.capacity || 0);
+              const sold = stats.vendidos || 0;
+              const disp = Math.max(0, cap - sold);
+              const estado = stats.agotada
+                ? '<span class="badge badge-warning">Agotada</span>'
+                : '<span class="badge badge-success">Disponible</span>';
+              filas.push(`<tr>
+                <td style="font-weight: 600;">${esc(ev.nombre)}</td>
+                <td>${fmt(cap)}</td>
+                <td>${fmt(sold)}</td>
+                <td>${fmt(disp)}</td>
+                <td>${estado}</td>
+              </tr>`);
+            });
+          });
+          tbody.innerHTML = filas.join('') || '<tr><td colspan="5" class="text-muted">Sin funciones registradas.</td></tr>';
+        } else if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Sin datos.</td></tr>';
+        }
+      } catch (_) {}
+
+      // Usuarios recientes
+      const uTbody = document.getElementById('users-table');
+      if (uTbody) {
+        const users = data.usuarios || [];
+        uTbody.innerHTML = users.length
+          ? users.map((u) => {
+              const ini = (u.nombre || '?').trim().split(/\s+/).map(w => w[0]).join('').substring(0, 2).toUpperCase();
+              const last = u.ultimo_login ? new Date(u.ultimo_login).toLocaleString('es-DO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+              return `<tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">${esc(ini)}</div>
+                    <div>
+                      <p style="font-weight: 600;">${esc(u.nombre)}${u.role === 'admin' ? ' <span class="badge badge-warning">admin</span>' : ''}</p>
+                      <p class="text-muted" style="font-size: 0.78rem;">${esc(u.email)}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-muted">#${esc(u.id)}</td>
+                <td><span class="badge ${u.estado === 'activo' ? 'badge-success' : 'badge-warning'}">${esc(u.estado || 'activo')}</span></td>
+                <td class="text-muted">${last}</td>
+                <td class="text-right"><a class="btn-ghost btn" style="padding: 6px;" href="mailto:${esc(u.email)}" title="Enviar correo"><span class="material-symbols-outlined">mail</span></a></td>
+              </tr>`;
+            }).join('')
+          : '<tr><td colspan="5" class="text-muted">Sin usuarios.</td></tr>';
+        const c = document.getElementById('users-count');
+        if (c) c.textContent = 'Mostrando ' + users.length + ' usuarios';
+      }
+
+      // Historial de accesos: una fila por cada intento, sin agrupar usuarios.
+      const aTbody = document.getElementById('access-table');
+      if (aTbody) {
+        const accesses = data.accesos || [];
+        aTbody.innerHTML = accesses.length ? accesses.map((a) => {
+          const fecha = a.creado_en ? new Date(a.creado_en).toLocaleString(I18n.getLang()==='en'?'en-US':'es-DO') : '—';
+          const device = /mobile|android|iphone/i.test(a.user_agent || '') ? (I18n.getLang()==='en'?'Mobile':'Móvil') : (I18n.getLang()==='en'?'Desktop':'Escritorio');
+          return `<tr><td class="text-muted">${fecha}</td><td><strong>@${esc(a.username || 'desconocido')}</strong><br><span class="text-muted">${esc(a.nombre || a.email_intentado)}</span></td><td><span class="badge ${a.exitoso?'badge-success':'badge-warning'}">${a.exitoso?(I18n.getLang()==='en'?'Successful':'Exitoso'):(I18n.getLang()==='en'?'Failed':'Fallido')}</span></td><td class="text-muted">${esc(a.ip || '—')}</td><td class="text-muted">${device}</td></tr>`;
+        }).join('') : '<tr><td colspan="5" class="text-muted">Sin accesos registrados.</td></tr>';
+      }
+
+      // Transacciones recientes
+      const tTbody = document.getElementById('txns-table');
+      if (tTbody) {
+        const txns = data.transacciones || [];
+        tTbody.innerHTML = txns.length
+          ? txns.map((t) => {
+              const hora = t.creada_en ? new Date(t.creada_en).toLocaleString('es-DO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+              const ok = t.estado === 'paid' || t.estado === 'completada';
+              return `<tr>
+                <td class="text-muted">#${esc(t.transaccion || t.id)}</td>
+                <td>${esc(t.usuario_nombre || '—')}</td>
+                <td style="font-weight: 500;">${esc(t.evento_nombre || '—')}</td>
+                <td style="font-weight: 600;">${fmtMoney(t.total)}</td>
+                <td class="text-muted">${hora}</td>
+                <td><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${ok ? 'Completada' : esc(t.estado || '—')}</span></td>
+              </tr>`;
+            }).join('')
+          : '<tr><td colspan="6" class="text-muted">Sin transacciones todavía. Compra una entrada desde el catálogo para verla aquí.</td></tr>';
+      }
+    } catch (err) {
+      console.error("Error cargando dashboard:", err);
+    }
+  }
+
+  document.querySelectorAll('[data-report]').forEach((btn) => btn.addEventListener('click', async () => {
+    const original=btn.innerHTML;btn.disabled=true;btn.textContent=I18n.getLang()==='en'?'Downloading…':'Descargando…';
+    try { const result=await Api.descargarReporte(btn.dataset.report, btn.dataset.file); showToast(`Reporte descargado: ${result.filename}`); }
+    catch(err){ alert(err.message); }
+    finally{btn.disabled=false;btn.innerHTML=original;}
+  }));
+
+  /* ---- Validación de QR ---- */
+  const qrInput = document.getElementById('qr-input');
+  const qrBtn = document.getElementById('qr-validate-btn');
+  const qrResult = document.getElementById('qr-result');
+  const qrReset = document.getElementById('qr-reset-btn');
+
+  function pintarResultado(ok, html) {
+    if (!qrResult) return;
+    qrResult.innerHTML = `<div class="qr-result ${ok ? 'qr-result-ok' : 'qr-result-err'}">${html}</div>`;
+    if (qrReset) qrReset.style.display = '';
+  }
+
+  async function validarQr() {
+    const val = (qrInput ? qrInput.value : '').trim();
+    if (!val) { pintarResultado(false, '<span class="material-symbols-outlined">error</span> Escribe o pega el código QR de la entrada.'); return; }
+    if (typeof Api === 'undefined' || !Api.validarEntrada) { pintarResultado(false, 'El módulo de validación no está disponible.'); return; }
+    if (qrBtn) { qrBtn.disabled = true; qrBtn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Validando…'; }
+    try {
+      const res = await Api.validarEntrada(val);
+      const e = res.entrada || {};
+      const f = e.fecha ? new Date(e.fecha).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      pintarResultado(true, `
+        <span class="qr-result-icon material-symbols-outlined">verified_user</span>
+        <div>
+          <strong>Acceso concedido</strong>
+          <p>${esc(e.evento || '')}${f ? ' · ' + esc(f) : ''}</p>
+          <p>Zona ${esc(e.zona || '—')} · Asiento ${esc(e.asiento || '—')}</p>
+          <p class="text-muted">Validada a las ${e.usado_en ? new Date(e.usado_en).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : '—'}</p>
+        </div>`);
+    } catch (err) {
+      const extra = err.status === 409 && err.entrada ? ` · ${err.entrada.zona || ''} ${err.entrada.asiento || ''}` : '';
+      pintarResultado(false, `<span class="qr-result-icon material-symbols-outlined">block</span><div><strong>${esc(err.message || 'Entrada inválida')}</strong><p class="text-muted">${esc(extra)}</p></div>`);
+    } finally {
+      if (qrBtn) { qrBtn.disabled = false; qrBtn.innerHTML = '<span class="material-symbols-outlined">qr_code_scanner</span> Validar QR'; }
+    }
+  }
+
+  if (qrBtn) qrBtn.addEventListener('click', validarQr);
+  if (qrInput) qrInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validarQr(); });
+  if (qrReset) qrReset.addEventListener('click', () => {
+    if (qrInput) qrInput.value = '';
+    if (qrResult) qrResult.innerHTML = '';
+    qrReset.style.display = 'none';
+    if (qrInput) qrInput.focus();
+  });
+
+  let qrStream = null;
+  const cameraBtn = document.getElementById('qr-camera-btn');
+  const cameraBox = document.getElementById('qr-camera');
+  const video = document.getElementById('qr-video');
+  const detenerCamara = () => { if (qrStream) qrStream.getTracks().forEach(t => t.stop()); qrStream = null; if (cameraBox) cameraBox.hidden = true; };
+  cameraBtn?.addEventListener('click', async () => {
+    if (qrStream) return detenerCamara();
+    try {
+      if (!('BarcodeDetector' in window)) throw new Error('Este navegador no permite leer QR con cámara. Puedes pegar el código en el campo.');
+      qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      video.srcObject = qrStream; cameraBox.hidden = false; cameraBtn.innerHTML = '<span class="material-symbols-outlined">videocam_off</span> Cerrar cámara'; await video.play();
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const scan = async () => {
+        if (!qrStream) { cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Escanear con cámara'; return; }
+        const codes = await detector.detect(video).catch(() => []);
+        if (codes[0]?.rawValue) { qrInput.value = codes[0].rawValue; detenerCamara(); cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Escanear con cámara'; return validarQr(); }
+        requestAnimationFrame(scan);
+      }; scan();
+    } catch (error) { detenerCamara(); alert(error.message); }
+  });
+
+  document.getElementById('users-export-btn')?.addEventListener('click', () => Api.descargarReporte('/admin/reportes/usuarios.csv', 'usuarios.csv').catch(e => alert(e.message)));
+  document.getElementById('users-filter-btn')?.addEventListener('click', () => {
+    const term = prompt('Escribe un nombre, usuario o correo para filtrar:'); if (term === null) return;
+    const value = term.trim().toLowerCase(); document.querySelectorAll('#users-table tr').forEach(row => { row.hidden = value && !row.textContent.toLowerCase().includes(value); });
+  });
+  document.querySelectorAll('a[href="index.html"]').forEach(link => link.addEventListener('click', () => Auth.logout()));
+
+  cargarDashboard();
+})();
+</script>
+
+</body>
+</html>

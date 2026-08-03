@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Astro Tickets · Abordaje Confirmado</title>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
+<link rel="stylesheet" href="css/styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="container" style="max-width: 1200px;">
+    <a class="brand" href="catalogo.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
+    </a>
+    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
+    </button>
+    <div class="theme-switch" role="group" aria-label="Cambiar tema">
+      <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro"><span class="material-symbols-outlined">light_mode</span><span class="txt" data-i18n="theme.light">Claro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro"><span class="material-symbols-outlined">dark_mode</span><span class="txt" data-i18n="theme.dark">Oscuro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático"><span class="material-symbols-outlined">brightness_auto</span><span class="txt" data-i18n="theme.auto">Auto</span></button>
+    </div>
+    <nav class="nav-links">
+      <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+      <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<div class="receipt-bg" style="padding-top: 24px;">
+  <main class="receipt-card" role="main" aria-label="Resumen de compra">
+
+    <!-- Small rocket decor (24-30px) -->
+    <div class="receipt-rocket" aria-hidden="true">
+      <span class="material-symbols-outlined">rocket_launch</span>
+    </div>
+
+    <!-- Success Icon -->
+    <div class="success-icon" id="success-icon" aria-hidden="true">
+      <span class="material-symbols-outlined">check</span>
+    </div>
+
+    <!-- Title -->
+    <h1 class="receipt-title" data-i18n="receipt.boarding">¡Abordaje Confirmado!</h1>
+
+    <!-- Description -->
+    <p class="receipt-desc">
+      <span data-i18n="receipt.boarding_desc1">Tu pasaje para la experiencia orbital</span><br />
+      <span data-i18n="receipt.boarding_desc2">ha sido reservado con éxito.</span>
+    </p>
+
+    <!-- Order header -->
+    <div class="receipt-order-header">
+      <div>
+        <span class="receipt-order-label" data-i18n="receipt.order_number">Orden</span>
+        <span class="receipt-order-value" id="receipt-order-number">#TXN-000000</span>
+      </div>
+      <div style="text-align:right;">
+        <span class="receipt-order-label" data-i18n="receipt.status">Estado</span>
+        <span class="receipt-order-badge" id="receipt-status-badge">Pagado</span>
+      </div>
+    </div>
+
+    <!-- Three columns -->
+    <div class="receipt-details">
+      <div class="receipt-detail-card receipt-image-col">
+        <img id="receipt-image" src="" alt="Imagen del evento" />
+      </div>
+      <div class="receipt-detail-card receipt-event-col">
+        <span class="label-rose" data-i18n="receipt.next_dest">PRÓXIMO DESTINO</span>
+        <h2 id="receipt-event-name">Nombre del Evento</h2>
+        <div class="info-block">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+          <div>
+            <span id="receipt-date">Fecha del evento</span>
+            <span class="info-sub" id="receipt-time"><span data-i18n="receipt.time_label">Apertura de esclusas:</span> <span id="receipt-time-value">19:30</span></span>
+          </div>
+        </div>
+        <div class="info-block">
+          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+          <div>
+            <span id="receipt-venue-name">Lugar del evento</span>
+            <span class="info-sub" id="receipt-venue-detail">Detalle del lugar</span>
+          </div>
+        </div>
+      </div>
+      <div class="receipt-detail-card receipt-purchase-col">
+        <span class="label-sky" data-i18n="receipt.resv_code">CÓDIGO DE RESERVA</span>
+        <h3 id="receipt-reservation-code">AST-9920X</h3>
+        <div class="purchase-row">
+          <span id="receipt-qty-type">2x Entradas</span>
+          <span id="receipt-price">RD$ 0</span>
+        </div>
+        <div class="purchase-row tax">
+          <span data-i18n="receipt.taxes">Impuestos Galácticos</span>
+          <span data-i18n="receipt.taxes_included">Incluidos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="receipt-pricing" aria-label="Resumen del pago">
+      <span>Subtotal <strong id="receipt-subtotal">RD$ 0</strong></span>
+      <span>Tarifa <strong id="receipt-fee">RD$ 0</strong></span>
+      <span>Total <strong id="receipt-total">RD$ 0</strong></span>
+    </div>
+
+    <!-- Extra details row: payment + transaction -->
+    <div class="receipt-extra-grid">
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.payment_method">Método de pago</span>
+        <span class="receipt-extra-value" id="receipt-payment-method">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.transaction_id">ID de transacción</span>
+        <span class="receipt-extra-value" id="receipt-transaction-id">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.purchase_date">Fecha de compra</span>
+        <span class="receipt-extra-value" id="receipt-purchase-date">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label" data-i18n="receipt.email_sent">Correo de confirmación</span>
+        <span class="receipt-extra-value" id="receipt-email-sent">usuario@ejemplo.com</span>
+      </div>
+    </div>
+
+    <div class="receipt-extra-grid receipt-identity-grid">
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label">Comprador</span>
+        <span class="receipt-extra-value" id="receipt-buyer-name">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label">Sala</span>
+        <span class="receipt-extra-value" id="receipt-room">—</span>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <p class="receipt-message" data-i18n="receipt.digital_ready">Tu boleto digital está listo para ser escaneado.</p>
+
+    <!-- Boletos digitales con QR -->
+    <div class="receipt-tickets" id="receipt-tickets"></div>
+
+    <!-- Primary button -->
+    <button class="btn-ticket" id="btn-view-ticket" aria-label="Ver mi boleto digital">
+      🎟 <span data-i18n="receipt.view_ticket">Ver mi Boleto</span>
+    </button>
+
+    <!-- Progress indicator -->
+    <div class="progress-steps" id="receipt-progress" role="progressbar" aria-label="Progreso de compra">
+      <div class="progress-step completed">
+        <div class="progress-dot"><span class="material-symbols-outlined">check</span></div>
+        <span data-i18n="event.step1">Selección</span>
+      </div>
+      <div class="progress-line completed"></div>
+      <div class="progress-step completed">
+        <div class="progress-dot"><span class="material-symbols-outlined">check</span></div>
+        <span data-i18n="event.step2">Pago</span>
+      </div>
+      <div class="progress-line completed"></div>
+      <div class="progress-step active">
+        <div class="progress-dot active"><span class="material-symbols-outlined">check</span></div>
+        <span data-i18n="event.step3">Éxito</span>
+      </div>
+    </div>
+
+    <!-- Bottom buttons -->
+    <div class="receipt-actions">
+      <button class="btn-outline-primary" id="btn-print-ticket" type="button" aria-label="Imprimir boleto">
+        <span class="material-symbols-outlined" aria-hidden="true">print</span>
+        <span>Imprimir boleto</span>
+      </button>
+      <button class="btn-outline-blue" id="btn-resend" aria-label="Reenviar confirmación por correo">
+        <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+        <span data-i18n="receipt.resend">Reenviar Confirmación</span>
+      </button>
+      <a href="historial.html" class="btn-outline-primary" id="btn-my-purchases" aria-label="Ver mis compras">
+        <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+        <span data-i18n="receipt.my_purchases">Mis Compras</span>
+      </a>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast notificación -->
+<div class="toast" id="purchase-toast">
+  <span class="material-symbols-outlined">notifications_active</span>
+  <div>
+    <strong data-i18n="receipt.toasttitle">Notificación enviada</strong>
+    <p style="font-size: 0.84rem; margin-top: 4px; opacity: 0.8;" data-i18n="receipt.toastmsg">Confirmamos tu compra por correo electrónico.</p>
+  </div>
+</div>
+
+<script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
+<script src="js/main.js"></script>
+<script src="js/stable-flow.js"></script>
+</body>
+</html>

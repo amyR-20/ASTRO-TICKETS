@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Astro Tickets · Noche de Jazz en Vivo</title>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
+<link rel="stylesheet" href="css/styles.css" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
+
+<header class="navbar">
+  <div class="container">
+    <a class="brand" href="catalogo.html">
+      <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
+    </a>
+    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
+    </button>
+    <div class="theme-switch" role="group" aria-label="Cambiar tema">
+      <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro"><span class="material-symbols-outlined">light_mode</span><span class="txt" data-i18n="theme.light">Claro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro"><span class="material-symbols-outlined">dark_mode</span><span class="txt" data-i18n="theme.dark">Oscuro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático"><span class="material-symbols-outlined">brightness_auto</span><span class="txt" data-i18n="theme.auto">Auto</span></button>
+    </div>
+    <nav class="nav-links">
+      <a class="active" href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+      <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container section" data-event-name="">
+  <a href="catalogo.html" class="text-muted" style="display: inline-flex; align-items: center; gap: 6px; margin-bottom: 24px; font-size: 0.88rem; color: var(--color-primary); font-weight: 500; transition: gap 0.2s;" onmouseover="this.style.gap='10px'" onmouseout="this.style.gap='6px'">
+    <span class="material-symbols-outlined" style="font-size: 1.1rem;">arrow_back</span> <span data-i18n="event.back">Volver al catálogo</span>
+  </a>
+
+  <!-- Indicador de progreso -->
+  <div class="steps">
+    <div class="step active"><span class="node">1</span><span class="label" data-i18n="event.step1">Evento</span></div>
+    <span class="line"></span>
+    <div class="step"><span class="node">2</span><span class="label" data-i18n="event.step2">Pago</span></div>
+    <span class="line"></span>
+    <div class="step"><span class="node">3</span><span class="label" data-i18n="event.step3">Comprobante</span></div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="detail-image">
+        <img src="multimedia/jazz.jpg" alt="Noche de Jazz en Vivo" />
+      </div>
+      <p class="eyebrow">Concierto</p>
+      <h1 style="font-size: 2rem; margin: 8px 0 16px;">Noche de Jazz en Vivo</h1>
+      <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px;">
+        <span class="text-muted" style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+          <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">calendar_month</span>
+          20 de agosto, 2026 · 8:00 pm
+        </span>
+        <span class="text-muted" style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+          <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">location_on</span>
+          Teatro Nacional, Santo Domingo
+        </span>
+      </div>
+      <div class="card" style="padding: 24px; line-height: 1.7;">
+        <p class="text-muted">Una velada íntima con los mejores exponentes del jazz contemporáneo. Incluye acceso a zona de lounge y una hora de puertas abiertas antes del inicio del espectáculo.</p>
+      </div>
+    </div>
+
+    <!-- Compra de boletas -->
+    <div class="glass-panel purchase-panel">
+      <h2 style="font-size: 1.25rem; margin-bottom: 20px; font-weight: 700;" data-i18n="event.select">Selecciona tus asientos</h2>
+
+      <!-- Seat map -->
+      <div class="seat-stage" data-i18n="event.stage">Escenario</div>
+
+      <div class="seat-zone-label"><span data-i18n="event.platinum">Platino</span> · RD$ 4,500</div>
+      <div class="seat-grid" id="seat-grid-platino">
+        <!-- JS will populate -->
+      </div>
+
+      <div class="seat-zone-divider"></div>
+      <div class="seat-zone-label"><span data-i18n="event.vip">VIP</span> · RD$ 3,200</div>
+      <div class="seat-grid" id="seat-grid-vip">
+        <!-- JS will populate -->
+      </div>
+
+      <div class="seat-zone-divider"></div>
+      <div class="seat-zone-label"><span data-i18n="event.general">General</span> · RD$ 1,800</div>
+      <div class="seat-grid" id="seat-grid-general">
+        <!-- JS will populate -->
+      </div>
+
+      <div class="seat-legend">
+        <span><span class="dot available"></span> <span data-i18n="event.available">Disponible</span></span>
+        <span><span class="dot selected"></span> <span data-i18n="event.selected">Seleccionado</span></span>
+        <span><span class="dot taken"></span> <span data-i18n="event.occupied">Ocupado</span></span>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <label style="font-size: 0.82rem; font-weight: 600; color: var(--color-on-surface); margin-bottom: 6px; display: block;" data-i18n="event.seats">Asientos seleccionados</label>
+        <div class="selected-seats-list" id="selected-seats-display">
+          <span style="font-size: 0.78rem; color: var(--color-on-surface-variant);" data-i18n="event.clickhint">Haz clic en los asientos del mapa</span>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="flex-between" style="margin-bottom: 8px;">
+        <span class="text-muted" style="font-size: 0.85rem;" data-i18n="event.tickets">Boletos</span>
+        <span id="ticket-count-display" style="font-weight: 600;">0</span>
+      </div>
+      <div class="flex-between" style="margin-bottom: 24px;">
+        <span class="text-muted" style="font-size: 0.85rem;" data-i18n="event.total">Total a pagar</span>
+        <span id="purchase-total" style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">RD$ 0</span>
+      </div>
+
+      <form data-redirect="pago.html" id="seat-form">
+        <input type="hidden" id="selected-seats-input" name="selected-seats" />
+        <button type="submit" class="btn btn-primary btn-block" style="padding: 14px 24px; font-size: 0.95rem;" id="btn-continuar" disabled>
+          <span data-i18n="event.continue">Continuar al pago</span>
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</main>
+
+
+
+<footer class="site-footer">
+  <div class="container">
+    <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+    <p class="bottom" data-i18n="footer">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
+  </div>
+</footer>
+
+<script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
+<script src="js/main.js"></script>
+<script>
+/* Load event from backend (?id=EVT_ID) — fallback a localStorage */
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get('id');
+  if (!eventId) return;
+
+  const main = document.querySelector('main');
+  if (!main) return;
+
+  function applyEvent(evt) {
+    main.dataset.eventId = evt.id;
+    main.dataset.eventName = evt.name;
+    main.dataset.eventImg = evt.image || 'multimedia/logo.svg';
+    main.dataset.eventCategory = evt.category || '';
+
+    const dateObj = new Date(evt.date + 'T' + (evt.time || '20:00'));
+    const dateStr = dateObj.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + (evt.time || '20:00');
+    main.dataset.eventDate = dateStr;
+    main.dataset.eventVenue = evt.venue || '';
+
+    // Precios desde las zonas reales del evento
+    const zones = evt.zones || [];
+    const priceOf = (name) => {
+      const z = zones.find(z => z.name.toLowerCase() === name);
+      return z ? z.price : null;
+    };
+    main.dataset.pricePlatino = priceOf('platino') || 4500;
+    main.dataset.priceVip = priceOf('vip') || 3200;
+    main.dataset.priceGeneral = priceOf('general') || 1800;
+
+    // Asientos vendidos/reservados (para marcar el mapa)
+    const taken = (evt.seats || [])
+      .filter(s => s.status === 'sold' || s.status === 'reserved' || s.status === 'blocked')
+      .map(s => s.id);
+    main.dataset.takenSeats = JSON.stringify(taken);
+
+    // Todos los asientos y zonas reales para dibujar el mapa completo
+    main.dataset.seats = JSON.stringify(evt.seats || []);
+    main.dataset.zones = JSON.stringify(evt.zones || []);
+
+    // Función activa contra la que se reserva y se compra
+    const funcs = (evt.funciones || []).filter(f => f.estado === 'activa');
+    main.dataset.funcionId = (funcs[0] || (evt.funciones || [])[0] || {}).id || '';
+
+    document.title = 'Astro Tickets · ' + evt.name;
+    const img = document.querySelector('.detail-image img');
+    if (img) img.src = evt.image || 'multimedia/logo.svg';
+    const catEl = document.querySelector('.eyebrow');
+    if (catEl) catEl.textContent = evt.category || '';
+    const titleEl = document.querySelector('h1');
+    if (titleEl) titleEl.textContent = evt.name;
+    const dateSpan = document.querySelector('.text-muted .material-symbols-outlined');
+    if (dateSpan) {
+      const parent = dateSpan.parentElement;
+      if (parent) parent.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">calendar_month</span> ' + dateStr;
+    }
+    const venueSpan = document.querySelectorAll('.text-muted')[1];
+    if (venueSpan) {
+      venueSpan.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">location_on</span> ' + (evt.venue || '');
+    }
+    const descCard = document.querySelector('.card p');
+    if (descCard) descCard.textContent = evt.description || '';
+
+    // Reconstruir el mapa con asientos/zonas/precios reales del evento
+    if (typeof window.renderSeatMap === 'function') window.renderSeatMap();
+  }
+
+  // Cargar desde el backend; si falla, desde localStorage
+  if (typeof Api !== 'undefined') {
+    Api.getEvento(eventId)
+      .then(applyEvent)
+      .catch(() => {
+        const events = JSON.parse(localStorage.getItem('astro_events') || '[]');
+        const evt = events.find(e => e.id === eventId);
+        if (evt) applyEvent(evt);
+      });
+  } else {
+    const events = JSON.parse(localStorage.getItem('astro_events') || '[]');
+    const evt = events.find(e => e.id === eventId);
+    if (evt) applyEvent(evt);
+  }
+})();
+</script>
+<script src="js/stable-flow.js"></script>
+</body>
+</html>

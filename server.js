@@ -44,8 +44,8 @@ app.use(cors({ origin: ORIGENES_PERMITIDOS }));
 // 4 MB deja margen para el JSON de asientos sin aceptar cargas desmedidas.
 app.use(express.json({ limit: "4mb" }));
 
-// AGREGADO: permite servir los archivos HTML, CSS y JavaScript
-app.use(express.static(path.join(__dirname)));
+// En local Express sirve la misma raiz que Vercel publica mediante su CDN.
+app.use(express.static(path.join(__dirname, "public")));
 
 // --- Rutas ---
 app.use("/api/auth", authRoutes);
@@ -58,7 +58,7 @@ app.use("/api", adminRoutes);
 
 // AGREGADO: muestra index.html al entrar a localhost:3000
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Ruta de salud, útil para confirmar que el servidor está corriendo
@@ -79,9 +79,13 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
 
 const { pool } = require("./config/database");
 
