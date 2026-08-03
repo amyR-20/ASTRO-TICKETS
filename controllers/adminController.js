@@ -9,6 +9,7 @@ const funcionModel = require("../models/funcionModel");
 const ordenModel = require("../models/ordenModel");
 const usuarioModel = require("../models/usuarioModel");
 const PDFDocument = require("pdfkit");
+const QRCode = require("qrcode");
 
 /**
  * GET /api/admin/dashboard — cifras para el panel de administración.
@@ -90,7 +91,7 @@ async function reporteCsv(req,res) {
 }
 
 /** GET /api/admin/reportes/general.pdf — resumen administrativo consolidado. */
-async function reportePdf(req,res) {
+async function reportePdfLegacy(req,res) {
   try {
     const [stats,ventas,usuarios,txns]=await Promise.all([
       pool.query(`SELECT COALESCE(SUM(total),0) ingresos,COUNT(*) transacciones FROM ordenes WHERE estado IN ('paid','completed')`),
@@ -108,6 +109,92 @@ async function reportePdf(req,res) {
     section("Transacciones recientes",["Transacción","Evento","Total","Estado","Fecha"],txns.rows.map(t=>[t.transaccion,t.evento,`RD$ ${Number(t.total).toLocaleString('es-DO')}`,t.estado,new Date(t.creada_en).toLocaleString('es-DO')]));
     doc.end();
   } catch(err){console.error("Error generando PDF admin:",err);if(!res.headersSent)res.status(500).json({error:"No se pudo generar el PDF."});else res.end();}
+}
+
+async function reportePdf(req, res) {
+  try {
+    const [statsResult, eventosResult, usuariosResult, txnsResult] = await Promise.all([
+      pool.query(`SELECT
+        COALESCE(SUM(total) FILTER (WHERE estado IN ('paid','completed','completada')),0) ingresos,
+        COUNT(*) FILTER (WHERE estado IN ('paid','completed','completada')) transacciones,
+        (SELECT COUNT(*) FROM entradas) boletos,
+        (SELECT COUNT(*) FROM usuarios) usuarios,
+        (SELECT COUNT(*) FROM eventos WHERE estado='published') eventos_activos`),
+      pool.query(`SELECT e.id,e.nombre,e.fecha,e.hora,e.lugar,e.estado,
+        f.id funcion_id,f.fecha funcion_fecha,f.hora funcion_hora,f.sala,f.estado funcion_estado,
+        COUNT(DISTINCT a.id)::int capacidad,
+        COUNT(DISTINCT a.id) FILTER (WHERE a.estado='sold')::int vendidos,
+        COUNT(DISTINCT a.id) FILTER (WHERE a.estado='available')::int disponibles,
+        (SELECT COALESCE(SUM(o.total),0) FROM ordenes o WHERE o.funcion_id=f.id AND o.estado IN ('paid','completed','completada')) ingresos
+        FROM eventos e LEFT JOIN funciones_evento f ON f.evento_id=e.id
+        LEFT JOIN asientos a ON a.funcion_id=f.id
+        GROUP BY e.id,f.id ORDER BY e.fecha,e.nombre,f.fecha,f.hora`),
+      pool.query(`SELECT username,nombre,email,role,estado,ultimo_login FROM usuarios ORDER BY ultimo_login DESC NULLS LAST LIMIT 18`),
+      pool.query(`SELECT o.transaccion,e.nombre evento,u.username,o.total,o.estado,o.creada_en
+        FROM ordenes o JOIN eventos e ON e.id=o.evento_id LEFT JOIN usuarios u ON u.id=o.usuario_id
+        ORDER BY o.creada_en DESC LIMIT 18`)
+    ]);
+    const stats = statsResult.rows[0];
+    const eventos = eventosResult.rows;
+    const usuarios = usuariosResult.rows;
+    const txns = txnsResult.rows;
+    const qrBuffers = new Map();
+    for (const item of eventos) {
+      if (item.funcion_id) qrBuffers.set(String(item.funcion_id), await QRCode.toBuffer(`ASTRO-FUNCION:${item.funcion_id}`, { width: 180, margin: 1, color: { dark: '#24134f', light: '#ffffff' } }));
+    }
+
+    res.set({ "Content-Type":"application/pdf", "Content-Disposition":"attachment; filename=astro-tickets_reporte-ejecutivo.pdf", "Cache-Control":"private, no-store" });
+    const doc = new PDFDocument({ size:"A4", margin:42, bufferPages:true, info:{ Title:"Reporte ejecutivo Astro Tickets", Author:"Astro Tickets" } });
+    doc.pipe(res);
+    const W = 511;
+    const purple = "#6c3fd1", dark = "#17132b", muted = "#6b7280", pale = "#f4f0ff", green = "#0f9f78", line = "#e9e5f2";
+    const money = (value) => `RD$ ${Number(value || 0).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    const date = (value) => value ? new Date(value).toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+    const ensure = (height=80) => { if (doc.y + height > 760) doc.addPage(); };
+    const sectionTitle = (title, subtitle, required=70) => { ensure(required); const y=doc.y+6; doc.fillColor(dark).font('Helvetica-Bold').fontSize(15).text(title,42,y,{width:W}); if(subtitle) doc.fillColor(muted).font('Helvetica').fontSize(8.5).text(subtitle,42,y+22,{width:W}); doc.y=y+(subtitle?43:28); };
+    const tableHeader = (columns, widths) => { ensure(34); const y=doc.y; doc.save().roundedRect(42,y,W,24,6).fill(purple).restore(); let x=48; columns.forEach((c,i)=>{doc.fillColor('#fff').font('Helvetica-Bold').fontSize(7.2).text(c,x,y+8,{width:widths[i]-8,height:10,lineBreak:false});x+=widths[i];});doc.y=y+30; };
+    const tableRow = (values,widths,index) => { ensure(28); const y=doc.y; if(index%2===0) doc.save().rect(42,y-3,W,24).fill('#faf9fd').restore(); let x=48; values.forEach((v,i)=>{doc.fillColor(dark).font('Helvetica').fontSize(7.2).text(String(v??'-'),x,y+4,{width:widths[i]-8,height:14,ellipsis:true,lineBreak:false});x+=widths[i];});doc.y=y+24; };
+
+    doc.save().rect(0,0,595,150).fill(dark).restore();
+    doc.fillColor('#fff').font('Helvetica-Bold').fontSize(23).text('ASTRO TICKETS',42,40);
+    doc.fillColor('#d8ccff').font('Helvetica').fontSize(10).text('REPORTE EJECUTIVO DE OPERACIONES',42,72);
+    doc.fillColor('#b7afc9').fontSize(8).text(`Generado ${new Date().toLocaleString('es-DO')}  |  Panel administrativo`,42,100);
+    doc.y=174;
+    const cards=[['INGRESOS',money(stats.ingresos)],['TRANSACCIONES',stats.transacciones],['BOLETOS',stats.boletos],['USUARIOS',stats.usuarios]];
+    const cardY=doc.y;
+    cards.forEach((card,i)=>{const x=42+i*128;doc.save().roundedRect(x,cardY,116,60,10).fill(i===0?purple:pale).restore();doc.fillColor(i===0?'#ded5ff':muted).font('Helvetica-Bold').fontSize(7).text(card[0],x+12,cardY+13,{width:92});doc.fillColor(i===0?'#fff':dark).fontSize(i===0?12:16).text(String(card[1]),x+12,cardY+29,{width:94});});
+    doc.y=cardY+82;
+
+    sectionTitle('Eventos y funciones', 'Cada QR identifica la función dentro del reporte operativo.');
+    if (!eventos.length) doc.fillColor(muted).fontSize(9).text('No hay funciones registradas.');
+    for (const item of eventos) {
+      ensure(112); const y=doc.y;
+      doc.save().roundedRect(42,y,W,98,10).lineWidth(1).strokeColor(line).stroke().restore();
+      doc.fillColor(dark).font('Helvetica-Bold').fontSize(11).text(item.nombre,56,y+13,{width:330});
+      doc.fillColor(muted).font('Helvetica').fontSize(8).text(`${date(item.funcion_fecha||item.fecha)}  |  ${String(item.funcion_hora||item.hora||'').slice(0,5)}  |  ${item.sala||item.lugar||'-'}`,56,y+31,{width:350});
+      doc.fillColor(purple).font('Helvetica-Bold').fontSize(7.5).text(`FUNCIÓN #${item.funcion_id||'-'}`,56,y+49);
+      doc.fillColor(dark).font('Helvetica').fontSize(8).text(`Capacidad: ${item.capacidad}    Vendidos: ${item.vendidos}    Disponibles: ${item.disponibles}`,56,y+65,{width:330});
+      doc.fillColor(green).font('Helvetica-Bold').fontSize(9).text(money(item.ingresos),56,y+80,{width:180});
+      const qr=qrBuffers.get(String(item.funcion_id)); if(qr) doc.image(qr,461,y+12,{fit:[76,76]});
+      doc.y=y+110;
+    }
+
+    sectionTitle('Transacciones recientes','Pagos y órdenes más recientes del sistema.',70+Math.min(txns.length,20)*24);
+    const txWidths=[86,145,72,70,70,68]; tableHeader(['TRANSACCIÓN','EVENTO','USUARIO','TOTAL','ESTADO','FECHA'],txWidths);
+    txns.forEach((t,i)=>tableRow([t.transaccion,t.evento,t.username,money(t.total),t.estado,date(t.creada_en)],txWidths,i));
+
+    sectionTitle('Usuarios y administradores','Actividad reciente y estado de las cuentas.',70+Math.min(usuarios.length,20)*24);
+    const userWidths=[74,100,157,56,56,68]; tableHeader(['USUARIO','NOMBRE','CORREO','ROL','ESTADO','ACCESO'],userWidths);
+    usuarios.forEach((u,i)=>tableRow([u.username,u.nombre,u.email,u.role,u.estado,date(u.ultimo_login)],userWidths,i));
+
+    const range=doc.bufferedPageRange();
+    for(let i=0;i<range.count;i++){doc.switchToPage(i);doc.save().moveTo(42,783).lineTo(553,783).strokeColor(line).stroke();doc.fillColor(muted).font('Helvetica').fontSize(7).text('Astro Tickets - reporte interno confidencial',42,790,{width:360,lineBreak:false});doc.text(`${i+1} / ${range.count}`,480,790,{width:70,align:'right',lineBreak:false});doc.restore();}
+    doc.end();
+  } catch(err) {
+    console.error('Error generando PDF ejecutivo:',err);
+    if(!res.headersSent) return res.status(500).json({error:'No se pudo generar el PDF.'});
+    return res.end();
+  }
 }
 
 /** GET /api/admin/resumen — inventario por evento/función. */

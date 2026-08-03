@@ -7,6 +7,7 @@
 const ordenModel = require("../models/ordenModel");
 const entradaModel = require("../models/entradaModel");
 const entradaService = require("../services/entradaService");
+const stripeService = require("../services/stripeService");
 
 /** POST /api/ordenes — crea una compra (requiere sesión). */
 async function crear(req, res) {
@@ -16,14 +17,20 @@ async function crear(req, res) {
     if (!funcionId) {
       return res.status(400).json({ error: "Debes indicar la función del evento." });
     }
-    if (!payment || !payment.transactionId || !payment.reservationCode) {
+    if (!payment || !payment.paymentIntentId) {
       return res.status(400).json({ error: "El pago no fue confirmado." });
     }
+
+    const pagoVerificado = await stripeService.verificarPago({
+      paymentIntentId: payment.paymentIntentId,
+      usuarioId: req.usuario.id,
+      funcionId,
+    });
 
     const orden = await ordenModel.crear({
       usuarioId: req.usuario.id,
       funcionId,
-      payment,
+      payment: pagoVerificado,
     });
 
     if (orden.status) {
@@ -34,7 +41,7 @@ async function crear(req, res) {
     return res.status(201).json({ orden });
   } catch (err) {
     console.error("Error creando orden:", err);
-    return res.status(500).json({ error: "Error interno al guardar la compra." });
+    return res.status(err.status || 500).json({ error: err.status ? err.message : "Error interno al guardar la compra." });
   }
 }
 

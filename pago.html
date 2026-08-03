@@ -18,6 +18,7 @@
 </script>
 <link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
+<script src="https://js.stripe.com/v3/"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
@@ -125,28 +126,9 @@
         </div>
 
         <form data-redirect="comprobante.html" id="card-form">
-          <div class="field">
-            <label for="card-number" data-i18n="payment.cardnum">Número de tarjeta</label>
-            <div class="input-wrap">
-              <span class="material-symbols-outlined">credit_card</span>
-              <input class="input" type="text" id="card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" required />
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="card-name" data-i18n="payment.cardholder">Nombre del titular</label>
-            <input class="input" type="text" id="card-name" placeholder="Como aparece en la tarjeta" required />
-          </div>
-
-          <div style="display: flex; gap: 16px;">
-            <div class="field" style="flex: 1;">
-              <label for="card-exp" data-i18n="payment.expiry">Vencimiento</label>
-              <input class="input" type="text" id="card-exp" placeholder="MM/AA" maxlength="5" required />
-            </div>
-            <div class="field" style="flex: 1;">
-              <label for="card-cvv" data-i18n="payment.cvv">CVV</label>
-              <input class="input" type="text" id="card-cvv" inputmode="numeric" placeholder="123" maxlength="4" required />
-            </div>
+          <div class="stripe-element-shell">
+            <div class="stripe-secure-label"><span class="material-symbols-outlined">verified_user</span> Pago seguro procesado por Stripe</div>
+            <div id="payment-element"><div class="stripe-loading">Preparando formulario seguro…</div></div>
           </div>
 
           <hr class="divider" />
@@ -156,7 +138,7 @@
             <span style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="pay-total-card">RD$ 3,600</span>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-block" style="padding: 14px 24px; font-size: 0.95rem;">
+          <button type="submit" id="stripe-submit" class="btn btn-primary btn-block" style="padding: 14px 24px; font-size: 0.95rem;" disabled>
             <span class="material-symbols-outlined">lock</span>
             <span data-i18n="payment.confirm">Confirmar y pagar</span>
           </button>

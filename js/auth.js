@@ -121,6 +121,8 @@ const Auth = (() => {
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      avatarUrl: user.avatar_url || user.avatarUrl || null,
+      username: user.username,
       loginAt: Date.now()
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -170,7 +172,7 @@ const Auth = (() => {
       <div class="user-panel">
         <div class="user-panel-header">
           <div class="user-panel-avatar" style="background: linear-gradient(135deg, ${colorMap[session.role] || colorMap.user}, var(--stellar-blue));">
-            ${session.avatar}
+            ${session.avatarUrl ? `<img src="${session.avatarUrl}" alt="">` : session.avatar}
           </div>
           <div class="user-panel-info">
             <p class="user-panel-name">${session.nombre}</p>
@@ -187,8 +189,12 @@ const Auth = (() => {
             <span class="material-symbols-outlined">receipt_long</span>
             <span>Mis compras</span>
           </a>
+          <a href="perfil.html" class="user-panel-action">
+            <span class="material-symbols-outlined">manage_accounts</span>
+            <span>Perfil y configuración</span>
+          </a>
           ${session.role === "admin" ? `
-          <a href="admin.html" class="user-panel-action">
+          <a href="admin-login.html" class="user-panel-action">
             <span class="material-symbols-outlined">admin_panel_settings</span>
             <span>Panel admin</span>
           </a>` : ""}
@@ -229,7 +235,7 @@ const Auth = (() => {
 
         const avatarBtn = document.createElement("button");
         avatarBtn.className = "nav-user-avatar";
-        avatarBtn.innerHTML = session.avatar;
+        avatarBtn.innerHTML = session.avatarUrl ? `<img src="${session.avatarUrl}" alt="${session.nombre}">` : session.avatar;
         avatarBtn.title = session.nombre;
 
         const panel = document.createElement("div");
@@ -246,8 +252,11 @@ const Auth = (() => {
             <a href="historial.html" class="user-panel-action">
               <span class="material-symbols-outlined">receipt_long</span> Mis compras
             </a>
+            <a href="perfil.html" class="user-panel-action">
+              <span class="material-symbols-outlined">manage_accounts</span> Perfil y configuración
+            </a>
             ${session.role === "admin" ? `
-            <a href="admin.html" class="user-panel-action">
+            <a href="admin-login.html" class="user-panel-action">
               <span class="material-symbols-outlined">admin_panel_settings</span> Panel admin
             </a>` : ""}
             <button class="user-panel-action user-panel-logout" style="width: 100%; border: none; background: none; cursor: pointer;">
@@ -293,7 +302,7 @@ const Auth = (() => {
       // Solo administradores pueden abrir admin.html (un usuario normal
       // o un visitante sin sesión sale inmediatamente al login).
       if (!isAdmin()) {
-        location.replace("index.html");
+        location.replace("admin-login.html");
         return;
       }
     } else if (requiereSesion) {

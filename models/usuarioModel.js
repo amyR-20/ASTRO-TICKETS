@@ -12,7 +12,7 @@ const { query } = require("../config/database");
  */
 async function buscarPorEmail(email) {
   const sql = `
-    SELECT id, username, nombre, email, password_hash, role, avatar, estado, creado_en
+    SELECT id, username, nombre, email, password_hash, role, avatar, avatar_url, bio, estado, creado_en
     FROM usuarios
     WHERE email = $1
   `;
@@ -22,7 +22,7 @@ async function buscarPorEmail(email) {
 
 async function buscarPorId(id) {
   const sql = `
-    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en, updated_at
+    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at
     FROM usuarios
     WHERE id = $1
   `;
@@ -106,6 +106,18 @@ async function listar({ limite = 50 } = {}) {
   return rows;
 }
 
+async function actualizarPerfil(id, { nombre, username, avatarUrl, bio }) {
+  const avatar = calcularIniciales(nombre);
+  const { rows } = await query(
+    `UPDATE usuarios
+        SET nombre=$2, username=$3, avatar=$4, avatar_url=$5, bio=$6, updated_at=now()
+      WHERE id=$1
+      RETURNING id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at`,
+    [id, nombre, username, avatar, avatarUrl || null, bio || null]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   buscarPorEmail,
   buscarPorUsername,
@@ -114,4 +126,5 @@ module.exports = {
   registrarAcceso,
   actualizarLogin,
   listar,
+  actualizarPerfil,
 };

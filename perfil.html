@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Astro Tickets · Mi perfil</title>
+  <link rel="icon" href="multimedia/favicon.svg"><link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+</head>
+<body>
+<div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
+<header class="navbar"><div class="container"><a class="brand" href="catalogo.html"><img src="multimedia/logo.svg" class="brand-logo" alt="Astro Tickets"></a><a class="btn btn-ghost" href="catalogo.html">Volver</a></div></header>
+<main class="container section profile-page">
+  <section class="profile-hero glass-panel">
+    <div class="profile-photo" id="profile-preview">AT</div>
+    <div><p class="eyebrow">CUENTA ASTRO</p><h1 id="profile-heading">Mi perfil</h1><p class="text-muted">Actualiza tu identidad, foto y preferencias personales.</p><span class="badge badge-success" id="profile-role">Usuario</span></div>
+  </section>
+  <form class="profile-grid" id="profile-form">
+    <section class="glass-panel profile-card">
+      <h2>Foto de perfil</h2><p class="text-muted">JPG, PNG o WebP; máximo 700 KB.</p>
+      <label class="profile-upload"><span class="material-symbols-outlined">add_a_photo</span><span>Elegir una foto</span><input id="profile-photo" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+      <button class="btn btn-ghost" type="button" id="profile-photo-remove">Quitar foto</button>
+    </section>
+    <section class="glass-panel profile-card">
+      <h2>Información personal</h2>
+      <label class="field">Nombre completo<input class="input" id="profile-name" maxlength="100" required></label>
+      <label class="field">Nombre de usuario<input class="input" id="profile-username" maxlength="24" pattern="[a-z0-9_]{3,24}" required></label>
+      <label class="field">Correo electrónico<input class="input" id="profile-email" disabled></label>
+      <label class="field">Sobre mí<textarea class="input" id="profile-bio" maxlength="240" rows="4" placeholder="Cuéntanos un poco sobre ti"></textarea></label>
+      <div class="profile-save-row"><span id="profile-status" class="text-muted"></span><button class="btn btn-primary" type="submit"><span class="material-symbols-outlined">save</span> Guardar cambios</button></div>
+    </section>
+  </form>
+</main>
+<script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/api.js"></script><script src="js/profile.js"></script>
+</body></html>

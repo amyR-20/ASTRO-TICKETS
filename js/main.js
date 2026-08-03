@@ -1499,18 +1499,27 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-open-event-modal]");
     if (!btn) return;
-    showCreator(btn.dataset.eventId || null);
+    e.preventDefault();
+    void showCreator(btn.dataset.eventId || null);
   });
 
-  window.showCreator = function(editId) {
+  window.showCreator = async function(editId) {
     editingEventId = editId || null;
     if (ev.creator) ev.creator.classList.add("active");
     if (ev.main) ev.main.style.display = "none";
     document.querySelectorAll(".site-footer").forEach(f => f.style.display = "none");
     if (editId) {
-      const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
-      const event = events.find(e => e.id === editId);
-      if (event) loadEventForEditing(event);
+      try {
+        if (typeof Api === "undefined") throw new Error("La API no esta disponible");
+        const event = await Api.getEvento(editId);
+        if (!event) throw new Error("El evento no existe");
+        loadEventForEditing(event);
+      } catch (error) {
+        console.error("No se pudo cargar el evento:", error);
+        alert(error.message || "No se pudo cargar el evento para editarlo.");
+        hideCreator();
+        return;
+      }
     } else {
       resetCreator();
     }
@@ -1618,12 +1627,39 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function handleImageFile(file, dz, isBanner) {
+    if (!file.type.startsWith("image/")) {
+      alert("Selecciona una imagen JPG, PNG o WEBP.");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (e) => {
-      dz.classList.add("has-image");
-      dz.innerHTML = `<img src="${e.target.result}" alt="" />`;
-      if (!isBanner) ev.previewImg.src = e.target.result;
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = isBanner ? 1920 : 1280;
+        const maxHeight = isBanner ? 720 : 1280;
+        const scale = Math.min(1, maxWidth / img.width, maxHeight / img.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        let quality = 0.84;
+        let optimized = canvas.toDataURL("image/jpeg", quality);
+        while (optimized.length > 700000 && quality > 0.46) {
+          quality -= 0.08;
+          optimized = canvas.toDataURL("image/jpeg", quality);
+        }
+        if (optimized.length > 900000) {
+          alert("La imagen es demasiado grande. Usa una imagen de menor resolucion.");
+          return;
+        }
+        dz.classList.add("has-image");
+        dz.innerHTML = `<img src="${optimized}" alt="Vista previa del evento" />`;
+        if (!isBanner) ev.previewImg.src = optimized;
+      };
+      img.onerror = () => alert("No se pudo leer la imagen seleccionada.");
+      img.src = reader.result;
     };
+    reader.onerror = () => alert("No se pudo leer la imagen seleccionada.");
     reader.readAsDataURL(file);
   }
   setupDropzone(ev.dropzoneImg, ev.imgInput, false);
@@ -1988,56 +2024,65 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function saveEvent(eventData) {
-    const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
-    const idx = events.findIndex(e => e.id === eventData.id);
-    if (idx !== -1) {
-      events[idx] = { ...events[idx], ...eventData };
-    } else {
-      events.push(eventData);
-    }
-    localStorage.setItem("astro_events", JSON.stringify(events));
-    renderAdminEvents();
+  async function saveEvent(eventData) {
+    if (typeof Api === "undefined") throw new Error("No se pudo conectar con Neon.");
+    const saved = editingEventId
+      ? await Api.actualizarEvento(editingEventId, eventData)
+      : await Api.crearEvento(eventData);
+    localStorage.removeItem("astro_events");
+    await renderAdminEvents();
+    return saved;
 
     // Guardar también en el backend (Neon)
-    if (typeof Api !== "undefined") {
-      const exists = idx !== -1;
-      const p = exists
-        ? Api.actualizarEvento(eventData.id, eventData)
-        : Api.crearEvento(eventData);
-      p.then(() => {
-        showToast(t('admin.ev_published_toast'));
-      }).catch((err) => {
-        console.warn("No se pudo guardar en el backend:", err.message);
-      });
-    }
   }
 
   if (ev.publishBtn) {
-    ev.publishBtn.addEventListener("click", () => {
+    ev.publishBtn.addEventListener("click", async () => {
       const name = ev.name.value.trim();
       if (!name || !ev.date.value) {
         alert(t('admin.ev_required'));
         return;
       }
+      if (!evSeats.length) {
+        alert("Primero genera el mapa de asientos del evento.");
+        return;
+      }
+      if (!evSeats.some((seat) => seat.type)) {
+        alert("Asigna al menos una zona a los asientos antes de publicar.");
+        return;
+      }
       const data = collectEventData("published");
-      saveEvent(data);
-      showToast(t('admin.ev_published_toast'));
-      hideCreator();
+      ev.publishBtn.disabled = true;
+      try {
+        await saveEvent(data);
+        showToast(t('admin.ev_published_toast'));
+        hideCreator();
+      } catch (error) {
+        alert(error.message || "No se pudo publicar el evento.");
+      } finally {
+        ev.publishBtn.disabled = false;
+      }
     });
   }
 
   if (ev.saveDraftBtn) {
-    ev.saveDraftBtn.addEventListener("click", () => {
+    ev.saveDraftBtn.addEventListener("click", async () => {
       const name = ev.name.value.trim();
       if (!name) {
         alert(t('admin.ev_required_name'));
         return;
       }
       const data = collectEventData("draft");
-      saveEvent(data);
-      showToast(t('admin.ev_draft_toast'));
-      hideCreator();
+      ev.saveDraftBtn.disabled = true;
+      try {
+        await saveEvent(data);
+        showToast(t('admin.ev_draft_toast'));
+        hideCreator();
+      } catch (error) {
+        alert(error.message || "No se pudo guardar el borrador.");
+      } finally {
+        ev.saveDraftBtn.disabled = false;
+      }
     });
   }
 
@@ -2392,9 +2437,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (emailEl) emailEl.textContent = session.email || "";
       if (welcomeEl) welcomeEl.textContent = session.nombre || "Admin";
       if (avatarEl) {
-        if (session.avatar && /^(https?:|data:|\/)/.test(session.avatar)) {
+        if (session.avatarUrl && /^(https?:|data:|\/)/.test(session.avatarUrl)) {
           avatarEl.textContent = "";
-          avatarEl.style.backgroundImage = "url(" + session.avatar + ")";
+          avatarEl.style.backgroundImage = "url(" + session.avatarUrl + ")";
           avatarEl.style.backgroundSize = "cover";
           avatarEl.style.backgroundPosition = "center";
         } else {

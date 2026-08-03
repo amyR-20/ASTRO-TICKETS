@@ -28,21 +28,28 @@
 </header>
 
 <main class="center-page">
-  <div class="glass-panel auth-card" style="max-width: 440px; padding: 48px 40px;">
+  <div class="glass-panel auth-card admin-access-card">
     <div style="text-align: center; margin-bottom: 32px;">
       <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, var(--cosmic-purple), var(--cosmic-purple-deep)); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
         <span class="material-symbols-outlined" style="font-size: 2rem; color: #fff;">admin_panel_settings</span>
       </div>
       <h1 style="font-size: 1.7rem; margin-top: 4px;" data-i18n="admin.login.title">Panel de administración</h1>
-      <p class="text-muted" style="margin-top: 8px; font-size: 0.9rem;" data-i18n="admin.login.subtitle">Accede con tus credenciales de administrador.</p>
+      <p class="text-muted" style="margin-top: 8px; font-size: 0.9rem;">Selecciona tu perfil y escribe tu contraseña personal.</p>
     </div>
+
+    <div class="admin-profile-picker" role="list" aria-label="Perfiles administrativos">
+      <button type="button" class="admin-profile-option" data-admin-email="amy@gmail.com" data-admin-name="Amy"><span class="admin-profile-avatar amy">A</span><span><strong>Amy</strong><small>Administradora general</small></span><span class="material-symbols-outlined">arrow_forward</span></button>
+      <button type="button" class="admin-profile-option" data-admin-email="admin@astro.com" data-admin-name="Víctor"><span class="admin-profile-avatar victor">V</span><span><strong>Víctor</strong><small>Administrador de operaciones</small></span><span class="material-symbols-outlined">arrow_forward</span></button>
+      <button type="button" class="admin-profile-option" data-admin-email="sarahtapiamercedes22@gmail.com" data-admin-name="Sarah"><span class="admin-profile-avatar sarah">S</span><span><strong>Sarah</strong><small>Administradora de eventos</small></span><span class="material-symbols-outlined">arrow_forward</span></button>
+    </div>
+    <div class="admin-selected-profile" id="admin-selected-profile"><span class="material-symbols-outlined">touch_app</span> Selecciona uno de los tres perfiles</div>
 
     <form id="admin-login-form">
       <div class="field">
         <label for="admin-email" data-i18n="admin.login.email">Correo electrónico</label>
         <div class="input-wrap">
           <span class="material-symbols-outlined">mail</span>
-          <input class="input" type="email" id="admin-email" name="admin-email" placeholder="admin@astro tickets.com" required />
+          <input class="input" type="email" id="admin-email" name="admin-email" placeholder="Selecciona un perfil arriba" readonly required />
         </div>
       </div>
 
@@ -89,5 +96,18 @@
 <script src="js/api.js"></script>
 
 <script src="js/main.js"></script>
+<script>
+document.querySelectorAll('.admin-profile-option').forEach((option) => {
+  option.addEventListener('click', () => {
+    document.querySelectorAll('.admin-profile-option').forEach((item) => item.classList.remove('selected'));
+    option.classList.add('selected');
+    document.getElementById('admin-email').value = option.dataset.adminEmail;
+    document.getElementById('admin-selected-profile').innerHTML = '<span class="material-symbols-outlined">verified_user</span> Entrarás como <strong>' + option.dataset.adminName + '</strong>';
+    document.getElementById('admin-password').focus();
+  });
+});
+const requestedProfile = new URLSearchParams(location.search).get('profile');
+if (requestedProfile) document.querySelector(`.admin-profile-option[data-admin-email="${CSS.escape(requestedProfile)}"]`)?.click();
+</script>
 </body>
 </html>

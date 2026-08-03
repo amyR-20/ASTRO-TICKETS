@@ -14,6 +14,7 @@ const ordenRoutes = require("./routes/ordenRoutes");
 const funcionRoutes = require("./routes/funcionRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const entradaRoutes = require("./routes/entradaRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
@@ -39,7 +40,9 @@ if (process.env.CORS_ORIGINS) {
   }
 }
 app.use(cors({ origin: ORIGENES_PERMITIDOS }));
-app.use(express.json());
+// Las portadas de eventos se envian optimizadas desde el panel.
+// 4 MB deja margen para el JSON de asientos sin aceptar cargas desmedidas.
+app.use(express.json({ limit: "4mb" }));
 
 // AGREGADO: permite servir los archivos HTML, CSS y JavaScript
 app.use(express.static(path.join(__dirname)));
@@ -50,6 +53,7 @@ app.use("/api", funcionRoutes);
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/ordenes", ordenRoutes);
 app.use("/api/entradas", entradaRoutes);
+app.use("/api/pagos", paymentRoutes);
 app.use("/api", adminRoutes);
 
 // AGREGADO: muestra index.html al entrar a localhost:3000

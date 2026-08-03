@@ -87,7 +87,7 @@
         <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
         <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt">Validar QR</span></a>
         <a href="#reportes"><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
-        <a href="#" data-coming-soon><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
+        <a href="perfil.html"><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
       </nav>
       <div class="admin-sidebar-foot">
         <a href="index.html"><span class="material-symbols-outlined">logout</span><span class="txt" data-i18n="admin.salir">Salir</span></a>
@@ -112,6 +112,15 @@
       <button class="btn btn-primary" data-open-event-modal><span class="material-symbols-outlined">add</span> <span data-i18n="admin.newevent">Nuevo evento</span></button>
     </div>
   </div>
+
+  <section class="admin-team-panel" aria-labelledby="admin-team-title">
+    <div><p class="eyebrow">EQUIPO ADMINISTRATIVO</p><h2 id="admin-team-title">Perfiles del panel</h2><p class="text-muted">Cada administrador conserva su propia contraseña, actividad y perfil.</p></div>
+    <div class="admin-team-grid">
+      <article class="admin-team-card" data-admin-card="amy@gmail.com"><span class="admin-profile-avatar amy">A</span><div><strong>Amy</strong><small>@amy · Administración general</small></div><a class="btn btn-ghost" href="admin-login.html?profile=amy@gmail.com">Cambiar</a></article>
+      <article class="admin-team-card" data-admin-card="admin@astro.com"><span class="admin-profile-avatar victor">V</span><div><strong>Víctor</strong><small>@victor · Operaciones</small></div><a class="btn btn-ghost" href="admin-login.html?profile=admin@astro.com">Cambiar</a></article>
+      <article class="admin-team-card" data-admin-card="sarahtapiamercedes22@gmail.com"><span class="admin-profile-avatar sarah">S</span><div><strong>Sarah</strong><small>@sarah · Eventos</small></div><a class="btn btn-ghost" href="admin-login.html?profile=sarahtapiamercedes22@gmail.com">Cambiar</a></article>
+    </div>
+  </section>
 
   <!-- Stats -->
   <div class="stats-grid" style="margin-bottom: 36px;">
@@ -184,7 +193,9 @@
         <button class="btn btn-primary" id="qr-validate-btn" style="border-radius: 12px; padding: 0 22px;">
           <span class="material-symbols-outlined">qr_code_scanner</span> Validar QR
         </button>
+        <button class="btn btn-ghost" id="qr-camera-btn"><span class="material-symbols-outlined">photo_camera</span> Escanear con cámara</button>
       </div>
+      <div class="qr-camera" id="qr-camera" hidden><video id="qr-video" playsinline muted></video><p class="text-muted">Apunta la cámara al código QR de la entrada.</p></div>
       <div id="qr-result" style="margin-top: 16px;"></div>
     </div>
   </div>
@@ -218,8 +229,8 @@
         <p class="text-muted" style="margin-top: 4px;" data-i18n="admin.userssub">Gestiona las cuentas registradas en la plataforma.</p>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-ghost"><span class="material-symbols-outlined">filter_list</span> <span data-i18n="admin.filter">Filtrar</span></button>
-        <button class="btn btn-ghost"><span class="material-symbols-outlined">download</span> <span data-i18n="admin.export">Exportar</span></button>
+        <button class="btn btn-ghost" id="users-filter-btn"><span class="material-symbols-outlined">filter_list</span> <span data-i18n="admin.filter">Filtrar</span></button>
+        <button class="btn btn-ghost" id="users-export-btn"><span class="material-symbols-outlined">download</span> <span data-i18n="admin.export">Exportar</span></button>
       </div>
     </div>
     <table>
@@ -604,7 +615,7 @@
         <h4 data-i18n="footer.account">Cuenta</h4>
         <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
         <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
-        <a href="admin.html" data-i18n="nav.admin">Administrador</a>
+        <a href="admin-login.html" data-i18n="nav.admin">Cambiar perfil</a>
       </div>
       <div class="footer-col">
         <h4 data-i18n="footer.support">Soporte</h4>
@@ -657,6 +668,14 @@
 (function () {
   const fmt = (n) => (Number(n) || 0).toLocaleString('es-DO');
   const fmtMoney = (n) => 'RD$ ' + fmt(Math.round(Number(n) || 0));
+  const currentAdmin = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+  document.querySelectorAll('[data-admin-card]').forEach((card) => {
+    if (currentAdmin && card.dataset.adminCard.toLowerCase() === String(currentAdmin.email || '').toLowerCase()) {
+      card.classList.add('current');
+      const link = card.querySelector('a'); link.href = 'perfil.html'; link.textContent = 'Editar mi perfil';
+      card.insertAdjacentHTML('beforeend','<span class="admin-current-badge">Sesión actual</span>');
+    }
+  });
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -743,7 +762,7 @@
                 <td class="text-muted">#${esc(u.id)}</td>
                 <td><span class="badge ${u.estado === 'activo' ? 'badge-success' : 'badge-warning'}">${esc(u.estado || 'activo')}</span></td>
                 <td class="text-muted">${last}</td>
-                <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
+                <td class="text-right"><a class="btn-ghost btn" style="padding: 6px;" href="mailto:${esc(u.email)}" title="Enviar correo"><span class="material-symbols-outlined">mail</span></a></td>
               </tr>`;
             }).join('')
           : '<tr><td colspan="5" class="text-muted">Sin usuarios.</td></tr>';
@@ -788,7 +807,7 @@
 
   document.querySelectorAll('[data-report]').forEach((btn) => btn.addEventListener('click', async () => {
     const original=btn.innerHTML;btn.disabled=true;btn.textContent=I18n.getLang()==='en'?'Downloading…':'Descargando…';
-    try { await Api.descargarReporte(btn.dataset.report, btn.dataset.file); }
+    try { const result=await Api.descargarReporte(btn.dataset.report, btn.dataset.file); showToast(`Reporte descargado: ${result.filename}`); }
     catch(err){ alert(err.message); }
     finally{btn.disabled=false;btn.innerHTML=original;}
   }));
@@ -838,6 +857,34 @@
     qrReset.style.display = 'none';
     if (qrInput) qrInput.focus();
   });
+
+  let qrStream = null;
+  const cameraBtn = document.getElementById('qr-camera-btn');
+  const cameraBox = document.getElementById('qr-camera');
+  const video = document.getElementById('qr-video');
+  const detenerCamara = () => { if (qrStream) qrStream.getTracks().forEach(t => t.stop()); qrStream = null; if (cameraBox) cameraBox.hidden = true; };
+  cameraBtn?.addEventListener('click', async () => {
+    if (qrStream) return detenerCamara();
+    try {
+      if (!('BarcodeDetector' in window)) throw new Error('Este navegador no permite leer QR con cámara. Puedes pegar el código en el campo.');
+      qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      video.srcObject = qrStream; cameraBox.hidden = false; cameraBtn.innerHTML = '<span class="material-symbols-outlined">videocam_off</span> Cerrar cámara'; await video.play();
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const scan = async () => {
+        if (!qrStream) { cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Escanear con cámara'; return; }
+        const codes = await detector.detect(video).catch(() => []);
+        if (codes[0]?.rawValue) { qrInput.value = codes[0].rawValue; detenerCamara(); cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Escanear con cámara'; return validarQr(); }
+        requestAnimationFrame(scan);
+      }; scan();
+    } catch (error) { detenerCamara(); alert(error.message); }
+  });
+
+  document.getElementById('users-export-btn')?.addEventListener('click', () => Api.descargarReporte('/admin/reportes/usuarios.csv', 'usuarios.csv').catch(e => alert(e.message)));
+  document.getElementById('users-filter-btn')?.addEventListener('click', () => {
+    const term = prompt('Escribe un nombre, usuario o correo para filtrar:'); if (term === null) return;
+    const value = term.trim().toLowerCase(); document.querySelectorAll('#users-table tr').forEach(row => { row.hidden = value && !row.textContent.toLowerCase().includes(value); });
+  });
+  document.querySelectorAll('a[href="index.html"]').forEach(link => link.addEventListener('click', () => Auth.logout()));
 
   cargarDashboard();
 })();

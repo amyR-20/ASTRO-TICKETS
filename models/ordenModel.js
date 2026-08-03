@@ -108,6 +108,13 @@ async function crear(datos) {
 
     const ordenId = orden.rows[0].id;
 
+    await client.query(
+      `INSERT INTO pagos (orden_id, transaccion, metodo_pago, marca_tarjeta, ultimos4, monto, estado, pagado_en)
+       VALUES ($1,$2,$3,$4,$5,$6,'procesado',now())
+       ON CONFLICT (transaccion) DO NOTHING`,
+      [ordenId, datos.payment.transactionId, datos.payment.method || "stripe", datos.payment.cardBrand, datos.payment.cardLast4, total]
+    );
+
     const entradasCreadas = [];
     for (const r of detalleAsientos) {
       const codigoEntrada = generarCodigoEntrada();

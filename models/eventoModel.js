@@ -160,7 +160,10 @@ async function crear(datos, usuarioId = null, razon = null) {
     });
 
     await client.query("COMMIT");
-    return aEventoFrontend(ev);
+    // Devolver el evento completo. La respuesta anterior solo incluia la fila
+    // principal y dejaba `zones` y `funciones` vacios aunque ya existieran en
+    // Neon, haciendo que el panel pareciera no haber creado bien el evento.
+    return buscarPorId(ev.id);
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;

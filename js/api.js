@@ -53,6 +53,10 @@ const Api = (() => {
     return request("/auth/perfil");
   }
 
+  async function actualizarPerfil(datos) {
+    return request("/auth/perfil", { method: "PUT", body: datos });
+  }
+
   /* ---------- Eventos ---------- */
   async function getEventos(estado) {
     const q = estado ? "?estado=" + encodeURIComponent(estado) : "";
@@ -84,6 +88,14 @@ const Api = (() => {
   /* ---------- Órdenes / compras ---------- */
   async function crearOrden(datos) {
     return request("/ordenes", { method: "POST", body: datos });
+  }
+
+  async function stripeConfig() {
+    return request("/pagos/config");
+  }
+
+  async function crearIntentoPago(funcionId) {
+    return request("/pagos/intents", { method: "POST", body: { funcionId } });
   }
 
   async function getMisCompras() {
@@ -192,14 +204,23 @@ const Api = (() => {
 
   async function descargarReporte(path, filename) {
     const headers={}; const token=typeof Auth!=="undefined"&&Auth.getToken?Auth.getToken():null;
+    if(!token) throw new Error("Tu sesion administrativa vencio. Vuelve a elegir tu perfil.");
     if(token) headers.Authorization="Bearer "+token;
     const res=await fetch(API_BASE+path,{headers});
     if(!res.ok){let data={};try{data=await res.json();}catch(_){}throw new Error(data.error||"No se pudo descargar el reporte.");}
-    const url=URL.createObjectURL(await res.blob());const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const blob=await res.blob();
+    if(!blob.size) throw new Error("El servidor devolvio un reporte vacio.");
+    const type=(res.headers.get("content-type")||"").toLowerCase();
+    if(path.endsWith(".pdf")&&!type.includes("application/pdf")) throw new Error("El servidor no genero un PDF valido.");
+    const disposition=res.headers.get("content-disposition")||"";
+    const serverName=disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i)?.[1];
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=decodeURIComponent(serverName||filename);a.style.display="none";document.body.appendChild(a);a.click();const downloadedName=a.download;a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    return {filename:downloadedName,size:blob.size,type:blob.type};
   }
 
   return {
     perfil,
+    actualizarPerfil,
     getEventos,
     getEvento,
     getFuncion,
@@ -207,6 +228,8 @@ const Api = (() => {
     actualizarEvento,
     eliminarEvento,
     crearOrden,
+    stripeConfig,
+    crearIntentoPago,
     getMisCompras,
     getOrden,
     reenviarOrden,

@@ -118,15 +118,34 @@
       set("pago-seats", resumen.reservas.map((r) => r.asiento).join(", ")); set("pago-qty", resumen.reservas.length);
       set("pago-subtotal", money(resumen.subtotal)); set("pago-fee", money(resumen.tarifa)); set("pago-total", money(resumen.total));
       document.querySelectorAll('[id^="pay-total-"]').forEach((el) => { el.textContent = money(resumen.total); });
-      document.querySelectorAll(".pay-method-form, #card-form").forEach((form) => form.addEventListener("submit", async (event) => {
+      const form = document.getElementById("card-form");
+      const submit = document.getElementById("stripe-submit");
+      if (!window.Stripe) throw new Error("No se pudo cargar el formulario seguro de Stripe.");
+      const [config, intento] = await Promise.all([Api.stripeConfig(), Api.crearIntentoPago(funcionId)]);
+      const stripe = Stripe(config.publishableKey);
+      const appearance = {
+        theme: document.documentElement.dataset.theme === "dark" ? "night" : "stripe",
+        variables: { colorPrimary: "#6c3fd1", borderRadius: "12px", fontFamily: "Inter, sans-serif" }
+      };
+      const elements = stripe.elements({ clientSecret: intento.clientSecret, appearance });
+      elements.create("payment", { layout: "tabs" }).mount("#payment-element");
+      if (submit) submit.disabled = false;
+      form?.addEventListener("submit", async (event) => {
         event.preventDefault(); event.stopImmediatePropagation();
-        const submit = form.querySelector('button[type="submit"]');
-        if (submit) submit.disabled = true;
+        if (submit) { submit.disabled = true; submit.dataset.original = submit.innerHTML; submit.innerHTML = '<span class="material-symbols-outlined">progress_activity</span><span>Procesando con Stripe…</span>'; }
         try {
-          const data = await Api.crearOrden({ funcionId, payment: { transactionId: `TXN-${crypto.randomUUID()}`, reservationCode: `AST-${crypto.randomUUID().slice(0, 8).toUpperCase()}`, method: "card" } });
+          const result = await stripe.confirmPayment({ elements, redirect: "if_required", confirmParams: { return_url: `${location.origin}${location.pathname}?funcion=${encodeURIComponent(funcionId)}` } });
+          if (result.error) throw new Error(result.error.message || "Stripe rechazó el pago.");
+          const paymentIntent = result.paymentIntent;
+          if (!paymentIntent || paymentIntent.status !== "succeeded") throw new Error("El pago continúa pendiente. No se emitieron entradas.");
+          const data = await Api.crearOrden({ funcionId, payment: { paymentIntentId: paymentIntent.id } });
           location.href = `comprobante.html?orden=${encodeURIComponent(data.orden.id)}`;
-        } catch (err) { document.getElementById("pay-error-text").textContent = err.message; document.getElementById("pay-error").style.display = "flex"; if (submit) submit.disabled = false; }
-      }, true));
+        } catch (err) {
+          document.getElementById("pay-error-text").textContent = err.message;
+          document.getElementById("pay-error").style.display = "flex";
+          if (submit) { submit.disabled = false; submit.innerHTML = submit.dataset.original || "Confirmar y pagar"; }
+        }
+      }, true);
     } catch (err) { document.getElementById("pay-error-text").textContent = err.message; document.getElementById("pay-error").style.display = "flex"; }
   }
 
