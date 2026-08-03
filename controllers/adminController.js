@@ -29,12 +29,11 @@ async function dashboard(req, res) {
       `),
       pool.query(`
         SELECT e.id, e.nombre, e.imagen,
-               COUNT(en.id)::int AS boletos,
-               COALESCE(SUM(o.total), 0)::numeric AS ingresos
+               (SELECT COUNT(*) FROM entradas en JOIN ordenes o2 ON o2.id = en.orden_id
+                WHERE o2.evento_id = e.id AND o2.estado IN ('paid','completada'))::int AS boletos,
+               (SELECT COALESCE(SUM(total), 0) FROM ordenes
+                WHERE evento_id = e.id AND estado IN ('paid','completada'))::numeric AS ingresos
         FROM eventos e
-        LEFT JOIN ordenes o ON o.evento_id = e.id AND o.estado IN ('paid','completada')
-        LEFT JOIN entradas en ON en.orden_id = o.id
-        GROUP BY e.id
         ORDER BY ingresos DESC, e.nombre ASC
       `),
       usuarioModel.listar({ limite: 20 }),
@@ -43,7 +42,7 @@ async function dashboard(req, res) {
         LEFT JOIN usuarios u ON u.id=a.usuario_id ORDER BY a.creado_en DESC LIMIT 100`),
     ]);
 
-    const transacciones = await ordenModel.listarTodas();
+    const transacciones = await ordenModel.listarTodas({ limite: 10 });
 
     return res.json({
       stats: {
@@ -54,7 +53,7 @@ async function dashboard(req, res) {
         transacciones: Number(stats.rows[0].transacciones),
       },
       ventasPorEvento: ventasPorEvento.rows,
-      transacciones: transacciones.slice(0, 10),
+      transacciones,
       usuarios,
       accesos: accesos.rows,
     });
@@ -95,7 +94,12 @@ async function reportePdfLegacy(req,res) {
   try {
     const [stats,ventas,usuarios,txns]=await Promise.all([
       pool.query(`SELECT COALESCE(SUM(total),0) ingresos,COUNT(*) transacciones FROM ordenes WHERE estado IN ('paid','completed')`),
-      pool.query(`SELECT e.nombre,COUNT(en.id)::int boletos,COALESCE(SUM(o.total),0) ingresos FROM eventos e LEFT JOIN ordenes o ON o.evento_id=e.id LEFT JOIN entradas en ON en.orden_id=o.id GROUP BY e.id ORDER BY ingresos DESC`),
+      pool.query(`SELECT e.nombre,
+        (SELECT COUNT(*) FROM entradas en JOIN ordenes o2 ON o2.id = en.orden_id
+         WHERE o2.evento_id = e.id)::int boletos,
+        (SELECT COALESCE(SUM(o3.total),0) FROM ordenes o3
+         WHERE o3.evento_id = e.id) ingresos
+        FROM eventos e GROUP BY e.id ORDER BY ingresos DESC`),
       pool.query(`SELECT username,nombre,email,estado,ultimo_login FROM usuarios ORDER BY ultimo_login DESC NULLS LAST LIMIT 40`),
       pool.query(`SELECT o.transaccion,e.nombre evento,o.total,o.estado,o.creada_en FROM ordenes o JOIN eventos e ON e.id=o.evento_id ORDER BY o.creada_en DESC LIMIT 40`)
     ]);
@@ -248,4 +252,209 @@ async function reservasPorVencer(req, res) {
   }
 }
 
-module.exports = { dashboard, resumen, auditoria, reservasPorVencer, reporteCsv, reportePdf };
+/**
+ * GET /api/admin/reportes/evento/:id — reporte completo por evento.
+ * Ventas, funciones, zonas, tendencia (14 días), compradores y
+ * transacciones en una sola llamada. Incluye eventos nuevos: la
+ * consulta corre contra la BD real (ordenes/entradas/asientos).
+ */
+async function reporteEvento(req, res) {
+  try {
+    const { id } = req.params;
+    const PAGADO = "'paid','completada'";
+
+    const [evento, resumen, porFuncion, porZona, tendencia, compradores, transacciones, reembolsos] = await Promise.all([
+      pool.query(
+        `SELECT id, nombre, imagen, fecha, hora, lugar, estado, capacidad
+         FROM eventos WHERE id = $1`,
+        [id]
+      ),
+      pool.query(
+        `SELECT
+           COALESCE(SUM(total), 0)::numeric AS ingresos,
+           (SELECT COUNT(*)::int FROM entradas
+            WHERE evento_id = $1 AND estado IN ('activa','usada')) AS boletos,
+           COUNT(*)::int AS transacciones,
+           COUNT(DISTINCT COALESCE(usuario_id::text, datos_comprador->>'email'))::int AS compradores,
+           COALESCE(SUM(total) FILTER (WHERE estado = 'pending'), 0)::numeric AS pendiente,
+           (SELECT COUNT(*)::int FROM asientos a
+            JOIN funciones_evento f ON f.id = a.funcion_id
+            WHERE f.evento_id = $1) AS capacidad
+         FROM ordenes
+         WHERE evento_id = $1 AND estado IN (${PAGADO})`,
+        [id]
+      ),
+      pool.query(
+        `SELECT f.id, f.fecha, f.hora, f.sala, f.estado,
+                (SELECT COUNT(*)::int FROM asientos a WHERE a.funcion_id = f.id) AS capacidad,
+                (SELECT COUNT(*)::int FROM asientos a WHERE a.funcion_id = f.id AND a.estado = 'sold') AS vendidos,
+                (SELECT COUNT(*)::int FROM asientos a WHERE a.funcion_id = f.id AND a.estado = 'available') AS disponibles,
+                COALESCE((SELECT SUM(en.precio) FROM entradas en
+                          JOIN asientos a2 ON a2.evento_id = en.evento_id AND a2.asiento_id = en.asiento_id
+                          WHERE a2.funcion_id = f.id AND en.estado IN ('activa','usada')), 0)::numeric AS ingresos
+         FROM funciones_evento f
+         WHERE f.evento_id = $1
+         ORDER BY f.fecha, f.hora`,
+        [id]
+      ),
+      pool.query(
+        `SELECT en.zona, COUNT(*)::int AS boletos,
+                COALESCE(SUM(en.precio), 0)::numeric AS ingresos
+         FROM entradas en
+         WHERE en.evento_id = $1 AND en.estado IN ('activa','usada')
+         GROUP BY en.zona
+         ORDER BY ingresos DESC, boletos DESC`,
+        [id]
+      ),
+      pool.query(
+        `SELECT to_char(o.creada_en::date, 'YYYY-MM-DD') AS dia,
+                COUNT(DISTINCT o.id)::int AS transacciones,
+                COUNT(en.id)::int AS boletos,
+                COALESCE(SUM(o.total), 0)::numeric AS ingresos
+         FROM ordenes o
+         LEFT JOIN entradas en ON en.orden_id = o.id
+         WHERE o.evento_id = $1 AND o.estado IN (${PAGADO})
+           AND o.creada_en >= now() - interval '14 days'
+         GROUP BY o.creada_en::date
+         ORDER BY dia`,
+        [id]
+      ),
+      pool.query(
+        `SELECT COALESCE(u.id::text, o.datos_comprador->>'email') AS id,
+                COALESCE(u.nombre, o.datos_comprador->>'nombre') AS nombre,
+                COALESCE(u.email, o.datos_comprador->>'email') AS email,
+                COUNT(DISTINCT o.id)::int AS transacciones,
+                COUNT(en.id)::int AS boletos,
+                COALESCE(SUM(o.total), 0)::numeric AS gastado,
+                MAX(o.creada_en) AS ultima
+         FROM ordenes o
+         LEFT JOIN usuarios u ON u.id = o.usuario_id
+         LEFT JOIN entradas en ON en.orden_id = o.id
+         WHERE o.evento_id = $1 AND o.estado IN (${PAGADO})
+         GROUP BY 1, 2, 3
+         ORDER BY gastado DESC
+         LIMIT 50`,
+        [id]
+      ),
+      pool.query(
+        `SELECT o.id, o.transaccion, o.codigo_reserva, o.metodo_pago, o.total,
+                o.estado, o.creada_en,
+                COALESCE(u.nombre, o.datos_comprador->>'nombre') AS comprador,
+                COALESCE(u.email, o.datos_comprador->>'email') AS email,
+                COUNT(en.id)::int AS boletos
+         FROM ordenes o
+         LEFT JOIN usuarios u ON u.id = o.usuario_id
+         LEFT JOIN entradas en ON en.orden_id = o.id
+         WHERE o.evento_id = $1
+         GROUP BY o.id, u.nombre, u.email
+         ORDER BY o.creada_en DESC
+         LIMIT 30`,
+        [id]
+      ),
+      pool.query(
+        `SELECT r.id, r.monto, r.motivo, r.estado, r.creado_en,
+                o.transaccion, o.total AS orden_total,
+                COALESCE(u.nombre, o.datos_comprador->>'nombre') AS comprador,
+                COALESCE(u.email, o.datos_comprador->>'email') AS email,
+                a.nombre AS admin_nombre
+         FROM reembolsos r
+         JOIN ordenes o ON o.id = r.orden_id
+         LEFT JOIN usuarios u ON u.id = o.usuario_id
+         LEFT JOIN usuarios a ON a.id = r.autorizado_por
+         WHERE o.evento_id = $1
+         ORDER BY r.creado_en DESC
+         LIMIT 50`,
+        [id]
+      ),
+    ]);
+
+    if (!evento.rows.length) {
+      return res.status(404).json({ error: "Evento no encontrado." });
+    }
+
+    const ev = evento.rows[0];
+    const resumenRow = resumen.rows[0];
+    const capacidad = Number(resumenRow.capacidad);
+
+    return res.json({
+      evento: {
+        id: ev.id,
+        nombre: ev.nombre,
+        imagen: ev.imagen,
+        fecha: ev.fecha instanceof Date ? ev.fecha.toISOString().slice(0, 10) : ev.fecha,
+        lugar: ev.lugar,
+        estado: ev.estado,
+        capacidad: Number(ev.capacidad),
+      },
+      resumen: {
+        ingresos: Number(resumenRow.ingresos),
+        boletos: Number(resumenRow.boletos),
+        transacciones: Number(resumenRow.transacciones),
+        compradores: Number(resumenRow.compradores),
+        pendiente: Number(resumenRow.pendiente),
+        capacidad,
+        pctVendido: capacidad > 0 ? Math.round((Number(resumenRow.boletos) / capacidad) * 100) : 0,
+      },
+      porFuncion: porFuncion.rows.map((r) => ({
+        id: r.id,
+        fecha: r.fecha instanceof Date ? r.fecha.toISOString().slice(0, 10) : r.fecha,
+        hora: String(r.hora || "").slice(0, 5),
+        sala: r.sala,
+        estado: r.estado,
+        capacidad: Number(r.capacidad),
+        vendidos: Number(r.vendidos),
+        disponibles: Number(r.disponibles),
+        ingresos: Number(r.ingresos),
+      })),
+      porZona: porZona.rows.map((r) => ({
+        zona: r.zona,
+        boletos: Number(r.boletos),
+        ingresos: Number(r.ingresos),
+      })),
+      tendencia: tendencia.rows.map((r) => ({
+        dia: r.dia,
+        transacciones: Number(r.transacciones),
+        boletos: Number(r.boletos),
+        ingresos: Number(r.ingresos),
+      })),
+      compradores: compradores.rows.map((r) => ({
+        id: r.id,
+        nombre: r.nombre,
+        email: r.email,
+        transacciones: Number(r.transacciones),
+        boletos: Number(r.boletos),
+        gastado: Number(r.gastado),
+        ultima: r.ultima,
+      })),
+      transacciones: transacciones.rows.map((r) => ({
+        id: r.id,
+        transaccion: r.transaccion,
+        codigoReserva: r.codigo_reserva,
+        metodoPago: r.metodo_pago,
+        total: Number(r.total),
+        estado: r.estado,
+        creadaEn: r.creada_en,
+        comprador: r.comprador,
+        email: r.email,
+        boletos: Number(r.boletos),
+      })),
+      reembolsos: reembolsos.rows.map((r) => ({
+        id: r.id,
+        monto: Number(r.monto),
+        motivo: r.motivo,
+        estado: r.estado,
+        creadoEn: r.creado_en,
+        transaccion: r.transaccion,
+        ordenTotal: Number(r.orden_total),
+        comprador: r.comprador,
+        email: r.email,
+        adminNombre: r.admin_nombre,
+      })),
+    });
+  } catch (err) {
+    console.error("Error generando reporte por evento:", err);
+    return res.status(500).json({ error: "Error interno al generar el reporte." });
+  }
+}
+
+module.exports = { dashboard, resumen, auditoria, reservasPorVencer, reporteCsv, reportePdf, reporteEvento };

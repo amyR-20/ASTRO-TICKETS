@@ -12,7 +12,7 @@ const funcionModel = require("./funcionModel");
  * Convierte una fila de "eventos" al formato que espera el frontend
  * (el mismo que usaba localStorage: astro_events).
  */
-function aEventoFrontend(fila, zonas = [], asientos = [], funciones = []) {
+function aEventoFrontend(fila, zonas = [], asientos = [], funciones = [], artistas = []) {
   const fechaStr = fila.fecha instanceof Date
     ? fila.fecha.toISOString().slice(0, 10)
     : fila.fecha || null;
@@ -25,6 +25,9 @@ function aEventoFrontend(fila, zonas = [], asientos = [], funciones = []) {
     name: fila.nombre,
     description: fila.descripcion,
     category: fila.categoria,
+    categoryId: fila.categoria_id || null,
+    recintoId: fila.recinto_id || null,
+    artistas: artistas.map((a) => ({ id: a.id, name: a.nombre, genre: a.genero })),
     date: fechaStr,
     time: horaStr,
     venue: fila.lugar,
@@ -61,6 +64,51 @@ function aEventoFrontend(fila, zonas = [], asientos = [], funciones = []) {
   };
 }
 
+/**
+ * Garantiza que exista una fila en "categorias" para el texto de la
+ * categoría y devuelve su id (la FK real de eventos.categoria_id).
+ */
+async function resolverCategoriaId(client, nombre) {
+  if (!nombre) return null;
+  await client.query(
+    `INSERT INTO categorias (nombre) VALUES ($1) ON CONFLICT (nombre) DO NOTHING`,
+    [String(nombre)]
+  );
+  const { rows } = await client.query(
+    `SELECT id FROM categorias WHERE nombre = $1`,
+    [String(nombre)]
+  );
+  return rows[0] ? rows[0].id : null;
+}
+
+/** Lee los artistas asociados a un evento. */
+async function listarArtistasDeEvento(id) {
+  const { rows } = await query(
+    `SELECT ar.id, ar.nombre, ar.genero
+     FROM evento_artistas ea
+     JOIN artistas ar ON ar.id = ea.artista_id
+     WHERE ea.evento_id = $1
+     ORDER BY ea.posicion ASC, ar.nombre ASC`,
+    [id]
+  );
+  return rows;
+}
+
+/** Reemplaza los artistas asociados a un evento (dentro de una transacción). */
+async function reemplazarArtistas(client, eventoId, artistaIds) {
+  await client.query(`DELETE FROM evento_artistas WHERE evento_id = $1`, [eventoId]);
+  if (Array.isArray(artistaIds) && artistaIds.length) {
+    const ids = [...new Set(artistaIds.map((n) => Number(n)).filter((n) => Number.isInteger(n) && n > 0))];
+    for (let i = 0; i < ids.length; i++) {
+      await client.query(
+        `INSERT INTO evento_artistas (evento_id, artista_id, posicion) VALUES ($1, $2, $3)
+         ON CONFLICT (evento_id, artista_id) DO NOTHING`,
+        [eventoId, ids[i], i]
+      );
+    }
+  }
+}
+
 /** Lista eventos (filtra por estado si se pasa). */
 async function listar(estado) {
   const sql = `
@@ -70,6 +118,65 @@ async function listar(estado) {
   `;
   const { rows } = await query(sql, [estado || null]);
   return rows;
+}
+
+/**
+ * Lista eventos en 2 consultas (eventos + zonas), sin asientos ni funciones.
+ * Para listados en los que el frontend sólo usa zonas (evita el N+1 de
+ * buscarPorId). Devuelve el formato aEventoFrontend con funciones vacías.
+ */
+async function listarConDetalle(estado) {
+  const sql = `
+    SELECT * FROM eventos
+    WHERE ($1::text IS NULL OR estado = $1)
+    ORDER BY fecha ASC, hora ASC
+  `;
+  const { rows } = await query(sql, [estado || null]);
+  if (!rows.length) return [];
+
+  const ids = rows.map((r) => r.id);
+  const { rows: zonas } = await query(
+    `SELECT * FROM zonas
+     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL
+     ORDER BY id`,
+    [ids]
+  );
+  const zonasPorEvento = new Map();
+  for (const z of zonas) {
+    if (!zonasPorEvento.has(z.evento_id)) zonasPorEvento.set(z.evento_id, []);
+    zonasPorEvento.get(z.evento_id).push(z);
+  }
+
+  // Funciones + estadísticas de inventario para poder pintar el estado
+  // "Disponible / Vendiéndose rápido / Agotado" según las boletas que quedan.
+  const { rows: funciones } = await query(
+    `SELECT * FROM funciones_evento
+     WHERE evento_id = ANY($1::text[])
+     ORDER BY evento_id, fecha ASC, hora ASC`,
+    [ids]
+  );
+  const stats = funciones.length
+    ? await funcionModel.estadisticasMasivas(funciones.map((f) => f.id))
+    : new Map();
+  const funcionesPorEvento = new Map();
+  for (const f of funciones) {
+    if (!funcionesPorEvento.has(f.evento_id)) funcionesPorEvento.set(f.evento_id, []);
+    funcionesPorEvento.get(f.evento_id).push({ ...f, stats: stats.get(f.id) || null });
+  }
+
+  return rows.map((fila) => aEventoFrontend(fila, zonasPorEvento.get(fila.id) || [], [], funcionesPorEvento.get(fila.id) || []));
+}
+
+/** Comprueba (sin leer todo el evento) si existe un evento con ese id. */
+async function existe(id) {
+  const { rows } = await query("SELECT 1 FROM eventos WHERE id = $1", [id]);
+  return rows.length > 0;
+}
+
+/** Devuelve { estado } de un evento o null (consulta barata para validar). */
+async function buscarEstado(id) {
+  const { rows } = await query("SELECT estado FROM eventos WHERE id = $1", [id]);
+  return rows[0] || null;
 }
 
 /** Busca un evento por su id, incluyendo zonas, asientos y funciones. */
@@ -86,8 +193,9 @@ async function buscarPorId(id) {
     [id]
   )).rows;
   const funciones = await funcionModel.listarPorEvento(id);
+  const artistas = await listarArtistasDeEvento(id);
 
-  return aEventoFrontend(rows[0], zonas, asientos, funciones);
+  return aEventoFrontend(rows[0], zonas, asientos, funciones, artistas);
 }
 
 /**
@@ -99,11 +207,15 @@ async function crear(datos, usuarioId = null, razon = null) {
   try {
     await client.query("BEGIN");
 
+    const categoriaId = await resolverCategoriaId(client, datos.category || null);
+    const recintoId = datos.recintoId ? Number(datos.recintoId) : null;
+
     const evento = await client.query(
       `INSERT INTO eventos
          (id, nombre, descripcion, categoria, fecha, hora, lugar, ciudad,
-          direccion, imagen, estado, filas, columnas, capacidad, creado_en)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, now())
+          direccion, imagen, estado, filas, columnas, capacidad, creado_en,
+          categoria_id, recinto_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, now(), $15, $16)
        RETURNING *`,
       [
         datos.id,
@@ -120,24 +232,44 @@ async function crear(datos, usuarioId = null, razon = null) {
         datos.rows || 0,
         datos.cols || 0,
         datos.capacity || 0,
+        categoriaId,
+        recintoId,
       ]
     );
 
     const ev = evento.rows[0];
 
-    for (const z of datos.zones || []) {
+    if (Array.isArray(datos.artistas)) {
+      await reemplazarArtistas(client, ev.id, datos.artistas);
+    }
+
+    if (datos.zones && datos.zones.length) {
+      const valores = [];
+      const params = [];
+      datos.zones.forEach((z, i) => {
+        const base = i * 6;
+        params.push(ev.id, z.name, z.color, z.price, z.qty, z.desc);
+        valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`);
+      });
       await client.query(
         `INSERT INTO zonas (evento_id, nombre, color, precio, cantidad, descripcion)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [ev.id, z.name, z.color, z.price, z.qty, z.desc]
+         VALUES ${valores.join(", ")}`,
+        params
       );
     }
 
-    for (const s of datos.seats || []) {
+    if (datos.seats && datos.seats.length) {
+      const valores = [];
+      const params = [];
+      datos.seats.forEach((s, i) => {
+        const base = i * 6;
+        params.push(ev.id, s.id, s.row, s.col, s.type || null, s.status || "available");
+        valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`);
+      });
       await client.query(
         `INSERT INTO asientos (evento_id, asiento_id, fila, columna, zona, estado)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [ev.id, s.id, s.row, s.col, s.type || null, s.status || "available"]
+         VALUES ${valores.join(", ")}`,
+        params
       );
     }
 
@@ -184,12 +316,15 @@ async function actualizar(id, datos, usuarioId = null, razon = null) {
     )).rows[0];
     if (!anterior) return null;
 
+    const categoriaId = await resolverCategoriaId(client, datos.category || anterior.categoria || null);
+    const recintoId = datos.recintoId !== undefined ? Number(datos.recintoId) : anterior.recinto_id;
+
     await client.query(
       `UPDATE eventos SET
          nombre=$1, descripcion=$2, categoria=$3, fecha=$4, hora=$5,
          lugar=$6, ciudad=$7, direccion=$8, imagen=$9, estado=$10,
-         filas=$11, columnas=$12, capacidad=$13
-       WHERE id=$14`,
+         filas=$11, columnas=$12, capacidad=$13, categoria_id=$14, recinto_id=$15
+       WHERE id=$16`,
       [
         datos.name,
         datos.description || "",
@@ -204,28 +339,48 @@ async function actualizar(id, datos, usuarioId = null, razon = null) {
         datos.rows || 0,
         datos.cols || 0,
         datos.capacity || 0,
+        categoriaId,
+        recintoId,
         id,
       ]
     );
+
+    if (Array.isArray(datos.artistas)) {
+      await reemplazarArtistas(client, id, datos.artistas);
+    }
 
     // Las zonas de funciones existentes conservan el precio e inventario
     // histórico. Sólo se actualiza la plantilla para funciones futuras.
     await client.query("DELETE FROM zonas WHERE evento_id=$1 AND funcion_id IS NULL", [id]);
     await client.query("DELETE FROM asientos WHERE evento_id=$1 AND funcion_id IS NULL", [id]);
 
-    for (const z of datos.zones || []) {
+    if (datos.zones && datos.zones.length) {
+      const valores = [];
+      const params = [];
+      datos.zones.forEach((z, i) => {
+        const base = i * 6;
+        params.push(id, z.name, z.color, z.price, z.qty, z.desc);
+        valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`);
+      });
       await client.query(
         `INSERT INTO zonas (evento_id, nombre, color, precio, cantidad, descripcion)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [id, z.name, z.color, z.price, z.qty, z.desc]
+         VALUES ${valores.join(", ")}`,
+        params
       );
     }
 
-    for (const s of datos.seats || []) {
+    if (datos.seats && datos.seats.length) {
+      const valores = [];
+      const params = [];
+      datos.seats.forEach((s, i) => {
+        const base = i * 6;
+        params.push(id, s.id, s.row, s.col, s.type || null, s.status || "available");
+        valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`);
+      });
       await client.query(
         `INSERT INTO asientos (evento_id, asiento_id, fila, columna, zona, estado)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [id, s.id, s.row, s.col, s.type || null, s.status || "available"]
+         VALUES ${valores.join(", ")}`,
+        params
       );
     }
 
@@ -360,4 +515,16 @@ async function eliminar(id, usuarioId = null, razon = null) {
   }
 }
 
-module.exports = { listar, buscarPorId, crear, actualizar, publicar, cancelar, eliminar, aEventoFrontend };
+module.exports = {
+  listar,
+  listarConDetalle,
+  existe,
+  buscarEstado,
+  buscarPorId,
+  crear,
+  actualizar,
+  publicar,
+  cancelar,
+  eliminar,
+  aEventoFrontend,
+};

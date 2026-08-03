@@ -1,5 +1,6 @@
 /* Flujo operativo respaldado exclusivamente por Neon. */
 (() => {
+  window.__stableFlow = true;
   const money = (n) => `RD$ ${(Number(n) || 0).toLocaleString("es-DO")}`;
   const query = new URLSearchParams(location.search);
 
@@ -19,14 +20,14 @@
       const event = await Api.getEvento(eventId);
       const active = (event.funciones || []).filter((f) => f.estado === "activa");
       const functions = active.length ? active : [];
-      document.title = `Astro Tickets · ${event.name}`;
+      document.title = `Astro Tickets · ${I18n.eventName(event.name)}`;
       main.dataset.eventId = event.id;
-      main.dataset.eventName = event.name;
+      main.dataset.eventName = I18n.eventName(event.name);
       main.dataset.eventVenue = event.venue || "";
-      main.dataset.eventCategory = event.category || "";
-      const image = document.querySelector(".detail-image img"); if (image) { image.src = event.image || "multimedia/logo.svg"; image.alt = event.name; }
-      const title = document.querySelector("h1"); if (title) title.textContent = event.name;
-      const eyebrow = document.querySelector(".eyebrow"); if (eyebrow) eyebrow.textContent = event.category || "";
+      main.dataset.eventCategory = I18n.category(event.category || "");
+      const image = document.querySelector(".detail-image img"); if (image) { image.src = event.image || "multimedia/logo.svg"; image.alt = I18n.eventName(event.name); }
+      const title = document.querySelector("h1"); if (title) title.textContent = I18n.eventName(event.name);
+      const eyebrow = document.querySelector(".eyebrow"); if (eyebrow) eyebrow.textContent = I18n.category(event.category || "");
       const description = document.querySelector(".detail-image").parentElement.querySelector(".card p"); if (description) description.textContent = event.description || "";
       const panel = document.querySelector(".purchase-panel");
       let select = document.getElementById("function-select");
@@ -61,6 +62,10 @@
     slots.forEach((slot) => { if (slot) slot.innerHTML = ""; });
     if (!detail) { if (button) button.disabled = true; return; }
     form.dataset.funcionId = detail.id;
+    // Solo asientos vendidos (o bloqueados por el staff) se marcan "agotados".
+    // Las reservas NO pintan como agotadas: solo quedan tomadas cuando la
+    // compra se confirma (comprobante) y el asiento pasa a estado "sold".
+    const taken = (s) => s.status === "sold" || s.status === "blocked";
     const zones = detail.zonas || [];
     const panel = document.querySelector(".purchase-panel");
     const firstGrid = document.getElementById("seat-grid-platino");
@@ -87,7 +92,7 @@
       Object.keys(rows).sort().forEach((row) => {
         const line = document.createElement("div"); line.className = "seat-row"; line.innerHTML = `<span class="seat-row-label">${row}</span>`;
         rows[row].sort((a, b) => a.col - b.col).forEach((seat) => {
-          const el = document.createElement("button"); el.type = "button"; el.className = `seat${seat.status === "available" ? "" : " taken"}`; el.textContent = seat.col; el.disabled = seat.status !== "available";
+          const el = document.createElement("button"); el.type = "button"; el.className = `seat${taken(seat) ? " taken" : ""}`; el.textContent = seat.col; el.disabled = taken(seat);
           if (!el.disabled) el.addEventListener("click", () => { if (selected.has(seat.id)) { selected.delete(seat.id); el.classList.remove("selected"); } else { selected.set(seat.id, { id: seat.id, zone: zone.name, price: Number(zone.price) }); el.classList.add("selected"); } update(); });
           line.appendChild(el);
         }); grid.appendChild(line);
@@ -113,8 +118,10 @@
     if (!requireSession() || !funcionId) return;
     try {
       const [resumen, detail] = await Promise.all([Api.getMisReservas(funcionId), Api.getFuncion(funcionId)]);
+      window.__checkoutEventName = detail.evento.nombre;
+      window.__checkoutDate = `${detail.fecha} · ${I18n.time(detail.hora)}`;
       const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-      set("summary-event", detail.evento.nombre); set("summary-date", `${detail.fecha} · ${String(detail.hora).slice(0, 5)}`);
+      set("summary-event", I18n.eventName(detail.evento.nombre)); set("summary-date", window.__checkoutDate);
       set("pago-seats", resumen.reservas.map((r) => r.asiento).join(", ")); set("pago-qty", resumen.reservas.length);
       set("pago-subtotal", money(resumen.subtotal)); set("pago-fee", money(resumen.tarifa)); set("pago-total", money(resumen.total));
       document.querySelectorAll('[id^="pay-total-"]').forEach((el) => { el.textContent = money(resumen.total); });
@@ -154,16 +161,18 @@
     if (!requireSession() || !orderId) return;
     try {
       const purchase = await Api.getOrden(orderId);
+      window.__receiptEventName = purchase.event.name;
       const setReceipt = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text || "-"; };
-      setReceipt("receipt-event-name", purchase.event.name); setReceipt("receipt-order-number", `#${purchase.payment.transactionId}`); setReceipt("receipt-reservation-code", purchase.payment.reservationCode); setReceipt("receipt-price", money(purchase.pricing.total)); setReceipt("receipt-subtotal", money(purchase.pricing.subtotal)); setReceipt("receipt-fee", money(purchase.pricing.fee)); setReceipt("receipt-total", money(purchase.pricing.total)); setReceipt("receipt-qty-type", `${purchase.seats.length} entrada${purchase.seats.length === 1 ? "" : "s"}`); setReceipt("receipt-payment-method", purchase.payment.method); setReceipt("receipt-transaction-id", purchase.payment.transactionId); setReceipt("receipt-purchase-date", purchase.purchasedAt ? new Date(purchase.purchasedAt).toLocaleString("es-DO") : ""); setReceipt("receipt-date", purchase.funcion.fecha || purchase.event.date); setReceipt("receipt-time-value", purchase.funcion.hora); setReceipt("receipt-venue-name", purchase.event.venue); setReceipt("receipt-room", purchase.funcion.sala); setReceipt("receipt-buyer-name", purchase.comprador.nombre); setReceipt("receipt-email-sent", purchase.comprador.email);
-      const hero = document.getElementById("receipt-image"); if (hero && purchase.event.img) { hero.src = purchase.event.img; hero.alt = purchase.event.name; }
+      const tkWord = purchase.seats.length === 1 ? I18n.t("history.ticket") : I18n.t("history.tickets");
+      setReceipt("receipt-event-name", I18n.eventName(purchase.event.name)); setReceipt("receipt-order-number", `#${purchase.payment.transactionId}`); setReceipt("receipt-reservation-code", purchase.payment.reservationCode); setReceipt("receipt-price", money(purchase.pricing.total)); setReceipt("receipt-subtotal", money(purchase.pricing.subtotal)); setReceipt("receipt-fee", money(purchase.pricing.fee)); setReceipt("receipt-total", money(purchase.pricing.total)); setReceipt("receipt-qty-type", `${purchase.seats.length} ${tkWord}`); setReceipt("receipt-payment-method", purchase.payment.method); setReceipt("receipt-transaction-id", purchase.payment.transactionId); setReceipt("receipt-purchase-date", purchase.purchasedAt ? I18n.dateTime(purchase.purchasedAt) : ""); setReceipt("receipt-date", purchase.funcion.fecha || purchase.event.date); setReceipt("receipt-time-value", I18n.time(purchase.funcion.hora)); setReceipt("receipt-venue-name", purchase.event.venue); setReceipt("receipt-room", purchase.funcion.sala); setReceipt("receipt-buyer-name", purchase.comprador.nombre); setReceipt("receipt-email-sent", purchase.comprador.email);
+      const hero = document.getElementById("receipt-image"); if (hero && purchase.event.img) { hero.src = purchase.event.img; hero.alt = I18n.eventName(purchase.event.name); }
       const detailedTickets = document.getElementById("receipt-tickets"); detailedTickets.innerHTML = "";
       purchase.seats.forEach((seat, index) => {
         const card = document.createElement("article"); card.className = "receipt-ticket"; card.dataset.ticketCode = seat.codigo;
-        card.innerHTML = `<div class="receipt-ticket-poster" style="background-image:linear-gradient(90deg, rgba(20,12,45,.2), rgba(20,12,45,.75)), url('${purchase.event.img || ""}')"><span>ASTRO TICKETS</span><strong>${purchase.event.name}</strong><small>${purchase.funcion.fecha || purchase.event.date} / ${purchase.funcion.hora || ""}</small></div><div class="receipt-ticket-main"><div class="receipt-ticket-info"><span class="receipt-ticket-label">Boleto ${index + 1}</span><strong class="receipt-ticket-seat">Asiento ${seat.id} / ${seat.zone}</strong><span>${purchase.funcion.sala || purchase.event.venue || ""}</span><code class="receipt-ticket-code">${seat.codigo}</code></div><div class="receipt-ticket-qr" aria-label="Codigo QR del boleto"></div><button type="button" class="btn-ticket-download">Descargar PDF</button></div>`;
-        card.querySelector(".receipt-ticket-info").insertAdjacentHTML("beforeend", `<span>Precio: ${money(seat.price)}</span><span>Estado: ${purchase.status || "paid"}</span>`);
+        card.innerHTML = `<div class="receipt-ticket-poster" style="background-image:linear-gradient(90deg, rgba(20,12,45,.2), rgba(20,12,45,.75)), url('${purchase.event.img || ""}')"><span>ASTRO TICKETS</span><strong>${I18n.eventName(purchase.event.name)}</strong><small>${purchase.funcion.fecha || purchase.event.date} / ${I18n.time(purchase.funcion.hora)}</small></div><div class="receipt-ticket-main"><div class="receipt-ticket-info"><span class="receipt-ticket-label">${I18n.t("receipt.ticket")} ${index + 1}</span><strong class="receipt-ticket-seat">${I18n.t("history.seat")} ${seat.id} / ${seat.zone}</strong><span>${purchase.funcion.sala || purchase.event.venue || ""}</span><code class="receipt-ticket-code">${seat.codigo}</code></div><div class="receipt-ticket-qr" aria-label="Codigo QR del boleto"></div><button type="button" class="btn-ticket-download">${I18n.t("history.download_pdf")}</button></div>`;
+        card.querySelector(".receipt-ticket-info").insertAdjacentHTML("beforeend", `<span>${I18n.t("history.price")}: ${money(seat.price)}</span><span>${I18n.t("history.status")}: ${purchase.status || "paid"}</span>`);
         card.querySelector(".btn-ticket-download").onclick = () => Api.descargarPdfEntrada(seat.codigo).catch((e) => alert(e.message));
-        const printTicket = document.createElement("button"); printTicket.type = "button"; printTicket.className = "btn-ticket-download"; printTicket.textContent = "Imprimir esta entrada"; printTicket.onclick = () => { document.body.classList.add("printing-one-ticket"); card.classList.add("print-ticket-only"); window.addEventListener("afterprint", () => { document.body.classList.remove("printing-one-ticket"); card.classList.remove("print-ticket-only"); }, { once: true }); window.print(); }; card.querySelector(".receipt-ticket-main").appendChild(printTicket);
+        const printTicket = document.createElement("button"); printTicket.type = "button"; printTicket.className = "btn-ticket-download"; printTicket.textContent = I18n.t("history.print_ticket"); printTicket.onclick = () => { document.body.classList.add("printing-one-ticket"); card.classList.add("print-ticket-only"); window.addEventListener("afterprint", () => { document.body.classList.remove("printing-one-ticket"); card.classList.remove("print-ticket-only"); }, { once: true }); window.print(); }; card.querySelector(".receipt-ticket-main").appendChild(printTicket);
         Api.qrDataUrl(seat.codigo).then((url) => { card.querySelector(".receipt-ticket-qr").innerHTML = `<img class="receipt-qr-img" src="${url}" alt="QR del asiento ${seat.id}">`; }).catch((e) => { card.querySelector(".receipt-ticket-qr").textContent = e.message; }); detailedTickets.appendChild(card);
       });
       document.getElementById("btn-view-ticket")?.addEventListener("click", () => detailedTickets.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -178,4 +187,14 @@
     } catch (err) { document.querySelector("main").insertAdjacentHTML("afterbegin", `<p class="pay-error-box">${err.message}</p>`); }
   }
   loadEvent(); checkout(); receipt();
+
+  window.addEventListener("astro:langchange", () => {
+    if (document.getElementById("summary-event") && window.__checkoutEventName) {
+      document.getElementById("summary-event").textContent = I18n.eventName(window.__checkoutEventName);
+    }
+    if (document.getElementById("receipt-event-name") && window.__receiptEventName) {
+      document.getElementById("receipt-event-name").textContent = I18n.eventName(window.__receiptEventName);
+      document.querySelectorAll(".receipt-ticket-poster strong").forEach((el) => { el.textContent = I18n.eventName(window.__receiptEventName); });
+    }
+  });
 })();

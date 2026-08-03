@@ -1784,6 +1784,48 @@ main {
   transform: translateY(0) scale(1);
 }
 
+.nav-bell-wrap {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+.nav-bell-btn {
+  background: var(--color-surface-container-high);
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface);
+}
+.nav-bell-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--nebula-pink, #e8258f);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.nav-bell-panel {
+  width: 320px;
+}
+.nav-bell-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+.nav-bell-item:last-child {
+  border-bottom: none;
+}
+.nav-bell-item-unread {
+  background: color-mix(in srgb, var(--cosmic-purple) 6%, transparent);
+}
+@media (max-width: 560px) {
+  .nav-bell-panel { width: 280px; right: -60px; }
+}
+
 .user-panel-action {
   display: flex;
   align-items: center;
@@ -3999,6 +4041,31 @@ main {
   }
 }
 
+/* ---------- Footer administrativo ---------- */
+.site-footer-admin::before {
+  background: linear-gradient(90deg, transparent, var(--color-secondary), var(--stellar-blue), transparent);
+  opacity: 0.7;
+}
+.site-footer-admin {
+  background: linear-gradient(180deg, var(--astro-dark), #120b1e);
+}
+.site-footer-admin .footer-tag {
+  color: rgba(190, 215, 255, 0.65);
+}
+.admin-footer-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, var(--cosmic-purple), var(--stellar-blue));
+  vertical-align: middle;
+}
+
 /* ---------- Contenedores con scroll controlado ---------- */
 .seat-grid-visual {
   overflow-x: auto;
@@ -4179,6 +4246,14 @@ html[data-theme="dark"] {
   --color-error-container: rgba(127, 29, 29, 0.35);
   --color-on-error-container: #fecaca;
   --color-scrim: rgba(0, 0, 0, 0.65);
+  --color-surface-container: #1e2340;
+  --color-primary-light: #b79ffc;
+  --color-primary-container: #3b2a63;
+  --color-on-primary-container: #e9ddff;
+  --color-tertiary: #d9c86b;
+  --color-tertiary-container: #3f3710;
+  --color-on-tertiary-container: #f2e6a8;
+  --color-on-secondary-container: #052e16;
   color-scheme: dark;
 }
 html[data-theme="dark"] body { background: #0f1326; }
@@ -4199,6 +4274,13 @@ html[data-theme="dark"] .glass-panel {
   box-shadow: var(--shadow-lg);
 }
 html[data-theme="dark"] .input:focus { background: #1b2038; }
+html[data-theme="dark"] .auth-feature-item .material-symbols-outlined {
+  color: #b79ffc;
+}
+html[data-theme="dark"] .cvv-box {
+  background: #1b2038;
+  color: #e6e8f7;
+}
 
 /* ---------- Panel admin (adicionales) ---------- */
 html[data-theme="dark"] body.admin-page .admin-sidebar {
@@ -4226,6 +4308,10 @@ html[data-theme="dark"] body.admin-page .stat-card .value {
   background: linear-gradient(135deg, var(--color-on-surface), var(--color-primary));
   -webkit-background-clip: text;
   background-clip: text;
+}
+html[data-theme="dark"] body.admin-page .ev-progress {
+  background: #161a2e;
+  border-color: rgba(148, 163, 184, 0.14);
 }
 
 /* ---------- Comprobante (receipt) ---------- */
@@ -4458,3 +4544,44 @@ html[data-theme="dark"] .stripe-element-shell { background:#161a2e; border-color
 .admin-team-card { position:relative;display:grid;grid-template-columns:46px 1fr;align-items:center;gap:10px;padding:14px;border-radius:16px;background:var(--color-surface-container-lowest);border:1px solid var(--color-outline-variant); }
 .admin-team-card.current { border-color:var(--color-primary);box-shadow:0 8px 24px rgba(108,63,209,.12); }.admin-team-card div{display:grid;gap:2px;min-width:0}.admin-team-card small{color:var(--color-outline);font-size:.67rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-team-card .btn{grid-column:1/-1;padding:8px 10px;font-size:.72rem}.admin-current-badge{position:absolute;right:8px;top:8px;border-radius:999px;background:#d1fae5;color:#047857;font-size:.58rem;font-weight:800;padding:3px 7px}
 @media(max-width:900px){.admin-team-grid{grid-template-columns:1fr}.admin-team-card{grid-template-columns:46px 1fr auto}.admin-team-card .btn{grid-column:auto}}
+
+/* ============================================================
+   RENDIMIENTO — atmosphere más ligero en pantallas pequeñas
+   (el blur de 120px sobre capas gigantes re-rasteriza la GPU)
+   ============================================================ */
+@media (max-width: 768px) {
+  .atmosphere::before,
+  .atmosphere::after {
+    filter: blur(60px);
+    animation: none;
+  }
+  .atmosphere .glow-a,
+  .atmosphere .glow-b {
+    filter: blur(50px);
+    animation: none;
+  }
+  .particle { display: none; }
+}
+
+/* ============================================================
+   RENDIMIENTO — usuarios con "prefers-reduced-motion"
+   Desactiva animaciones/transiciones decorativas: menos CPU/GPU
+   y mejor accesibilidad.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .atmosphere::before, .atmosphere::after,
+  .atmosphere .glow-a, .atmosphere .glow-b {
+    animation: none !important;
+  }
+  .particle, .cursor-glow { display: none !important; }
+  .card, .glass-panel, .stat-card, .event-card, .section-head, .email-preview, .steps {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

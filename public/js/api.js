@@ -57,6 +57,10 @@ const Api = (() => {
     return request("/auth/perfil", { method: "PUT", body: datos });
   }
 
+  async function actualizarPreferencias(datos) {
+    return request("/auth/perfil/preferencias", { method: "PUT", body: datos });
+  }
+
   /* ---------- Eventos ---------- */
   async function getEventos(estado) {
     const q = estado ? "?estado=" + encodeURIComponent(estado) : "";
@@ -133,6 +137,27 @@ const Api = (() => {
     return request("/funciones/" + encodeURIComponent(funcionId) + "/mis-reservas");
   }
 
+  /* ---------- Lista de espera (boletos agotados) ---------- */
+  async function unirseListaEspera(funcionId) {
+    return request(
+      "/funciones/" + encodeURIComponent(funcionId) + "/lista-espera",
+      { method: "POST" }
+    );
+  }
+
+  async function miEstadoListaEspera(funcionId) {
+    return request(
+      "/funciones/" + encodeURIComponent(funcionId) + "/lista-espera/mi"
+    );
+  }
+
+  async function retirarseListaEspera(funcionId) {
+    return request(
+      "/funciones/" + encodeURIComponent(funcionId) + "/lista-espera",
+      { method: "DELETE" }
+    );
+  }
+
   /* ---------- Entradas (PDF / QR) ---------- */
   /** Descarga el PDF de una entrada por su código. */
   async function descargarPdfEntrada(codigo) {
@@ -163,6 +188,14 @@ const Api = (() => {
   /** Reenvía el PDF de una entrada por correo. */
   async function reenviarPdfEntrada(codigo) {
     return request("/entradas/" + encodeURIComponent(codigo) + "/reenviar", { method: "POST" });
+  }
+
+  /** Transfiere una entrada a otra persona por correo. */
+  async function transferirEntrada(codigo, email) {
+    return request(
+      "/entradas/" + encodeURIComponent(codigo) + "/transferir",
+      { method: "POST", body: { email } }
+    );
   }
 
   /** Obtiene la imagen QR (PNG) de una entrada como data URL. */
@@ -198,8 +231,67 @@ const Api = (() => {
     return request("/admin/dashboard");
   }
 
+  /* ---------- Catálogo (recintos / artistas) ---------- */
+  async function getRecintos() {
+    const data = await request("/recintos");
+    return data.recintos || [];
+  }
+
+  async function getArtistas() {
+    const data = await request("/artistas");
+    return data.artistas || [];
+  }
+
+  async function crearRecinto(datos) {
+    return request("/admin/recintos", { method: "POST", body: datos });
+  }
+
+  async function crearArtista(datos) {
+    return request("/admin/artistas", { method: "POST", body: datos });
+  }
+
+  /* ---------- Reembolsos (panel admin) ---------- */
+  async function listarReembolsos() {
+    return request("/admin/reembolsos");
+  }
+
+  async function reembolsarOrden(datos) {
+    return request("/admin/reembolsos", { method: "POST", body: datos });
+  }
+
+  async function aprobarReembolso(id) {
+    return request("/admin/reembolsos/" + encodeURIComponent(id) + "/aprobar", { method: "POST" });
+  }
+
+  async function rechazarReembolso(id) {
+    return request("/admin/reembolsos/" + encodeURIComponent(id) + "/rechazar", { method: "POST" });
+  }
+
+  /* ---------- Reembolsos (usuario) ---------- */
+  async function getMisReembolsos() {
+    return request("/reembolsos/mis-reembolsos");
+  }
+
+  async function solicitarReembolso(datos) {
+    return request("/reembolsos", { method: "POST", body: datos });
+  }
+
+  /* ---------- Notificaciones ---------- */
+  async function getNotificaciones() {
+    return request("/notificaciones");
+  }
+
+  async function marcarNotificacionesLeidas() {
+    return request("/notificaciones/leer", { method: "POST" });
+  }
+
   async function getAdminResumen() {
     return request("/admin/resumen");
+  }
+
+  /** Reporte completo por evento (ventas, funciones, compradores, tendencia). */
+  async function getReporteEvento(eventoId) {
+    return request("/admin/reportes/evento/" + encodeURIComponent(eventoId));
   }
 
   async function descargarReporte(path, filename) {
@@ -221,6 +313,7 @@ const Api = (() => {
   return {
     perfil,
     actualizarPerfil,
+    actualizarPreferencias,
     getEventos,
     getEvento,
     getFuncion,
@@ -236,13 +329,30 @@ const Api = (() => {
     reservarAsientos,
     cancelarReservas,
     getMisReservas,
+    unirseListaEspera,
+    miEstadoListaEspera,
+    retirarseListaEspera,
     descargarPdfEntrada,
     reenviarPdfEntrada,
+    transferirEntrada,
     qrDataUrl,
     validarEntrada,
     getAdminDashboard,
     getAdminResumen,
+    getReporteEvento,
     descargarReporte,
+    getRecintos,
+    getArtistas,
+    crearRecinto,
+    crearArtista,
+    listarReembolsos,
+    reembolsarOrden,
+    aprobarReembolso,
+    rechazarReembolso,
+    getMisReembolsos,
+    solicitarReembolso,
+    getNotificaciones,
+    marcarNotificacionesLeidas,
   };
 
 })();

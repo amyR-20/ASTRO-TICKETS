@@ -12,7 +12,7 @@ const { query } = require("../config/database");
  */
 async function buscarPorEmail(email) {
   const sql = `
-    SELECT id, username, nombre, email, password_hash, role, avatar, avatar_url, bio, estado, creado_en
+    SELECT id, username, nombre, email, password_hash, role, avatar, avatar_url, bio, estado, creado_en, idioma_pref, tema_pref
     FROM usuarios
     WHERE email = $1
   `;
@@ -22,7 +22,7 @@ async function buscarPorEmail(email) {
 
 async function buscarPorId(id) {
   const sql = `
-    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at
+    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref
     FROM usuarios
     WHERE id = $1
   `;
@@ -112,8 +112,22 @@ async function actualizarPerfil(id, { nombre, username, avatarUrl, bio }) {
     `UPDATE usuarios
         SET nombre=$2, username=$3, avatar=$4, avatar_url=$5, bio=$6, updated_at=now()
       WHERE id=$1
-      RETURNING id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at`,
+      RETURNING id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref`,
     [id, nombre, username, avatar, avatarUrl || null, bio || null]
+  );
+  return rows[0] || null;
+}
+
+/** Actualiza solo las preferencias (idioma/tema) del usuario. */
+async function actualizarPreferencias(id, { idioma, tema }) {
+  const { rows } = await query(
+    `UPDATE usuarios
+        SET idioma_pref = COALESCE($2, idioma_pref),
+            tema_pref   = COALESCE($3, tema_pref),
+            updated_at  = now()
+      WHERE id = $1
+      RETURNING id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref`,
+    [id, idioma || null, tema || null]
   );
   return rows[0] || null;
 }
@@ -127,4 +141,5 @@ module.exports = {
   actualizarLogin,
   listar,
   actualizarPerfil,
+  actualizarPreferencias,
 };

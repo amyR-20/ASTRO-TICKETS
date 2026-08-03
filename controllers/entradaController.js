@@ -160,4 +160,31 @@ async function validar(req, res) {
   }
 }
 
-module.exports = { descargarPdf, qrPng, reenviarPdf, validar };
+/**
+ * POST /api/entradas/:id/transferir — transfiere una entrada a otra
+ * persona por correo (requiere sesión; solo el comprador).
+ */
+async function transferir(req, res) {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(email)) {
+      return res.status(400).json({ error: "Ingresa un correo electrónico válido." });
+    }
+    const resultado = await entradaModel.transferir(req.params.id, {
+      emailDestino: email,
+      usuarioOrigenId: req.usuario.id,
+    });
+    if (resultado.status) {
+      return res.status(resultado.status).json({ error: resultado.mensaje });
+    }
+    const mensaje = resultado.estado === "completada"
+      ? "Entrada transferida correctamente al correo indicado."
+      : "Transferencia registrada. Se completará cuando el destinatario registre una cuenta con ese correo.";
+    return res.json({ mensaje, transferencia: resultado });
+  } catch (err) {
+    console.error("Error transfiriendo entrada:", err);
+    return res.status(500).json({ error: "Error interno al transferir la entrada." });
+  }
+}
+
+module.exports = { descargarPdf, qrPng, reenviarPdf, validar, transferir };

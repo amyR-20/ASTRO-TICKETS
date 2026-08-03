@@ -2,10 +2,24 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <script>
+  (function () {
+    try {
+      var stored = localStorage.getItem("astro_theme");
+      var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+      if (theme === "auto") {
+        theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {}
+  })();
+  </script>
   <title>Astro Tickets · Mi perfil</title>
   <link rel="icon" href="multimedia/favicon.svg"><link rel="stylesheet" href="css/styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
@@ -30,6 +44,62 @@
       <div class="profile-save-row"><span id="profile-status" class="text-muted"></span><button class="btn btn-primary" type="submit"><span class="material-symbols-outlined">save</span> Guardar cambios</button></div>
     </section>
   </form>
+  <form class="profile-grid" id="prefs-form">
+    <section class="glass-panel profile-card">
+      <h2>Preferencias</h2>
+      <p class="text-muted">Se guardan en tu cuenta y se aplican en todos los dispositivos donde inicies sesión.</p>
+      <label class="field">Idioma
+        <select class="input" id="prefs-lang">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <label class="field">Tema
+        <select class="input" id="prefs-theme">
+          <option value="auto">Automático</option>
+          <option value="light">Claro</option>
+          <option value="dark">Oscuro</option>
+        </select>
+      </label>
+      <div class="profile-save-row"><span id="prefs-status" class="text-muted"></span><button class="btn btn-primary" type="submit"><span class="material-symbols-outlined">palette</span> Guardar preferencias</button></div>
+    </section>
+  </form>
+  <section class="glass-panel profile-card" id="reembolsos-seccion" style="margin-top:28px;">
+    <h2 data-i18n="reembolsos.title">Mis reembolsos</h2>
+    <p class="text-muted" data-i18n="reembolsos.sub">Solicita la devolución de una compra; el administrador la revisará y te notificará el resultado.</p>
+    <div id="reembolsos-container" class="refunds-user">
+      <p class="text-muted">Cargando…</p>
+    </div>
+  </section>
 </main>
-<script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/api.js"></script><script src="js/profile.js"></script>
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+        <p class="footer-name" data-i18n="brand">Astro Tickets</p>
+        <p class="footer-tag" data-i18n="footer.tag">Tu viaje comienza aquí.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.explore">Explora</h4>
+        <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+        <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.account">Cuenta</h4>
+        <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+        <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
+        <a href="admin-login.html" data-i18n="nav.admin">Administrador</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.support">Soporte</h4>
+        <a href="#" data-i18n="footer.terms">Términos del servicio</a>
+        <a href="#" data-i18n="footer.privacy">Política de privacidad</a>
+        <a href="#" data-i18n="footer.help">Centro de ayuda</a>
+      </div>
+    </div>
+    <p class="bottom">© <span class="footer-year">2026</span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
+  </div>
+</footer>
+<script src="js/i18n.js"></script><script src="js/main.js"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/api.js"></script><script src="js/profile.js"></script>
 </body></html>

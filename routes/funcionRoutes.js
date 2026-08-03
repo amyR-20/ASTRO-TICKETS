@@ -10,7 +10,10 @@ const {
   listar, ver, crear, actualizar, eliminar,
   reservar, cancelarReservas, misReservas, bloquearAsiento, restaurarAsiento,
 } = require("../controllers/funcionController");
-const { verificarToken, soloAdmin } = require("../middleware/authMiddleware");
+const { verificarToken, soloAdmin, soloUsuario } = require("../middleware/authMiddleware");
+const {
+  unirse, miEstado, retirarse,
+} = require("../controllers/waitlistController");
 
 // Público: funciones de un evento y detalle de una función
 router.get("/eventos/:eventoId/funciones", listar);
@@ -24,8 +27,13 @@ router.post("/funciones/:id/asientos/:asiento/bloquear", verificarToken, soloAdm
 router.post("/funciones/:id/asientos/:asiento/restaurar", verificarToken, soloAdmin, restaurarAsiento);
 
 // Usuario con sesión: reservar / liberar asientos
-router.post("/funciones/:id/reservar", verificarToken, reservar);
+router.post("/funciones/:id/reservar", verificarToken, soloUsuario, reservar);
 router.get("/funciones/:id/mis-reservas", verificarToken, misReservas);
 router.delete("/funciones/:id/reservas", verificarToken, cancelarReservas);
+
+// Lista de espera de una función (avísame cuando haya boletos)
+router.post("/funciones/:id/lista-espera", verificarToken, soloUsuario, unirse);
+router.get("/funciones/:id/lista-espera/mi", verificarToken, miEstado);
+router.delete("/funciones/:id/lista-espera", verificarToken, retirarse);
 
 module.exports = router;

@@ -31,6 +31,7 @@ async function crear(req, res) {
       usuarioId: req.usuario.id,
       funcionId,
       payment: pagoVerificado,
+      buyer: (req.body && req.body.buyer) || null,
     });
 
     if (orden.status) {

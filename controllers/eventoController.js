@@ -39,10 +39,7 @@ function validarDatos(datos) {
 async function listar(req, res) {
   try {
     const estado = req.query.estado || null;
-    const filas = await eventoModel.listar(estado);
-    const eventos = await Promise.all(
-      filas.map((f) => eventoModel.buscarPorId(f.id))
-    );
+    const eventos = await eventoModel.listarConDetalle(estado);
     return res.json({ eventos });
   } catch (err) {
     console.error("Error listando eventos:", err);
@@ -98,7 +95,7 @@ async function actualizar(req, res) {
     if (errores.length) {
       return res.status(400).json({ error: errores.join(" ") });
     }
-    const existe = await eventoModel.buscarPorId(req.params.id);
+    const existe = await eventoModel.existe(req.params.id);
     if (!existe) {
       return res.status(404).json({ error: "Evento no encontrado." });
     }
@@ -113,11 +110,11 @@ async function actualizar(req, res) {
 /** POST /api/eventos/:id/publicar — publica un evento y sus funciones. */
 async function publicar(req, res) {
   try {
-    const existe = await eventoModel.buscarPorId(req.params.id);
-    if (!existe) {
+    const estado = await eventoModel.buscarEstado(req.params.id);
+    if (!estado) {
       return res.status(404).json({ error: "Evento no encontrado." });
     }
-    if (existe.status === "cancelado") {
+    if (estado.estado === "cancelado") {
       return res.status(409).json({ error: "No se puede publicar un evento cancelado." });
     }
     await eventoModel.publicar(req.params.id, req.usuario.id, req.body?.razon || null);
@@ -135,7 +132,7 @@ async function cancelar(req, res) {
     if (!razon) {
       return res.status(400).json({ error: "La razón es obligatoria para cancelar." });
     }
-    const existe = await eventoModel.buscarPorId(req.params.id);
+    const existe = await eventoModel.existe(req.params.id);
     if (!existe) {
       return res.status(404).json({ error: "Evento no encontrado." });
     }

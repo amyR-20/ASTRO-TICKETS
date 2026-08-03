@@ -16,10 +16,12 @@
   } catch (e) {}
 })();
 </script>
-<link rel="icon" type="image/png" href="multimedia/favicon.svg" />
+<link rel="icon" type="image/svg+xml" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
 <body class="admin-page">
 <div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
@@ -65,6 +67,7 @@
       <a href="#crear-evento" data-i18n="admin.crearevento">Crear evento</a>
       <a href="#usuarios" data-i18n="admin.usuarios">Usuarios</a>
       <a href="#transacciones" data-i18n="admin.ventas">Transacciones</a>
+      <a href="reporte-evento.html" data-i18n="admin.report_event">Reporte por evento</a>
       <a href="index.html" data-i18n="admin.salir">Salir</a>
     </nav>
   </div>
@@ -85,8 +88,9 @@
         <a href="#crear-evento"><span class="material-symbols-outlined">add_circle</span><span class="txt" data-i18n="admin.crearevento">Crear evento</span></a>
         <a href="#usuarios"><span class="material-symbols-outlined">group</span><span class="txt" data-i18n="admin.usuarios">Usuarios</span></a>
         <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
-        <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt">Validar QR</span></a>
+        <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt" data-i18n="admin.validate_qr">Validar QR</span></a>
         <a href="#reportes"><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
+        <a href="reporte-evento.html"><span class="material-symbols-outlined">monitoring</span><span class="txt" data-i18n="admin.report_event">Reporte por evento</span></a>
         <a href="perfil.html"><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
       </nav>
       <div class="admin-sidebar-foot">
@@ -114,7 +118,7 @@
   </div>
 
   <section class="admin-team-panel" aria-labelledby="admin-team-title">
-    <div><p class="eyebrow">EQUIPO ADMINISTRATIVO</p><h2 id="admin-team-title">Perfiles del panel</h2><p class="text-muted">Cada administrador conserva su propia contraseña, actividad y perfil.</p></div>
+    <div><p class="eyebrow" data-i18n="admin.team_eyebrow">EQUIPO ADMINISTRATIVO</p><h2 id="admin-team-title" data-i18n="admin.team_title">Perfiles del panel</h2><p class="text-muted" data-i18n="admin.team_sub">Cada administrador conserva su propia contraseña, actividad y perfil.</p></div>
     <div class="admin-team-grid">
       <article class="admin-team-card" data-admin-card="amy@gmail.com"><span class="admin-profile-avatar amy">A</span><div><strong>Amy</strong><small>@amy · Administración general</small></div><a class="btn btn-ghost" href="admin-login.html?profile=amy@gmail.com">Cambiar</a></article>
       <article class="admin-team-card" data-admin-card="admin@astro.com"><span class="admin-profile-avatar victor">V</span><div><strong>Víctor</strong><small>@victor · Operaciones</small></div><a class="btn btn-ghost" href="admin-login.html?profile=admin@astro.com">Cambiar</a></article>
@@ -183,17 +187,17 @@
     <div style="padding: 28px;">
       <div class="flex-between" style="align-items: flex-start; flex-wrap: wrap; gap: 16px;">
         <div>
-          <h2 style="font-size: 1.25rem;">Validación de accesos</h2>
+          <h2 style="font-size: 1.25rem;" data-i18n="admin.validate_qr">Validación de accesos</h2>
           <p class="text-muted" style="margin-top: 4px;">Escanea o pega el código QR de una entrada para verificar el acceso al evento.</p>
         </div>
-        <button class="btn btn-ghost" id="qr-reset-btn" style="display: none;"><span class="material-symbols-outlined">refresh</span> Nueva validación</button>
+        <button class="btn btn-ghost" id="qr-reset-btn" style="display: none;"><span class="material-symbols-outlined">refresh</span> <span data-i18n="admin.qr_new">Nueva validación</span></button>
       </div>
       <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
-        <input class="input" id="qr-input" placeholder="Código QR de la entrada" style="flex: 1; min-width: 240px;" />
+        <input class="input" id="qr-input" data-i18n="admin.qr_placeholder" placeholder="Código QR de la entrada" style="flex: 1; min-width: 240px;" />
         <button class="btn btn-primary" id="qr-validate-btn" style="border-radius: 12px; padding: 0 22px;">
-          <span class="material-symbols-outlined">qr_code_scanner</span> Validar QR
+          <span class="material-symbols-outlined">qr_code_scanner</span> <span data-i18n="admin.qr_validate">Validar QR</span>
         </button>
-        <button class="btn btn-ghost" id="qr-camera-btn"><span class="material-symbols-outlined">photo_camera</span> Escanear con cámara</button>
+        <button class="btn btn-ghost" id="qr-camera-btn"><span class="material-symbols-outlined">photo_camera</span> <span data-i18n="admin.qr_scan">Escanear con cámara</span></button>
       </div>
       <div class="qr-camera" id="qr-camera" hidden><video id="qr-video" playsinline muted></video><p class="text-muted">Apunta la cámara al código QR de la entrada.</p></div>
       <div id="qr-result" style="margin-top: 16px;"></div>
@@ -270,6 +274,67 @@
   <section class="card table-wrap" id="accesos" style="margin-bottom:36px;">
     <div style="padding:22px 24px 12px;"><h2 style="font-size:1.25rem;" data-i18n="admin.access_title">Historial de accesos</h2><p class="text-muted" data-i18n="admin.access_sub">Cada inicio de sesión aparece por separado, del más reciente al más antiguo.</p></div>
     <table><thead><tr><th data-i18n="admin.access_date">Fecha</th><th data-i18n="admin.user">Usuario</th><th data-i18n="admin.access_result">Resultado</th><th>IP</th><th data-i18n="admin.access_device">Dispositivo</th></tr></thead><tbody id="access-table"><tr><td colspan="5" class="text-muted">Cargando…</td></tr></tbody></table>
+  </section>
+
+  <!-- Reembolsos -->
+  <section class="card table-wrap" id="reembolsos" style="margin-bottom:36px;">
+    <div style="padding:22px 24px 12px;">
+      <h2 style="font-size:1.25rem;" data-i18n="admin.refunds_title">Reembolsos</h2>
+      <p class="text-muted" data-i18n="admin.refunds_sub">Procesa devoluciones de órdenes pagadas; los asientos vuelven a venderse.</p>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="admin.refunds_order">Orden</th>
+          <th data-i18n="admin.txn_evento">Evento</th>
+          <th data-i18n="admin.user">Comprador</th>
+          <th data-i18n="admin.txn_monto">Monto</th>
+          <th data-i18n="admin.status">Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="refundable-table">
+        <tr><td colspan="6" class="text-muted">Cargando…</td></tr>
+      </tbody>
+    </table>
+    <div style="padding:22px 24px 0;">
+      <h3 style="font-size:1.05rem;" data-i18n="admin.refunds_requests_title">Solicitudes de reembolso</h3>
+      <p class="text-muted" style="font-size:0.85rem;" data-i18n="admin.refunds_requests_sub">Usuarios que pidieron devolver su dinero. Apruébalos para liberar los asientos y reembolsar.</p>
+    </div>
+    <table style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th data-i18n="admin.refunds_order">Orden</th>
+          <th data-i18n="admin.txn_evento">Evento</th>
+          <th data-i18n="admin.user">Comprador</th>
+          <th data-i18n="admin.txn_monto">Monto</th>
+          <th data-i18n="admin.refunds_reason">Motivo</th>
+          <th data-i18n="admin.txn_hora">Fecha</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="solicitudes-table">
+        <tr><td colspan="8" class="text-muted">Cargando…</td></tr>
+      </tbody>
+    </table>
+    <table style="margin-top:20px;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th data-i18n="admin.refunds_order">Orden</th>
+          <th data-i18n="admin.txn_evento">Evento</th>
+          <th data-i18n="admin.txn_monto">Monto</th>
+          <th data-i18n="admin.refunds_reason">Motivo</th>
+          <th data-i18n="admin.refunds_by">Autorizado por</th>
+          <th data-i18n="admin.txn_hora">Fecha</th>
+          <th data-i18n="admin.status">Estado</th>
+        </tr>
+      </thead>
+      <tbody id="refunds-table">
+        <tr><td colspan="8" class="text-muted">Cargando…</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- Transacciones diarias -->
@@ -598,33 +663,34 @@
   </div>
 </div>
 
-<footer class="site-footer">
+<footer class="site-footer site-footer-admin">
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
         <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
-        <p class="footer-name" data-i18n="brand">Astro Tickets</p>
-        <p class="footer-tag" data-i18n="footer.tag">Tu viaje comienza aquí.</p>
+        <p class="footer-name"><span data-i18n="brand">Astro Tickets</span> <span class="admin-footer-badge" data-i18n="footer.badge">Admin</span></p>
+        <p class="footer-tag" data-i18n="footer.admin_tag">Panel de administración</p>
       </div>
       <div class="footer-col">
-        <h4 data-i18n="footer.explore">Explora</h4>
-        <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
-        <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+        <h4 data-i18n="footer.manage">Gestión</h4>
+        <a href="#resumen" data-i18n="admin.dashboard">Resumen</a>
+        <a href="#eventos" data-i18n="admin.eventos">Gestión de eventos</a>
+        <a href="#crear-evento" data-i18n="admin.crearevento">Crear evento</a>
       </div>
       <div class="footer-col">
-        <h4 data-i18n="footer.account">Cuenta</h4>
-        <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
-        <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
-        <a href="admin-login.html" data-i18n="nav.admin">Cambiar perfil</a>
+        <h4 data-i18n="footer.sections">Secciones</h4>
+        <a href="reporte-evento.html" data-i18n="admin.report_event">Reporte por evento</a>
+        <a href="#usuarios" data-i18n="admin.usuarios">Usuarios</a>
+        <a href="#transacciones" data-i18n="admin.ventas">Transacciones</a>
       </div>
       <div class="footer-col">
-        <h4 data-i18n="footer.support">Soporte</h4>
-        <a href="#" data-i18n="footer.terms">Términos del servicio</a>
-        <a href="#" data-i18n="footer.privacy">Política de privacidad</a>
-        <a href="#" data-i18n="footer.help">Centro de ayuda</a>
+        <h4 data-i18n="footer.session">Sesión</h4>
+        <a href="#validar" data-i18n="admin.validate_qr">Validar QR</a>
+        <a href="perfil.html" data-i18n="admin.configuracion">Configuración</a>
+        <a href="admin-login.html" data-i18n="footer.switch">Cambiar perfil</a>
       </div>
     </div>
-    <p class="bottom">© <span class="footer-year"></span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
+    <p class="bottom">© <span class="footer-year">2026</span> <span data-i18n="footer.admin_full">Astro Tickets Admin · Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
   </div>
 </footer>
 
@@ -672,13 +738,24 @@
   document.querySelectorAll('[data-admin-card]').forEach((card) => {
     if (currentAdmin && card.dataset.adminCard.toLowerCase() === String(currentAdmin.email || '').toLowerCase()) {
       card.classList.add('current');
-      const link = card.querySelector('a'); link.href = 'perfil.html'; link.textContent = 'Editar mi perfil';
-      card.insertAdjacentHTML('beforeend','<span class="admin-current-badge">Sesión actual</span>');
+      const link = card.querySelector('a'); link.href = 'perfil.html'; link.textContent = I18n.t('admin.edit_profile');
+      card.insertAdjacentHTML('beforeend','<span class="admin-current-badge">' + I18n.t('admin.current_badge') + '</span>');
     }
   });
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showToast(msg) {
+    const existing = document.querySelector('.ev-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'ev-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:14px 24px;background:#1a1425;color:#fff;border-radius:14px;font-size:0.85rem;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:300;';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3200);
   }
 
   async function cargarDashboard() {
@@ -692,10 +769,10 @@
       set('stat-boletos', fmt(st.boletos));
       set('stat-usuarios', fmt(st.usuarios));
       set('stat-eventos', fmt(st.eventosActivos));
-      set('stat-ingresos-delta', (st.transacciones || 0) + ' transacciones');
-      set('stat-boletos-delta', 'Entradas vendidas');
-      set('stat-usuarios-delta', 'Cuentas activas');
-      set('stat-eventos-delta', 'Publicados');
+      set('stat-ingresos-delta', (st.transacciones || 0) + ' ' + I18n.t('admin.transaction_word'));
+      set('stat-boletos-delta', I18n.t('admin.delta_sold'));
+      set('stat-usuarios-delta', I18n.t('admin.delta_active'));
+      set('stat-eventos-delta', I18n.t('admin.delta_published'));
 
       // Gráfico de ventas por evento
       const chart = document.getElementById('bar-chart');
@@ -704,8 +781,9 @@
         const max = Math.max(...ventas.map(v => Number(v.boletos) || 0)) || 1;
         chart.innerHTML = ventas.slice(0, 8).map(v => {
           const h = Math.max(4, Math.round((Number(v.boletos) / max) * 100));
-          const name = (v.nombre || '').split(' ').slice(0, 2).join(' ');
-          return `<div class="bar-col"><div class="bar" style="height:${h}%;" title="${esc(v.nombre)} · ${fmt(v.boletos)} boletos · ${fmtMoney(v.ingresos)}"></div><span class="bar-label">${esc(name)}</span></div>`;
+          const vName = I18n.eventName(v.nombre || '');
+          const name = vName.split(' ').slice(0, 2).join(' ');
+          return `<div class="bar-col"><div class="bar" style="height:${h}%;" title="${esc(vName)} · ${fmt(v.boletos)} boletos · ${fmtMoney(v.ingresos)}"></div><span class="bar-label">${esc(name)}</span></div>`;
         }).join('');
       }
 
@@ -724,10 +802,10 @@
               const sold = stats.vendidos || 0;
               const disp = Math.max(0, cap - sold);
               const estado = stats.agotada
-                ? '<span class="badge badge-warning">Agotada</span>'
-                : '<span class="badge badge-success">Disponible</span>';
+                ? `<span class="badge badge-warning">${I18n.t('admin.agotada')}</span>`
+                : `<span class="badge badge-success">${I18n.t('catalog.available')}</span>`;
               filas.push(`<tr>
-                <td style="font-weight: 600;">${esc(ev.nombre)}</td>
+                <td style="font-weight: 600;">${esc(I18n.eventName(ev.nombre))}</td>
                 <td>${fmt(cap)}</td>
                 <td>${fmt(sold)}</td>
                 <td>${fmt(disp)}</td>
@@ -735,9 +813,9 @@
               </tr>`);
             });
           });
-          tbody.innerHTML = filas.join('') || '<tr><td colspan="5" class="text-muted">Sin funciones registradas.</td></tr>';
+          tbody.innerHTML = filas.join('') || '<tr><td colspan="5" class="text-muted">' + I18n.t('admin.no_functions') + '</td></tr>';
         } else if (tbody) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Sin datos.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" class="text-muted">' + I18n.t('admin.no_data') + '</td></tr>';
         }
       } catch (_) {}
 
@@ -748,7 +826,7 @@
         uTbody.innerHTML = users.length
           ? users.map((u) => {
               const ini = (u.nombre || '?').trim().split(/\s+/).map(w => w[0]).join('').substring(0, 2).toUpperCase();
-              const last = u.ultimo_login ? new Date(u.ultimo_login).toLocaleString('es-DO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+              const last = u.ultimo_login ? I18n.dateTime(u.ultimo_login, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
               return `<tr>
                 <td>
                   <div style="display: flex; align-items: center; gap: 12px;">
@@ -765,9 +843,9 @@
                 <td class="text-right"><a class="btn-ghost btn" style="padding: 6px;" href="mailto:${esc(u.email)}" title="Enviar correo"><span class="material-symbols-outlined">mail</span></a></td>
               </tr>`;
             }).join('')
-          : '<tr><td colspan="5" class="text-muted">Sin usuarios.</td></tr>';
+          : '<tr><td colspan="5" class="text-muted">' + I18n.t('admin.no_users') + '</td></tr>';
         const c = document.getElementById('users-count');
-        if (c) c.textContent = 'Mostrando ' + users.length + ' usuarios';
+        if (c) c.textContent = I18n.t('admin.showing') + ' ' + users.length + ' ' + I18n.t('admin.users');
       }
 
       // Historial de accesos: una fila por cada intento, sin agrupar usuarios.
@@ -775,10 +853,10 @@
       if (aTbody) {
         const accesses = data.accesos || [];
         aTbody.innerHTML = accesses.length ? accesses.map((a) => {
-          const fecha = a.creado_en ? new Date(a.creado_en).toLocaleString(I18n.getLang()==='en'?'en-US':'es-DO') : '—';
-          const device = /mobile|android|iphone/i.test(a.user_agent || '') ? (I18n.getLang()==='en'?'Mobile':'Móvil') : (I18n.getLang()==='en'?'Desktop':'Escritorio');
-          return `<tr><td class="text-muted">${fecha}</td><td><strong>@${esc(a.username || 'desconocido')}</strong><br><span class="text-muted">${esc(a.nombre || a.email_intentado)}</span></td><td><span class="badge ${a.exitoso?'badge-success':'badge-warning'}">${a.exitoso?(I18n.getLang()==='en'?'Successful':'Exitoso'):(I18n.getLang()==='en'?'Failed':'Fallido')}</span></td><td class="text-muted">${esc(a.ip || '—')}</td><td class="text-muted">${device}</td></tr>`;
-        }).join('') : '<tr><td colspan="5" class="text-muted">Sin accesos registrados.</td></tr>';
+          const fecha = a.creado_en ? I18n.dateTime(a.creado_en) : '—';
+          const device = /mobile|android|iphone/i.test(a.user_agent || '') ? I18n.t('admin.device_mobile') : I18n.t('admin.device_desktop');
+          return `<tr><td class="text-muted">${fecha}</td><td><strong>@${esc(a.username || 'desconocido')}</strong><br><span class="text-muted">${esc(a.nombre || a.email_intentado)}</span></td><td><span class="badge ${a.exitoso?'badge-success':'badge-warning'}">${a.exitoso?I18n.t('admin.successful'):I18n.t('admin.failed')}</span></td><td class="text-muted">${esc(a.ip || '—')}</td><td class="text-muted">${device}</td></tr>`;
+        }).join('') : '<tr><td colspan="5" class="text-muted">' + I18n.t('admin.no_access') + '</td></tr>';
       }
 
       // Transacciones recientes
@@ -787,30 +865,158 @@
         const txns = data.transacciones || [];
         tTbody.innerHTML = txns.length
           ? txns.map((t) => {
-              const hora = t.creada_en ? new Date(t.creada_en).toLocaleString('es-DO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+              const hora = t.creada_en ? I18n.dateTime(t.creada_en, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
               const ok = t.estado === 'paid' || t.estado === 'completada';
               return `<tr>
                 <td class="text-muted">#${esc(t.transaccion || t.id)}</td>
                 <td>${esc(t.usuario_nombre || '—')}</td>
-                <td style="font-weight: 500;">${esc(t.evento_nombre || '—')}</td>
+                <td style="font-weight: 500;">${esc(I18n.eventName(t.evento_nombre || '—'))}</td>
                 <td style="font-weight: 600;">${fmtMoney(t.total)}</td>
                 <td class="text-muted">${hora}</td>
-                <td><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${ok ? 'Completada' : esc(t.estado || '—')}</span></td>
+                <td><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${ok ? I18n.t('admin.completed') : esc(t.estado || '—')}</span></td>
               </tr>`;
             }).join('')
-          : '<tr><td colspan="6" class="text-muted">Sin transacciones todavía. Compra una entrada desde el catálogo para verla aquí.</td></tr>';
+          : '<tr><td colspan="6" class="text-muted">' + I18n.t('admin.no_txns') + '</td></tr>';
       }
     } catch (err) {
       console.error("Error cargando dashboard:", err);
     }
   }
 
-  document.querySelectorAll('[data-report]').forEach((btn) => btn.addEventListener('click', async () => {
+  async function cargarReembolsos() {
+    if (typeof Api === 'undefined' || !Api.listarReembolsos) return;
+    try {
+      const data = await Api.listarReembolsos();
+      const refundables = data.ordenesReembolsables || [];
+      const tbody = document.getElementById('refundable-table');
+      if (tbody) {
+        tbody.innerHTML = refundables.length
+          ? refundables.map((o) => `
+              <tr>
+                <td class="text-muted">#${esc(o.transaccion || o.id)}</td>
+                <td style="font-weight:500;">${esc(I18n.eventName(o.evento_nombre || '—'))}</td>
+                <td>${esc(o.comprador_nombre || '—')}<br><span class="text-muted" style="font-size:0.78rem;">${esc(o.comprador_email || '')}</span></td>
+                <td style="font-weight:600;">${fmtMoney(o.total)}</td>
+                <td><span class="badge badge-success">${I18n.t('admin.paid')}</span></td>
+                <td class="text-right">
+                  <button class="btn btn-ghost" style="padding:6px;" data-refund="${esc(o.id)}">
+                    <span class="material-symbols-outlined">currency_exchange</span>
+                    <span>${I18n.t('admin.refund')}</span>
+                  </button>
+                </td>
+              </tr>`).join('')
+          : '<tr><td colspan="6" class="text-muted">' + I18n.t('admin.no_refundable') + '</td></tr>';
+      }
+      const reembolsos = data.reembolsos || [];
+      const solicitudes = reembolsos.filter((r) => r.estado === 'solicitado');
+      const historial = reembolsos.filter((r) => r.estado !== 'solicitado');
+      const fmtFecha = (r) => (r.creado_en ? I18n.dateTime(r.creado_en, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+
+      const sTbody = document.getElementById('solicitudes-table');
+      if (sTbody) {
+        sTbody.innerHTML = solicitudes.length
+          ? solicitudes.map((r) => `
+              <tr>
+                <td class="text-muted">#${esc(r.id)}</td>
+                <td class="text-muted">#${esc(r.transaccion || r.orden_id)}</td>
+                <td>${esc(I18n.eventName(r.evento_nombre || '—'))}</td>
+                <td>${esc(r.comprador_nombre || '—')}<br><span class="text-muted" style="font-size:0.78rem;">${esc(r.comprador_email || '')}</span></td>
+                <td style="font-weight:600;">${fmtMoney(r.monto)}</td>
+                <td class="text-muted">${esc(r.motivo || '—')}</td>
+                <td class="text-muted">${fmtFecha(r)}</td>
+                <td class="text-right" style="white-space:nowrap;">
+                  <button class="btn btn-primary" style="padding:6px 10px;" data-approve-reembolso="${esc(r.id)}">
+                    <span class="material-symbols-outlined">check</span> ${I18n.t('admin.approve')}
+                  </button>
+                  <button class="btn btn-ghost" style="padding:6px 10px;" data-reject-reembolso="${esc(r.id)}">
+                    <span class="material-symbols-outlined">close</span> ${I18n.t('admin.reject')}
+                  </button>
+                </td>
+              </tr>`).join('')
+          : '<tr><td colspan="8" class="text-muted">' + I18n.t('admin.no_requests') + '</td></tr>';
+      }
+
+      const rTbody = document.getElementById('refunds-table');
+      if (rTbody) {
+        const badgeMap = { aprobado: 'badge-success', rechazado: 'badge-error', solicitado: 'badge-info' };
+        const estadoLabels = { aprobado: 'report.refund_aprobado', rechazado: 'report.refund_rechazado', solicitado: 'report.refund_solicitado' };
+        rTbody.innerHTML = historial.length
+          ? historial.map((r) => {
+              const badge = badgeMap[r.estado] || 'badge-info';
+              const label = I18n.t(estadoLabels[r.estado] || '');
+              return `<tr>
+                <td class="text-muted">#${esc(r.id)}</td>
+                <td class="text-muted">#${esc(r.transaccion || r.orden_id)}</td>
+                <td>${esc(I18n.eventName(r.evento_nombre || '—'))}</td>
+                <td style="font-weight:600;">${fmtMoney(r.monto)}</td>
+                <td class="text-muted">${esc(r.motivo || '—')}</td>
+                <td>${esc(r.admin_nombre || '—')}</td>
+                <td class="text-muted">${fmtFecha(r)}</td>
+                <td><span class="badge ${badge}">${esc(label.indexOf('report.refund_') === 0 ? r.estado : label)}</span></td>
+              </tr>`;
+            }).join('')
+          : '<tr><td colspan="8" class="text-muted">' + I18n.t('admin.no_refunds') + '</td></tr>';
+      }
+    } catch (err) {
+      console.error("Error cargando reembolsos:", err);
+    }
+  }
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-refund]');
+    if (!btn) return;
+    const motivo = prompt(I18n.t('admin.refund_reason'));
+    if (motivo === null) return;
+    btn.disabled = true;
+    try {
+      const res = await Api.reembolsarOrden({ ordenId: btn.dataset.refund, motivo: motivo.trim() || null });
+      showToast(res.mensaje || I18n.t('admin.refund_done'));
+      cargarReembolsos(); cargarDashboard();
+    } catch (err) {
+      alert(err.message || 'No se pudo procesar el reembolso.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.addEventListener('click', async (e) => {
+    const aprobarBtn = e.target.closest('[data-approve-reembolso]');
+    if (aprobarBtn) {
+      aprobarBtn.disabled = true;
+      try {
+        const res = await Api.aprobarReembolso(aprobarBtn.dataset.approveReembolso);
+        showToast(res.mensaje || I18n.t('admin.approved'));
+        cargarReembolsos(); cargarDashboard();
+      } catch (err) {
+        alert(err.message || 'No se pudo aprobar el reembolso.');
+      } finally {
+        aprobarBtn.disabled = false;
+      }
+      return;
+    }
+    const rechazarBtn = e.target.closest('[data-reject-reembolso]');
+    if (rechazarBtn) {
+      rechazarBtn.disabled = true;
+      try {
+        const res = await Api.rechazarReembolso(rechazarBtn.dataset.rejectReembolso);
+        showToast(res.mensaje || I18n.t('admin.rejected'));
+        cargarReembolsos(); cargarDashboard();
+      } catch (err) {
+        alert(err.message || 'No se pudo rechazar el reembolso.');
+      } finally {
+        rechazarBtn.disabled = false;
+      }
+    }
+  });
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-report]');
+    if (!btn) return;
     const original=btn.innerHTML;btn.disabled=true;btn.textContent=I18n.getLang()==='en'?'Downloading…':'Descargando…';
     try { const result=await Api.descargarReporte(btn.dataset.report, btn.dataset.file); showToast(`Reporte descargado: ${result.filename}`); }
     catch(err){ alert(err.message); }
     finally{btn.disabled=false;btn.innerHTML=original;}
-  }));
+  });
 
   /* ---- Validación de QR ---- */
   const qrInput = document.getElementById('qr-input');
@@ -826,26 +1032,26 @@
 
   async function validarQr() {
     const val = (qrInput ? qrInput.value : '').trim();
-    if (!val) { pintarResultado(false, '<span class="material-symbols-outlined">error</span> Escribe o pega el código QR de la entrada.'); return; }
-    if (typeof Api === 'undefined' || !Api.validarEntrada) { pintarResultado(false, 'El módulo de validación no está disponible.'); return; }
-    if (qrBtn) { qrBtn.disabled = true; qrBtn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Validando…'; }
+    if (!val) { pintarResultado(false, '<span class="material-symbols-outlined">error</span> ' + I18n.t('admin.qr_type_hint')); return; }
+    if (typeof Api === 'undefined' || !Api.validarEntrada) { pintarResultado(false, I18n.t('admin.qr_unavailable')); return; }
+    if (qrBtn) { qrBtn.disabled = true; qrBtn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> ' + I18n.t('admin.qr_validating'); }
     try {
       const res = await Api.validarEntrada(val);
       const e = res.entrada || {};
-      const f = e.fecha ? new Date(e.fecha).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      const f = e.fecha ? I18n.date(e.fecha, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
       pintarResultado(true, `
         <span class="qr-result-icon material-symbols-outlined">verified_user</span>
         <div>
-          <strong>Acceso concedido</strong>
-          <p>${esc(e.evento || '')}${f ? ' · ' + esc(f) : ''}</p>
-          <p>Zona ${esc(e.zona || '—')} · Asiento ${esc(e.asiento || '—')}</p>
-          <p class="text-muted">Validada a las ${e.usado_en ? new Date(e.usado_en).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : '—'}</p>
+          <strong>${I18n.t('admin.qr_granted')}</strong>
+          <p>${esc(I18n.eventName(e.evento || ''))}${f ? ' · ' + esc(f) : ''}</p>
+          <p>${I18n.t('history.zone')} ${esc(e.zona || '—')} · ${I18n.t('history.seat')} ${esc(e.asiento || '—')}</p>
+          <p class="text-muted">${I18n.t('admin.qr_validated_at')} ${e.usado_en ? I18n.dateTime(e.usado_en, { hour: '2-digit', minute: '2-digit' }) : '—'}</p>
         </div>`);
     } catch (err) {
       const extra = err.status === 409 && err.entrada ? ` · ${err.entrada.zona || ''} ${err.entrada.asiento || ''}` : '';
-      pintarResultado(false, `<span class="qr-result-icon material-symbols-outlined">block</span><div><strong>${esc(err.message || 'Entrada inválida')}</strong><p class="text-muted">${esc(extra)}</p></div>`);
+      pintarResultado(false, `<span class="qr-result-icon material-symbols-outlined">block</span><div><strong>${esc(err.message || I18n.t('admin.qr_invalid'))}</strong><p class="text-muted">${esc(extra)}</p></div>`);
     } finally {
-      if (qrBtn) { qrBtn.disabled = false; qrBtn.innerHTML = '<span class="material-symbols-outlined">qr_code_scanner</span> Validar QR'; }
+      if (qrBtn) { qrBtn.disabled = false; qrBtn.innerHTML = '<span class="material-symbols-outlined">qr_code_scanner</span> ' + I18n.t('admin.qr_validate'); }
     }
   }
 
@@ -868,12 +1074,12 @@
     try {
       if (!('BarcodeDetector' in window)) throw new Error('Este navegador no permite leer QR con cámara. Puedes pegar el código en el campo.');
       qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
-      video.srcObject = qrStream; cameraBox.hidden = false; cameraBtn.innerHTML = '<span class="material-symbols-outlined">videocam_off</span> Cerrar cámara'; await video.play();
+      video.srcObject = qrStream; cameraBox.hidden = false; cameraBtn.innerHTML = '<span class="material-symbols-outlined">videocam_off</span> ' + I18n.t('admin.qr_camera_close'); await video.play();
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
       const scan = async () => {
-        if (!qrStream) { cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Escanear con cámara'; return; }
+        if (!qrStream) { cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> ' + I18n.t('admin.qr_scan'); return; }
         const codes = await detector.detect(video).catch(() => []);
-        if (codes[0]?.rawValue) { qrInput.value = codes[0].rawValue; detenerCamara(); cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Escanear con cámara'; return validarQr(); }
+        if (codes[0]?.rawValue) { qrInput.value = codes[0].rawValue; detenerCamara(); cameraBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> ' + I18n.t('admin.qr_scan'); return validarQr(); }
         requestAnimationFrame(scan);
       }; scan();
     } catch (error) { detenerCamara(); alert(error.message); }
@@ -886,7 +1092,10 @@
   });
   document.querySelectorAll('a[href="index.html"]').forEach(link => link.addEventListener('click', () => Auth.logout()));
 
+  window.addEventListener('astro:langchange', () => { cargarDashboard(); cargarReembolsos(); });
+
   cargarDashboard();
+  cargarReembolsos();
 })();
 </script>
 

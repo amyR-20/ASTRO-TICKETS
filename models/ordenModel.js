@@ -32,12 +32,11 @@ async function crear(datos) {
   try {
     await client.query("BEGIN");
 
-    // Liberar reservas vencidas antes de validar
-    await liberarReservasVencidas();
+    // Liberar reservas vencidas antes de validar (dentro de la transacción)
+    await liberarReservasVencidas(client);
 
     const funcion = (await client.query(
-      `SELECT f.*, e.id AS evento_id FROM funciones_evento f
-       JOIN eventos e ON e.id = f.evento_id
+      `SELECT f.id, f.evento_id, f.estado FROM funciones_evento f
        WHERE f.id = $1 FOR UPDATE`,
       [datos.funcionId]
     )).rows[0];
@@ -83,11 +82,29 @@ async function crear(datos) {
     const tarifa = Math.round(subtotal * 0.08 * 100) / 100;
     const total = Math.round((subtotal + tarifa) * 100) / 100;
 
+    // Datos del comprador capturados al momento de la compra (JSONB).
+    // Se usa lo enviado por el frontend o, en su defecto, el perfil.
+    let buyer = null;
+    if (datos.buyer && (datos.buyer.nombre || datos.buyer.email)) {
+      buyer = {
+        nombre: datos.buyer.nombre || null,
+        email: datos.buyer.email || null,
+        telefono: datos.buyer.telefono || null,
+      };
+    } else if (datos.usuarioId) {
+      const perfil = (await client.query(
+        `SELECT nombre, email FROM usuarios WHERE id = $1`,
+        [datos.usuarioId]
+      )).rows[0];
+      if (perfil) buyer = { nombre: perfil.nombre, email: perfil.email, telefono: null };
+    }
+    const buyerJson = buyer ? JSON.stringify(buyer) : null;
+
     const orden = await client.query(
       `INSERT INTO ordenes
          (usuario_id, evento_id, funcion_id, transaccion, codigo_reserva, metodo_pago,
-          tarjeta_marca, tarjeta_ultimos4, subtotal, tarifa, total, estado, creada_en)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+          tarjeta_marca, tarjeta_ultimos4, subtotal, tarifa, total, estado, creada_en, datos_comprador)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        RETURNING *`,
       [
         datos.usuarioId || null,
@@ -103,6 +120,7 @@ async function crear(datos) {
         total,
         datos.estado || "paid",
         datos.purchasedAt ? new Date(datos.purchasedAt) : new Date(),
+        buyerJson,
       ]
     );
 
@@ -205,6 +223,7 @@ async function listarPorUsuario(usuarioId) {
       o.estado,
       o.creada_en,
       o.funcion_id,
+      o.datos_comprador,
       e.id AS evento_id,
       e.nombre AS evento_nombre,
       e.imagen AS evento_imagen,
@@ -260,7 +279,11 @@ async function listarPorUsuario(usuarioId) {
         hora: r.funcion_hora ? String(r.funcion_hora).slice(0, 5) : null,
         sala: r.funcion_sala,
       },
-      comprador: { nombre: r.comprador_nombre, email: r.comprador_email },
+      comprador: {
+        nombre: (r.datos_comprador && r.datos_comprador.nombre) || r.comprador_nombre,
+        email: (r.datos_comprador && r.datos_comprador.email) || r.comprador_email,
+        telefono: (r.datos_comprador && r.datos_comprador.telefono) || null,
+      },
       seats: r.entradas,
       pricing: {
         subtotal: Number(r.subtotal),
@@ -281,8 +304,8 @@ async function listarPorUsuario(usuarioId) {
   });
 }
 
-/** Todas las órdenes (admin). */
-async function listarTodas() {
+/** Todas las órdenes (admin). `limite` opcional para el dashboard. */
+async function listarTodas({ limite = null } = {}) {
   const sql = `
     SELECT
       o.*, e.nombre AS evento_nombre, u.nombre AS usuario_nombre, u.email AS usuario_email
@@ -290,8 +313,10 @@ async function listarTodas() {
     JOIN eventos e ON e.id = o.evento_id
     LEFT JOIN usuarios u ON u.id = o.usuario_id
     ORDER BY o.creada_en DESC
+    ${limite ? "LIMIT $1" : ""}
   `;
-  const { rows } = await pool.query(sql);
+  const params = limite ? [limite] : [];
+  const { rows } = await pool.query(sql, params);
   return rows;
 }
 

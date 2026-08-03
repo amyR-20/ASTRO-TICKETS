@@ -187,6 +187,8 @@ async function login(req, res) {
         avatar: usuario.avatar,
         avatar_url: usuario.avatar_url,
         bio: usuario.bio,
+        idioma_pref: usuario.idioma_pref || "es",
+        tema_pref: usuario.tema_pref || "auto",
       },
     });
   } catch (err) {
@@ -236,4 +238,24 @@ async function actualizarPerfil(req, res) {
   }
 }
 
-module.exports = { registro, login, perfil, actualizarPerfil };
+/** PUT /api/auth/perfil/preferencias — guarda idioma/tema del usuario. */
+async function actualizarPreferencias(req, res) {
+  try {
+    const { idioma, tema } = req.body || {};
+    const idiomaValido = !idioma || ["es", "en"].includes(String(idioma));
+    const temaValido = !tema || ["light", "dark", "auto"].includes(String(tema));
+    if (!idiomaValido || !temaValido) {
+      return res.status(400).json({ error: "Preferencias inválidas." });
+    }
+    const usuario = await usuarioModel.actualizarPreferencias(req.usuario.id, {
+      idioma: idioma ? String(idioma) : undefined,
+      tema: tema ? String(tema) : undefined,
+    });
+    return res.json({ mensaje: "Preferencias guardadas.", usuario });
+  } catch (err) {
+    console.error("Error guardando preferencias:", err);
+    return res.status(500).json({ error: "No se pudieron guardar las preferencias." });
+  }
+}
+
+module.exports = { registro, login, perfil, actualizarPerfil, actualizarPreferencias };

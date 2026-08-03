@@ -6,6 +6,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const path = require("path"); // AGREGADO
 
 const authRoutes = require("./routes/authRoutes");
@@ -15,10 +16,17 @@ const funcionRoutes = require("./routes/funcionRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const entradaRoutes = require("./routes/entradaRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const catalogoRoutes = require("./routes/catalogoRoutes");
+const reembolsoRoutes = require("./routes/reembolsoRoutes");
+const notificacionRoutes = require("./routes/notificacionRoutes");
 
 const app = express();
 
 // --- Middlewares globales ---
+// Compresión gzip/brotli de todas las respuestas (JSON, HTML, CSS, JS):
+// reduce el peso transferido y acelera la carga de la página.
+app.use(compression());
+
 // CORS restringido a una lista explícita de orígenes (nunca "*"):
 //   - el propio servidor (Express sirve el frontend en :3000)
 //   - Live Server (.vscode/settings.json usa el puerto 5501)
@@ -45,7 +53,20 @@ app.use(cors({ origin: ORIGENES_PERMITIDOS }));
 app.use(express.json({ limit: "4mb" }));
 
 // En local Express sirve la misma raiz que Vercel publica mediante su CDN.
-app.use(express.static(path.join(__dirname, "public")));
+// Cabeceras de caché: imágenes 7 días, CSS/JS 1 día, HTML sin caché (para
+// que los cambios de despliegue se vean de inmediato).
+app.use(express.static(path.join(__dirname, "public"), {
+  maxAge: "1d",
+  setHeaders(res, filePath) {
+    if (/\.(html?)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "no-cache");
+    } else if (/\.(png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+    } else {
+      res.setHeader("Cache-Control", "public, max-age=86400");
+    }
+  },
+}));
 
 // --- Rutas ---
 app.use("/api/auth", authRoutes);
@@ -55,6 +76,9 @@ app.use("/api/ordenes", ordenRoutes);
 app.use("/api/entradas", entradaRoutes);
 app.use("/api/pagos", paymentRoutes);
 app.use("/api", adminRoutes);
+app.use("/api", catalogoRoutes);
+app.use("/api", reembolsoRoutes);
+app.use("/api", notificacionRoutes);
 
 // AGREGADO: muestra index.html al entrar a localhost:3000
 app.get("/", (req, res) => {

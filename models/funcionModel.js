@@ -16,20 +16,21 @@ const MINUTOS_RESERVA = 15;
  * expiradas. Si en el futuro se necesita que esto ocurra de forma
  * automática sin peticiones, se deberá programar un cron job que
  * llame a esta función cada 1-2 minutos.
+ *
+ * Acepta un `client` opcional: si se pasa, ejecuta los UPDATE dentro
+ * de la transacción de ese cliente (evita abrir una segunda conexión
+ * del pool durante reservar/comprar).
  */
-async function liberarReservasVencidas() {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-
+async function liberarReservasVencidas(client = null) {
+  const ejecutar = async (con) => {
     // 1) Marcar reservas activas vencidas como expiradas
-    const res = await client.query(
+    const res = await con.query(
       `UPDATE reservas SET estado = 'expirada'
        WHERE estado = 'activa' AND expira_en <= now()`
     );
 
     // 2) Liberar asientos que quedaron 'reserved' sin reserva activa
-    await client.query(
+    await con.query(
       `UPDATE asientos a SET estado = 'available'
        WHERE a.estado = 'reserved'
          AND a.funcion_id IS NOT NULL
@@ -40,31 +41,40 @@ async function liberarReservasVencidas() {
              AND r.estado = 'activa'
          )`
     );
-
-    await client.query("COMMIT");
     return res.rowCount || 0;
+  };
+
+  if (client) return ejecutar(client);
+
+  const c = await pool.connect();
+  try {
+    await c.query("BEGIN");
+    const n = await ejecutar(c);
+    await c.query("COMMIT");
+    return n;
   } catch (err) {
-    await client.query("ROLLBACK");
+    await c.query("ROLLBACK");
     throw err;
   } finally {
-    client.release();
+    c.release();
   }
 }
 
 /**
  * Estadísticas de inventario de una función.
+ * Una sola consulta con COUNT(*) FILTER (antes usaba 6 subconsultas
+ * que escaneaban `asientos` una vez por cada contador).
  * Devuelve { capacidad, vendidos, reservados, bloqueados, disponibles,
- *            pctDisponible, zonas: [{zona, total, vendidos, reservados,
- *                                    bloqueados, disponibles, agotada}] }
+ *            pctDisponible, agotada, zonas: [...] }
  */
 async function estadisticas(funcionId) {
   const { rows } = await pool.query(
     `SELECT
-       (SELECT COUNT(*) FROM asientos WHERE funcion_id = $1) AS capacidad,
-       (SELECT COUNT(*) FROM asientos WHERE funcion_id = $1 AND estado = 'sold') AS vendidos,
-       (SELECT COUNT(*) FROM asientos WHERE funcion_id = $1 AND estado = 'reserved') AS reservados,
-       (SELECT COUNT(*) FROM asientos WHERE funcion_id = $1 AND estado = 'blocked') AS bloqueados,
-       (SELECT COUNT(*) FROM asientos WHERE funcion_id = $1 AND estado = 'available') AS disponibles,
+       COUNT(*) AS capacidad,
+       COUNT(*) FILTER (WHERE estado = 'sold') AS vendidos,
+       COUNT(*) FILTER (WHERE estado = 'reserved') AS reservados,
+       COUNT(*) FILTER (WHERE estado = 'blocked') AS bloqueados,
+       COUNT(*) FILTER (WHERE estado = 'available') AS disponibles,
        COALESCE(
          (SELECT json_agg(z) FROM (
             SELECT zona,
@@ -77,7 +87,9 @@ async function estadisticas(funcionId) {
             WHERE funcion_id = $1
             GROUP BY zona
           ) z), '[]'
-       ) AS zonas`,
+       ) AS zonas
+     FROM asientos
+     WHERE funcion_id = $1`,
     [funcionId]
   );
 
@@ -85,7 +97,7 @@ async function estadisticas(funcionId) {
   if (!fila) {
     return {
       capacidad: 0, vendidos: 0, reservados: 0, bloqueados: 0,
-      disponibles: 0, pctDisponible: 0, zonas: [],
+      disponibles: 0, pctDisponible: 0, agotada: false, zonas: [],
     };
   }
 
@@ -98,6 +110,7 @@ async function estadisticas(funcionId) {
     bloqueados: Number(fila.bloqueados),
     disponibles,
     pctDisponible: capacidad > 0 ? Math.round((disponibles / capacidad) * 100) : 0,
+    agotada: capacidad > 0 && disponibles === 0,
     zonas: fila.zonas.map((z) => ({
       zona: z.zona,
       total: Number(z.total),
@@ -110,6 +123,74 @@ async function estadisticas(funcionId) {
   };
 }
 
+/**
+ * Estadísticas de todas las funciones cuyos ids se pasan, en 2 consultas
+ * (totales + por zona) en lugar de 2 consultas POR función.
+ * Devuelve un Map<funcionId, stats>.
+ */
+async function estadisticasMasivas(funcionIds) {
+  const mapa = new Map();
+  if (!funcionIds.length) return mapa;
+
+  const { rows: totales } = await pool.query(
+    `SELECT funcion_id,
+            COUNT(*) AS capacidad,
+            COUNT(*) FILTER (WHERE estado = 'sold') AS vendidos,
+            COUNT(*) FILTER (WHERE estado = 'reserved') AS reservados,
+            COUNT(*) FILTER (WHERE estado = 'blocked') AS bloqueados,
+            COUNT(*) FILTER (WHERE estado = 'available') AS disponibles
+     FROM asientos
+     WHERE funcion_id = ANY($1::int[])
+     GROUP BY funcion_id`,
+    [funcionIds]
+  );
+
+  const { rows: porZona } = await pool.query(
+    `SELECT funcion_id, zona,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE estado = 'sold') AS vendidos,
+            COUNT(*) FILTER (WHERE estado = 'reserved') AS reservados,
+            COUNT(*) FILTER (WHERE estado = 'blocked') AS bloqueados,
+            COUNT(*) FILTER (WHERE estado = 'available') AS disponibles
+     FROM asientos
+     WHERE funcion_id = ANY($1::int[])
+     GROUP BY funcion_id, zona
+     ORDER BY funcion_id`,
+    [funcionIds]
+  );
+
+  const zonasPorFuncion = new Map();
+  for (const z of porZona) {
+    if (!zonasPorFuncion.has(z.funcion_id)) zonasPorFuncion.set(z.funcion_id, []);
+    zonasPorFuncion.get(z.funcion_id).push(z);
+  }
+
+  for (const t of totales) {
+    const capacidad = Number(t.capacidad);
+    const disponibles = Number(t.disponibles);
+    const zonas = (zonasPorFuncion.get(t.funcion_id) || []).map((z) => ({
+      zona: z.zona,
+      total: Number(z.total),
+      vendidos: Number(z.vendidos),
+      reservados: Number(z.reservados),
+      bloqueados: Number(z.bloqueados),
+      disponibles: Number(z.disponibles),
+      agotada: Number(z.total) > 0 && Number(z.disponibles) === 0,
+    }));
+    mapa.set(t.funcion_id, {
+      capacidad,
+      vendidos: Number(t.vendidos),
+      reservados: Number(t.reservados),
+      bloqueados: Number(t.bloqueados),
+      disponibles,
+      pctDisponible: capacidad > 0 ? Math.round((disponibles / capacidad) * 100) : 0,
+      agotada: capacidad > 0 && disponibles === 0,
+      zonas,
+    });
+  }
+  return mapa;
+}
+
 /** Lista las funciones de un evento con sus estadísticas. */
 async function listarPorEvento(eventoId) {
   const { rows } = await pool.query(
@@ -118,11 +199,10 @@ async function listarPorEvento(eventoId) {
      ORDER BY fecha ASC, hora ASC`,
     [eventoId]
   );
-  const conStats = [];
-  for (const f of rows) {
-    conStats.push({ ...f, stats: await estadisticas(f.id) });
-  }
-  return conStats;
+  if (!rows.length) return rows;
+
+  const stats = await estadisticasMasivas(rows.map((f) => f.id));
+  return rows.map((f) => ({ ...f, stats: stats.get(f.id) || null }));
 }
 
 /** Busca una función por id con sus asientos y estadísticas. */
@@ -238,12 +318,19 @@ async function crearEnCliente(client, { eventoId, fecha, hora, sala, estado = "p
       }
     }
   }
-
-  for (const a of plantilla) {
+  if (plantilla.length) {
+    // Multi-row INSERT: un solo viaje a la BD en vez de uno por asiento.
+    const valores = [];
+    const params = [];
+    plantilla.forEach((a, i) => {
+      const base = i * 7;
+      params.push(eventoId, funcion.id, a.asiento_id, a.fila, a.columna, a.zona || null, "available");
+      valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7})`);
+    });
     await client.query(
       `INSERT INTO asientos (evento_id, funcion_id, asiento_id, fila, columna, zona, estado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [eventoId, funcion.id, a.asiento_id, a.fila, a.columna, a.zona || null, "available"]
+       VALUES ${valores.join(", ")}`,
+      params
     );
   }
 
@@ -257,14 +344,22 @@ async function crearEnCliente(client, { eventoId, fecha, hora, sala, estado = "p
   if (!zonasPlantilla.length || plantilla.some((a) => !a.zona)) {
     throw new Error("No se puede crear una función sin asientos y zonas con precio válido.");
   }
-  for (const zona of zonasPlantilla) {
-    if (!zona.nombre || Number(zona.precio) < 0) {
-      throw new Error("No se puede crear una función con una zona sin precio válido.");
-    }
+
+  if (zonasPlantilla.length) {
+    const valores = [];
+    const params = [];
+    zonasPlantilla.forEach((zona, i) => {
+      if (!zona.nombre || Number(zona.precio) < 0) {
+        throw new Error("No se puede crear una función con una zona sin precio válido.");
+      }
+      const base = i * 7;
+      params.push(eventoId, funcion.id, zona.nombre, zona.color, zona.precio, zona.cantidad, zona.descripcion);
+      valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7})`);
+    });
     await client.query(
       `INSERT INTO zonas (evento_id, funcion_id, nombre, color, precio, cantidad, descripcion)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [eventoId, funcion.id, zona.nombre, zona.color, zona.precio, zona.cantidad, zona.descripcion]
+       VALUES ${valores.join(", ")}`,
+      params
     );
   }
 
@@ -382,17 +477,30 @@ async function reservasPorVencer(minutos = 10) {
 /** Resumen global por evento → función (panel admin). */
 async function resumenGlobal() {
   await liberarReservasVencidas();
-  const { rows } = await pool.query(
+  // 4 consultas en total: eventos, funciones, totales y por zona.
+  // Antes hacía 1 consulta por evento + 2 por función (N+1).
+  const { rows: eventos } = await pool.query(
     `SELECT * FROM eventos ORDER BY creado_en DESC`
   );
-  const resultado = [];
-  for (const e of rows) {
-    resultado.push({
-      evento: e,
-      funciones: await listarPorEvento(e.id),
-    });
+  if (!eventos.length) return [];
+
+  const idsEventos = eventos.map((e) => e.id);
+  const { rows: funciones } = await pool.query(
+    `SELECT * FROM funciones_evento
+     WHERE evento_id = ANY($1::text[])
+     ORDER BY fecha ASC, hora ASC`,
+    [idsEventos]
+  );
+
+  const stats = await estadisticasMasivas(funciones.map((f) => f.id));
+
+  const porEvento = new Map(eventos.map((e) => [e.id, []]));
+  for (const f of funciones) {
+    const lista = porEvento.get(f.evento_id);
+    if (lista) lista.push({ ...f, stats: stats.get(f.id) || null });
   }
-  return resultado;
+
+  return eventos.map((e) => ({ evento: e, funciones: porEvento.get(e.id) || [] }));
 }
 
 /** Cambia el estado de un asiento de la función (admin). Audita. */
@@ -481,6 +589,7 @@ module.exports = {
   MINUTOS_RESERVA,
   liberarReservasVencidas,
   estadisticas,
+  estadisticasMasivas,
   listarPorEvento,
   buscarPorId,
   crear,

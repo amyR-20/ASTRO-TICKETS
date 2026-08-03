@@ -23,12 +23,11 @@ async function reservar({ usuarioId, funcionId, asientoIds }) {
   try {
     await client.query("BEGIN");
 
-    // Antes de reservar, liberar reservas vencidas
-    await liberarReservasVencidas();
+    // Antes de reservar, liberar reservas vencidas (dentro de la transacción)
+    await liberarReservasVencidas(client);
 
     const funcion = (await client.query(
-      `SELECT f.*, e.id AS evento_id FROM funciones_evento f
-       JOIN eventos e ON e.id = f.evento_id
+      `SELECT f.id, f.evento_id, f.estado FROM funciones_evento f
        WHERE f.id = $1 FOR UPDATE`,
       [funcionId]
     )).rows[0];
@@ -75,25 +74,34 @@ async function reservar({ usuarioId, funcionId, asientoIds }) {
       return { status: 404, mensaje: `Asiento(s) inexistente(s): ${inexistentes.join(", ")}` };
     }
 
-    // Validar disponibilidad (no confiar en lo mostrado al cargar la página)
+    // Validar disponibilidad (no confiar en lo mostrado al cargar la página).
+    // Las reservas previas del usuario se consultan en un solo SELECT
+    // (antes había 1 consulta por asiento reservado).
     const noDisponibles = [];
+    const reservados = asientos.filter((a) => a.estado === "reserved");
+    const preciosDeReserva = new Map();
+    if (reservados.length) {
+      const { rows: misReservas } = await client.query(
+        `SELECT asiento_id, precio FROM reservas
+         WHERE funcion_id = $1 AND usuario_id = $2 AND estado = 'activa'
+           AND asiento_id = ANY($3::text[])`,
+        [funcionId, usuarioId, reservados.map((a) => a.asiento_id)]
+      );
+      for (const r of misReservas) preciosDeReserva.set(r.asiento_id, Number(r.precio));
+    }
+
     for (const a of asientos) {
       if (a.estado === "sold" || a.estado === "blocked") {
         noDisponibles.push(a.asiento_id);
         continue;
       }
       if (a.estado === "reserved") {
-        const miReserva = (await client.query(
-          `SELECT precio FROM reservas
-           WHERE funcion_id = $1 AND asiento_id = $2
-             AND usuario_id = $3 AND estado = 'activa'`,
-          [funcionId, a.asiento_id, usuarioId]
-        )).rows[0];
-        if (!miReserva) {
+        const precio = preciosDeReserva.get(a.asiento_id);
+        if (precio == null) {
           noDisponibles.push(a.asiento_id);
           continue;
         }
-        a.precio = Number(miReserva.precio);
+        a.precio = precio;
         continue;
       }
       const precio = precioDe(a.zona);

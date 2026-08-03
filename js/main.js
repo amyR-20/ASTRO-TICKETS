@@ -8,11 +8,16 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ---------- Navbar: sombra al hacer scroll ---------- */
   const navbar = document.querySelector(".navbar");
   if (navbar) {
+    let navShadowRaf = 0;
     const onScroll = () => {
-      navbar.style.boxShadow =
-        window.scrollY > 10
-          ? "0 4px 20px rgba(108, 63, 209, 0.08)"
-          : "none";
+      if (navShadowRaf) return;
+      navShadowRaf = requestAnimationFrame(() => {
+        navShadowRaf = 0;
+        navbar.style.boxShadow =
+          window.scrollY > 10
+            ? "0 4px 20px rgba(108, 63, 209, 0.08)"
+            : "none";
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
@@ -117,28 +122,36 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------- Búsqueda / filtro de eventos ---------- */
+  // Las tarjetas las crea renderCatalogEvents() (asíncrono); guardamos la
+  // lista en caché y la renovamos tras cada render para no re-consultar el DOM.
+  let catalogCards = [];
+
+  const refreshCatalogCards = () => {
+    catalogCards = Array.prototype.slice.call(document.querySelectorAll("[data-event-name]"));
+  };
+
+  const applyCatalogFilter = () => {
+    if (!searchInput) return;
+    const term = searchInput.value.trim().toLowerCase();
+    const cat = categoryFilter && categoryFilter.value ? categoryFilter.value : "";
+    for (let i = 0; i < catalogCards.length; i++) {
+      const card = catalogCards[i];
+      const name = card.getAttribute("data-event-name").toLowerCase();
+      const place = (card.getAttribute("data-event-place") || "").toLowerCase();
+      const matchTerm = name.includes(term) || place.includes(term);
+      const catMatch = !cat || cat === "todas" || card.getAttribute("data-event-category") === cat;
+      card.hidden = !(matchTerm && catMatch);
+    }
+  };
+
   const searchInput = document.getElementById("event-search");
   if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      const term = searchInput.value.trim().toLowerCase();
-      document.querySelectorAll("[data-event-name]").forEach((card) => {
-        const name = card.getAttribute("data-event-name").toLowerCase();
-        const place = (card.getAttribute("data-event-place") || "").toLowerCase();
-        const match = name.includes(term) || place.includes(term);
-        card.style.display = match ? "" : "none";
-      });
-    });
+    searchInput.addEventListener("input", () => { refreshCatalogCards(); applyCatalogFilter(); });
   }
 
   const categoryFilter = document.getElementById("event-category");
   if (categoryFilter) {
-    categoryFilter.addEventListener("change", () => {
-      const value = categoryFilter.value;
-      document.querySelectorAll("[data-event-category]").forEach((card) => {
-        const cat = card.getAttribute("data-event-category");
-        card.style.display = value === "todas" || cat === value ? "" : "none";
-      });
-    });
+    categoryFilter.addEventListener("change", () => { refreshCatalogCards(); applyCatalogFilter(); });
   }
 
   /* ============================================================
@@ -177,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let TAKEN_SEATS = new Set(
       ALL_SEATS.length
-        ? ALL_SEATS.filter((s) => s.status !== 'available').map((s) => s.id)
+        ? ALL_SEATS.filter((s) => s.status === 'sold' || s.status === 'blocked').map((s) => s.id)
         : ["A3","A4","B2","B5","C1","C8","D4","D5","E6","F3","F7","G2","G9","H1","H5","H10","I4","I6"]
     );
     const selectedSeats = new Map();
@@ -186,6 +199,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const zoneSeats = ALL_SEATS.filter((s) => (s.type || '').toLowerCase() === zone);
       const nCols = zoneSeats.length ? Math.max(...zoneSeats.map((s) => s.col)) : cols;
       const aisleAfter = Math.floor(nCols / 2);
+
+      // Delegación: un solo listener por grid (los listeners por asiento
+      // se re-creaban en cada render y eran cientos de closures).
+      if (!container.dataset.seatDelegate) {
+        container.dataset.seatDelegate = "1";
+        container.addEventListener("click", (e) => {
+          const seatEl = e.target.closest(".seat");
+          if (!seatEl || seatEl.classList.contains("taken")) return;
+          toggleSeat(seatEl);
+        });
+      }
 
       // Column labels
       const colRow = document.createElement("div");
@@ -228,17 +252,13 @@ document.addEventListener("DOMContentLoaded", () => {
               continue;
             }
             const id = seatData.id;
-            const taken = seatData.status !== 'available';
+            const taken = seatData.status === 'sold' || seatData.status === 'blocked';
             const seat = document.createElement("div");
             seat.className = "seat" + (taken ? " taken" : "");
             seat.dataset.id = id;
             seat.dataset.zone = zone;
             seat.dataset.price = PRICES[zone];
             seat.textContent = c;
-
-            if (!taken) {
-              seat.addEventListener("click", () => toggleSeat(seat));
-            }
             rowEl.appendChild(seat);
           }
           container.appendChild(rowEl);
@@ -267,10 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
           seat.dataset.zone = zone;
           seat.dataset.price = PRICES[zone];
           seat.textContent = c;
-
-          if (!taken) {
-            seat.addEventListener("click", () => toggleSeat(seat));
-          }
           rowEl.appendChild(seat);
         }
         container.appendChild(rowEl);
@@ -289,16 +305,31 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSeatDisplay();
     }
 
-    function updateSeatDisplay() {
-      const display = document.getElementById("selected-seats-display");
-      const input = document.getElementById("selected-seats-input");
-      const countEl = document.getElementById("ticket-count-display");
-      const totalEl = document.getElementById("purchase-total");
-      const btn = document.getElementById("btn-continuar");
+    // Referencias del panel de selección cacheadas una sola vez
+    let seatDisplayRefs = null;
+    const getSeatDisplayRefs = () => {
+      if (!seatDisplayRefs) {
+        seatDisplayRefs = {
+          display: document.getElementById("selected-seats-display"),
+          input: document.getElementById("selected-seats-input"),
+          countEl: document.getElementById("ticket-count-display"),
+          totalEl: document.getElementById("purchase-total"),
+          btn: document.getElementById("btn-continuar"),
+          pagoSeats: document.getElementById("pago-seats"),
+          pagoQty: document.getElementById("pago-qty"),
+          pagoSubtotal: document.getElementById("pago-subtotal"),
+          pagoFee: document.getElementById("pago-fee"),
+          pagoTotal: document.getElementById("pago-total"),
+        };
+      }
+      return seatDisplayRefs;
+    };
 
+    function updateSeatDisplay() {
+      const refs = getSeatDisplayRefs();
+      const display = refs.display;
       if (!display) return;
 
-      let html = "";
       let total = 0;
 
       // Group by zone
@@ -308,35 +339,33 @@ document.addEventListener("DOMContentLoaded", () => {
         byZone[data.zone].push(id);
       });
 
+      const parts = [];
       Object.entries(byZone).forEach(([zone, ids]) => {
         ids.sort();
-        ids.forEach(id => {
-          html += `<span class="seat-tag">${id} <span style="font-weight:400;opacity:0.6;">·</span> ${zone}</span>`;
-        });
+        for (let i = 0; i < ids.length; i++) {
+          parts.push(`<span class="seat-tag">${ids[i]} <span style="font-weight:400;opacity:0.6;">·</span> ${zone}</span>`);
+        }
         total += ids.length * PRICES[zone];
       });
 
-      if (html === "") {
-        html = '<span style="font-size: 0.78rem; color: var(--color-on-surface-variant);">Haz clic en los asientos del mapa</span>';
+      if (parts.length === 0) {
+        parts.push('<span style="font-size: 0.78rem; color: var(--color-on-surface-variant);">Haz clic en los asientos del mapa</span>');
       }
 
-      display.innerHTML = html;
-      if (input) input.value = Array.from(selectedSeats.keys()).join(",");
-      if (countEl) countEl.textContent = selectedSeats.size;
-      if (totalEl) totalEl.textContent = "RD$ " + total.toLocaleString("es-DO");
-      if (btn) btn.disabled = selectedSeats.size === 0;
+      display.innerHTML = parts.join("");
+      const ids = Array.from(selectedSeats.keys());
+      if (refs.input) refs.input.value = ids.join(",");
+      if (refs.countEl) refs.countEl.textContent = selectedSeats.size;
+      if (refs.totalEl) refs.totalEl.textContent = "RD$ " + total.toLocaleString("es-DO");
+      if (refs.btn) refs.btn.disabled = selectedSeats.size === 0;
 
       // Update pago.html totals if present
-      const pagoSeats = document.getElementById("pago-seats");
-      const pagoQty = document.getElementById("pago-qty");
-      const pagoSubtotal = document.getElementById("pago-subtotal");
-      const pagoFee = document.getElementById("pago-fee");
-      const pagoTotal = document.getElementById("pago-total");
-      if (pagoSeats) pagoSeats.textContent = Array.from(selectedSeats.keys()).join(", ") || "—";
-      if (pagoQty) pagoQty.textContent = selectedSeats.size;
-      if (pagoSubtotal) pagoSubtotal.textContent = "RD$ " + total.toLocaleString("es-DO");
-      if (pagoFee) pagoFee.textContent = "RD$ " + Math.round(total * 0.05).toLocaleString("es-DO");
-      if (pagoTotal) pagoTotal.textContent = "RD$ " + Math.round(total * 1.05).toLocaleString("es-DO");
+      const idsStr = ids.join(", ");
+      if (refs.pagoSeats) refs.pagoSeats.textContent = idsStr || "—";
+      if (refs.pagoQty) refs.pagoQty.textContent = selectedSeats.size;
+      if (refs.pagoSubtotal) refs.pagoSubtotal.textContent = "RD$ " + total.toLocaleString("es-DO");
+      if (refs.pagoFee) refs.pagoFee.textContent = "RD$ " + Math.round(total * 0.05).toLocaleString("es-DO");
+      if (refs.pagoTotal) refs.pagoTotal.textContent = "RD$ " + Math.round(total * 1.05).toLocaleString("es-DO");
     }
 
     buildSeatGrid(seatGridPlatino, "platino", 2, 10);
@@ -424,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       TAKEN_SEATS = new Set(
         ALL_SEATS.length
-          ? ALL_SEATS.filter((s) => s.status !== 'available').map((s) => s.id)
+          ? ALL_SEATS.filter((s) => s.status === 'sold' || s.status === 'blocked').map((s) => s.id)
           : ["A3","A4","B2","B5","C1","C8","D4","D5","E6","F3","F7","G2","G9","H1","H5","H10","I4","I6"]
       );
 
@@ -534,7 +563,7 @@ document.addEventListener("DOMContentLoaded", () => {
      PURCHASE FLOW — pago.html & comprobante.html
      ============================================================ */
   const storedRaw = sessionStorage.getItem('astro_purchase');
-  if (storedRaw) {
+  if (storedRaw && !window.__stableFlow) {
     try {
       const purchase = JSON.parse(storedRaw);
 
@@ -729,16 +758,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---- Helpers ---- */
   function t(key) { return typeof I18n !== 'undefined' ? I18n.t(key) : key; }
-  const statusLabelMap = {
-    paid: t('history.paid'),
-    pending: t('history.pending'),
-    cancelled: t('history.cancelled'),
-    refunded: t('history.refunded'),
-    completed: t('history.completed'),
-    available: t('history.available'),
-    'selling-fast': t('history.selling_fast'),
-    'past-event': t('history.past_event')
-  };
+  function statusLabelOf(status) {
+    const labels = {
+      paid: t('history.paid'),
+      pending: t('history.pending'),
+      cancelled: t('history.cancelled'),
+      refunded: t('history.refunded'),
+      completed: t('history.completed'),
+      available: t('history.available'),
+      'selling-fast': t('history.selling_fast'),
+      'past-event': t('history.past_event')
+    };
+    return labels[status] || status;
+  }
   const statusClassMap = {
     paid: 'paid',
     pending: 'pending',
@@ -807,7 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(evt.date)) {
         const d = new Date(evt.date + 'T12:00:00');
         if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' });
+          return I18n.date(d, { day: 'numeric', month: 'long', year: 'numeric' });
         }
       }
       return evt.date;
@@ -911,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('stat-active-tickets').textContent = activeTickets;
       document.getElementById('stat-tickets-purchased').textContent = totalTickets;
       document.getElementById('stat-next-event').textContent = nextEvent && nextEvent.date > now
-        ? nextEvent.name
+        ? I18n.eventName(nextEvent.name)
         : '—';
 
       // Recent Success — latest purchase
@@ -924,7 +956,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const msgEl = confirmedEl.querySelector('.rc-msg');
           if (msgEl) {
             const tkLabel = latest.seats.length === 1 ? t('history.ticket') : t('history.tickets');
-            msgEl.textContent = `"${latest.event.name}" — ${latest.seats.length} ${tkLabel} ${t('history.ready_msg_short')}`;
+            msgEl.textContent = `"${I18n.eventName(latest.event.name)}" — ${latest.seats.length} ${tkLabel} ${t('history.ready_msg_short')}`;
           }
         }
       }
@@ -933,7 +965,7 @@ document.addEventListener("DOMContentLoaded", () => {
       listEl.innerHTML = '';
       history.forEach((p, idx) => {
         const status = p.status || 'paid';
-        const statusLabel = statusLabelMap[status] || status;
+        const statusLabel = statusLabelOf(status);
         const statusClass = statusClassMap[status] || 'paid';
         const qty = (p.seats || []).length;
         const orderNum = p.payment?.transactionId || ('#' + (idx + 1));
@@ -954,8 +986,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Venue short
         const venueShort = (p.event.venue || '').split(',')[0];
-        const functionTime = p.funcion?.hora || (p.event.date || '').split(' · ')[1] || '—';
-        const purchaseDateDisplay = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('es-DO', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+        const functionTime = I18n.time(p.funcion?.hora || (p.event.date || '').split(' · ')[1] || '—');
+        const purchaseDateDisplay = p.purchasedAt ? I18n.date(p.purchasedAt, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
         const orderId = p.orderId;
 
         const card = document.createElement('div');
@@ -968,7 +1000,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="purchase-card-body">
             <span class="purchase-status ${statusClass}">${statusLabel}</span>
-            <h3 class="purchase-event-name">${p.event.name}</h3>
+            <h3 class="purchase-event-name">${I18n.eventName(p.event.name)}</h3>
             <div class="purchase-info">
               <span class="purchase-info-item">
                 <span class="material-symbols-outlined">calendar_month</span> ${eventDateDisplay}
@@ -986,7 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span class="material-symbols-outlined">location_on</span> ${venueShort || '—'}
               </span>
               <span class="purchase-info-item">
-                <span class="material-symbols-outlined">shopping_bag</span> Comprado: ${purchaseDateDisplay}
+                <span class="material-symbols-outlined">shopping_bag</span> ${t('history.bought')}: ${purchaseDateDisplay}
               </span>
             </div>
             <div class="purchase-actions">
@@ -994,13 +1026,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span class="material-symbols-outlined">download</span> ${I18n.t('history.download_pdf')}
               </button>
               <button class="btn-purchase-details" data-action="ticket" data-order-id="${orderId}">
-                <span class="material-symbols-outlined">confirmation_number</span> Ver boleto
+                <span class="material-symbols-outlined">confirmation_number</span> ${t('history.view_ticket')}
               </button>
               <button class="btn-purchase-details" data-action="print" data-order-id="${orderId}">
-                <span class="material-symbols-outlined">print</span> Imprimir boleto
+                <span class="material-symbols-outlined">print</span> ${t('history.print_ticket')}
               </button>
               <button class="btn-purchase-details" data-action="resend" data-order-id="${orderId}">
-                <span class="material-symbols-outlined">mail</span> Reenviar confirmación
+                <span class="material-symbols-outlined">mail</span> ${t('history.resend_ticket')}
               </button>
             </div>
             <span class="purchase-order">${orderNum}</span>
@@ -1081,6 +1113,9 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="detail-ticket-seat">${seat.id}</span>
         <span class="detail-ticket-zone">${seat.zone.charAt(0).toUpperCase() + seat.zone.slice(1)}</span>
         <span class="detail-ticket-price">RD$ ${parseInt(seat.price).toLocaleString('es-DO')}</span>
+        <span class="text-right">
+          ${seat.codigo ? `<button type="button" class="btn-ghost btn" style="padding:4px 10px;font-size:0.78rem;" data-transfer-codigo="${String(seat.codigo).replace(/"/g, '&quot;')}"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;">swap_horiz</span> ${t('history.transfer')}</button>` : ''}
+        </span>
       </div>
     `).join('');
 
@@ -1088,7 +1123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const eventDateDisplay = dateParts[0] || p.event.date;
     const eventTime = dateParts[1] || '—';
 
-    const purchaseDate = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('es-DO', {
+    const purchaseDate = p.purchasedAt ? I18n.dateTime(p.purchasedAt, {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     }) : '—';
 
@@ -1099,11 +1134,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const emailDisplay = p.comprador?.email || '—';
 
     const statusDot = statusClassMap[status] || 'paid';
-    const statusLabel = statusLabelMap[status] || status;
+    const statusLabel = statusLabelOf(status);
 
     detailContent.innerHTML = `
-      <img class="detail-hero-img" src="${p.event.img || ''}" alt="${p.event.name}" />
-      <h2 class="detail-event-name">${p.event.name}</h2>
+      <img class="detail-hero-img" src="${p.event.img || ''}" alt="${I18n.eventName(p.event.name)}" fetchpriority="high" decoding="async" />
+      <h2 class="detail-event-name">${I18n.eventName(p.event.name)}</h2>
 
       <div class="detail-status-bar">
         <span class="status-dot ${statusDot}"></span>
@@ -1137,7 +1172,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="detail-field">
           <div class="detail-field-label">${t('history.category')}</div>
-          <div class="detail-field-value">${p.event.category || '—'}</div>
+          <div class="detail-field-value">${I18n.category(p.event.category) || '—'}</div>
         </div>
         <div class="detail-field">
           <div class="detail-field-label">${t('history.payment_method')}</div>
@@ -1154,10 +1189,11 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
 
       <div class="detail-ticket-list">
-        <div class="detail-ticket-row" style="background:#F9FAFB;font-weight:600;color:#374151;">
+        <div class="detail-ticket-row" style="background:var(--color-surface-container-low);color:var(--color-on-surface);font-weight:600;">
           <span>${t('history.seat')}</span>
           <span>${t('history.zone')}</span>
           <span>${t('history.price')}</span>
+          <span></span>
         </div>
         ${seatRows}
       </div>
@@ -1172,7 +1208,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="material-symbols-outlined">download</span> ${t('history.download_pdf')}
         </button>
         <button class="btn-purchase-details" data-detail-comprobante>
-          <span class="material-symbols-outlined">confirmation_number</span> Ver boleto
+          <span class="material-symbols-outlined">confirmation_number</span> ${t('history.view_ticket')}
         </button>
       </div>
     `;
@@ -1197,6 +1233,25 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = 'comprobante.html?orden=' + encodeURIComponent(p.orderId);
       });
     }
+
+    // Transferir un boleto a otra persona por correo
+    detailContent.querySelectorAll('[data-transfer-codigo]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const codigo = btn.dataset.transferCodigo;
+        const email = prompt(t('history.transfer_prompt'));
+        if (email === null) return;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { alert(t('history.transfer_invalid_email')); return; }
+        btn.disabled = true;
+        try {
+          const res = await Api.transferirEntrada(codigo, email.trim());
+          alert(res.mensaje || t('history.transfer_done'));
+        } catch (err) {
+          alert(err.message || t('history.transfer_failed'));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
 
     detailPanel.classList.add('open');
     detailOverlay.classList.add('show');
@@ -1270,7 +1325,12 @@ document.addEventListener("DOMContentLoaded", () => {
         reservationCode: buildResvCode(),
       }, extraPayment || {});
 
-      const data = await Api.crearOrden({ funcionId, payment });
+      const sesion = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
+      const data = await Api.crearOrden({
+        funcionId,
+        payment,
+        buyer: sesion ? { nombre: sesion.nombre, email: sesion.email } : null,
+      });
       const orden = data.orden || {};
 
       // 3) Guardar el resultado para el comprobante e historial
@@ -1306,7 +1366,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const cardForm = document.getElementById('card-form');
-  if (cardForm) {
+  if (cardForm && !window.__stableFlow) {
     cardForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const cardNumber = (document.getElementById('card-number')?.value || '').replace(/\s/g, '');
@@ -1321,7 +1381,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ---- Alt payment buttons: pagar y guardar ---- */
-  document.querySelectorAll('.pay-alt-btn').forEach(btn => {
+  if (!window.__stableFlow) document.querySelectorAll('.pay-alt-btn').forEach(btn => {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -1414,39 +1474,62 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const published = events.filter(e => e.status === "published" || !e.status);
 
-    // Remove previously inserted dynamic cards
+    // Remover tarjetas dinámicas insertadas previamente
     grid.querySelectorAll("[data-dynamic]").forEach(el => el.remove());
+
+    // Estado de disponibilidad según el inventario real de cada función
+    // (funciones[].stats proviene de las estadísticas del backend).
+    function badgeDisponibilidad(evt) {
+      const funcs = evt.funciones || [];
+      const activas = funcs.filter((f) => f.estado === "activa" && f.stats && f.stats.capacidad > 0);
+      if (activas.length) {
+        const pcts = activas.map((f) => f.stats.pctDisponible);
+        if (pcts.every((p) => p === 0)) return { label: t('catalog.soldout'), cls: 'badge-error' };
+        if (Math.min(...pcts) <= 20) return { label: t('catalog.sellingfast'), cls: 'badge-warning' };
+        return { label: t('catalog.available'), cls: 'badge-info' };
+      }
+      const conAsientos = funcs.filter((f) => f.stats && f.stats.capacidad > 0);
+      if (conAsientos.length && conAsientos.every((f) => f.stats.disponibles === 0)) {
+        return { label: t('catalog.soldout'), cls: 'badge-error' };
+      }
+      return { label: t('catalog.available'), cls: 'badge-info' };
+    }
 
     published.forEach(evt => {
       const dateObj = new Date(evt.date + "T" + (evt.time || "20:00"));
-      const dateDisplay = dateObj.toLocaleDateString("es-DO", { day: "numeric", month: "short", year: "numeric" });
+      const dateDisplay = I18n.date(dateObj, { day: "numeric", month: "short", year: "numeric" });
       const venueShort = (evt.venue || "").split(",")[0].trim();
       const cat = evt.category || "";
+      const evtName = I18n.eventName(evt.name);
 
       const card = document.createElement("a");
       card.className = "card event-card";
       card.href = "evento.html?id=" + evt.id;
       card.setAttribute("data-dynamic", "true");
-      card.setAttribute("data-event-name", evt.name.toLowerCase());
+      card.setAttribute("data-event-name", evtName.toLowerCase());
       card.setAttribute("data-event-place", (venueShort || "").toLowerCase());
-      card.setAttribute("data-event-category", cat.toLowerCase());
+      card.setAttribute("data-event-category", I18n.category(cat).toLowerCase());
 
       card.innerHTML = `
         <div class="thumb">
-          <img src="${evt.image}" alt="${evt.name}" loading="lazy" onerror="this.src='multimedia/logo.svg'" />
-          <span class="badge badge-info">${t('catalog.available')}</span>
+          <img src="${evt.image}" alt="${evtName}" loading="lazy" decoding="async" onerror="this.src='multimedia/logo.svg'" />
+          <span class="badge ${badgeDisponibilidad(evt).cls}">${badgeDisponibilidad(evt).label}</span>
         </div>
         <div class="body">
-          <h3 style="font-size: 1.08rem;">${evt.name}</h3>
+          <h3 style="font-size: 1.08rem;">${evtName}</h3>
           <p class="meta">${venueShort ? venueShort + ' · ' : ''}${dateDisplay}</p>
           <p class="text-muted" style="font-size: 0.82rem; line-height: 1.4; margin-top: 6px;">${evt.description || ''}</p>
         </div>
       `;
       grid.appendChild(card);
     });
+
+    // Renovar la caché del filtro de búsqueda tras insertar tarjetas nuevas
+    if (typeof refreshCatalogCards === "function") refreshCatalogCards();
   }
 
   renderCatalogEvents();
+  window.addEventListener("astro:langchange", () => renderCatalogEvents());
 
   // ---- Seed demo events (runs on any page) ----
   function seedDemoEvents() {
@@ -1642,11 +1725,11 @@ document.addEventListener("DOMContentLoaded", () => {
         canvas.width = Math.max(1, Math.round(img.width * scale));
         canvas.height = Math.max(1, Math.round(img.height * scale));
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        let quality = 0.84;
-        let optimized = canvas.toDataURL("image/jpeg", quality);
-        while (optimized.length > 700000 && quality > 0.46) {
-          quality -= 0.08;
-          optimized = canvas.toDataURL("image/jpeg", quality);
+        // Una sola pasada con calidad 0.7 (antes re-codificaba hasta 5 veces
+        // en el hilo principal, congelando la UI).
+        let optimized = canvas.toDataURL("image/jpeg", 0.7);
+        if (optimized.length > 900000) {
+          optimized = canvas.toDataURL("image/jpeg", 0.5);
         }
         if (optimized.length > 900000) {
           alert("La imagen es demasiado grande. Usa una imagen de menor resolucion.");
@@ -1695,6 +1778,34 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
     const aisleAfter = Math.floor(cols / 2);
 
+    // Mapa id -> asiento: evita el find() lineal dentro del bucle de celdas
+    const seatById = new Map();
+    for (let i = 0; i < seats.length; i++) seatById.set(seats[i].id, seats[i]);
+    const typeByName = new Map();
+    for (let i = 0; i < evSeatTypes.length; i++) typeByName.set(evSeatTypes[i].name, evSeatTypes[i]);
+
+    // Delegación para el grid de asignación (un solo listener)
+    if (container === ev.assignGrid && !container.dataset.assignDelegate) {
+      container.dataset.assignDelegate = "1";
+      container.addEventListener("click", (e) => {
+        const seat = e.target.closest(".sg-seat");
+        if (!seat) return;
+        const id = seat.dataset.id;
+        if (evSelectedSeats.has(id)) {
+          evSelectedSeats.delete(id);
+          seat.classList.remove("selected");
+        } else {
+          evSelectedSeats.add(id);
+          seat.classList.add("selected");
+        }
+        ev.assignPanel.classList.toggle("show", evSelectedSeats.size > 0);
+        if (evSelectedSeats.size > 0) {
+          const title = ev.assignPanel.querySelector(".sa-title");
+          if (title) title.textContent = t('admin.ev_assign_title') + " (" + evSelectedSeats.size + ")";
+        }
+      });
+    }
+
     for (let r = 0; r < numRows; r++) {
       const rowLetter = String.fromCharCode(65 + r);
       const rowEl = document.createElement("div");
@@ -1708,14 +1819,14 @@ document.addEventListener("DOMContentLoaded", () => {
           rowEl.appendChild(aisle);
         }
         const seatId = rowLetter + c;
-        const seatData = seats.find(s => s.id === seatId);
+        const seatData = seatById.get(seatId);
         const seat = document.createElement("div");
         seat.className = "sg-seat";
         seat.dataset.id = seatId;
         seat.textContent = c;
 
         if (seatData && seatData.type) {
-          const type = evSeatTypes.find(t => t.name === seatData.type);
+          const type = typeByName.get(seatData.type);
           if (type) {
             seat.classList.add("assigned");
             seat.style.background = type.color;
@@ -1725,10 +1836,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (seatData.status === "blocked") { seat.style.background = "#ccc"; seat.style.borderColor = "#ccc"; seat.style.color = "#999"; seat.style.cursor = "not-allowed"; }
         }
 
-        if (container === ev.assignGrid) {
-          seat.addEventListener("click", () => toggleAssignSeat(seatId));
-          if (evSelectedSeats.has(seatId)) seat.classList.add("selected");
-        }
+        if (container === ev.assignGrid && evSelectedSeats.has(seatId)) seat.classList.add("selected");
 
         rowEl.appendChild(seat);
       }
@@ -1829,15 +1937,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---- Seat Assignment ----
   function toggleAssignSeat(seatId) {
+    // La delegación en renderSeatGrid gestiona el toggle real; esta función
+    // se mantiene como respaldo y toca solo el asiento afectado (sin
+    // reconstruir el grid completo).
     if (evSelectedSeats.has(seatId)) {
       evSelectedSeats.delete(seatId);
     } else {
       evSelectedSeats.add(seatId);
     }
-    renderSeatGrid(ev.assignGrid, evSeats, parseInt(ev.cols.value) || 10);
+    const seatEl = ev.assignGrid && ev.assignGrid.querySelector('.sg-seat[data-id="' + seatId + '"]');
+    if (seatEl) seatEl.classList.toggle("selected", evSelectedSeats.has(seatId));
     ev.assignPanel.classList.toggle("show", evSelectedSeats.size > 0);
     if (evSelectedSeats.size > 0) {
-      ev.assignPanel.querySelector(".sa-title").textContent = t('admin.ev_assign_title') + " (" + evSelectedSeats.size + ")";
+      const title = ev.assignPanel.querySelector(".sa-title");
+      if (title) title.textContent = t('admin.ev_assign_title') + " (" + evSelectedSeats.size + ")";
     }
   }
 
@@ -1899,8 +2012,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ev.previewName.textContent = ev.name.value.trim() || "Nombre del Evento";
     if (ev.date.value) {
       const d = new Date(ev.date.value + "T" + (ev.time.value || "20:00"));
-      ev.previewDate.textContent = d.toLocaleDateString("es-DO", { day: "numeric", month: "long", year: "numeric" });
-    } else { ev.previewDate.textContent = "Selecciona una fecha"; }
+      ev.previewDate.textContent = I18n.date(d, { day: "numeric", month: "long", year: "numeric" });
+    } else { ev.previewDate.textContent = I18n.t("admin.ev_select_date"); }
     ev.previewTime.textContent = ev.time.value || "20:00";
     const venueParts = [ev.venue.value, ev.city.value].filter(Boolean);
     ev.previewVenue.textContent = venueParts.join(", ") || "Lugar del evento";
@@ -1929,17 +2042,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const numCols = parseInt(ev.cols.value) || 10;
       const numRows = evSeats.length > 0 ? (evSeats[evSeats.length-1].row.charCodeAt(0) - 65 + 1) : 0;
       ev.previewMiniMap.innerHTML = "";
+      const seatById = new Map();
+      for (let i = 0; i < evSeats.length; i++) seatById.set(evSeats[i].id, evSeats[i]);
+      const typeByName = new Map();
+      for (let i = 0; i < evSeatTypes.length; i++) typeByName.set(evSeatTypes[i].name, evSeatTypes[i]);
       const mapScale = Math.min(1, 140 / (numCols * 10));
       for (let r = 0; r < Math.min(numRows, 10); r++) {
         const rowEl = document.createElement("div");
         rowEl.className = "pm-row";
         for (let c = 1; c <= Math.min(numCols, 16); c++) {
           const seatId = String.fromCharCode(65 + r) + c;
-          const seat = evSeats.find(s => s.id === seatId);
+          const seat = seatById.get(seatId);
           const pm = document.createElement("div");
           pm.className = "pm-seat";
           if (seat && seat.type) {
-            const type = evSeatTypes.find(t => t.name === seat.type);
+            const type = typeByName.get(seat.type);
             if (type) { pm.style.background = type.color; pm.classList.add("assigned"); }
           }
           rowEl.appendChild(pm);
@@ -1949,16 +2066,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ---- Real-time preview updates ----
+  // ---- Real-time preview updates (debounce 150ms: no re-render por tecla) ----
+  let previewTimer = 0;
+  let progressTimer = 0;
+  const debouncedPreview = () => {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(updatePreview, 150);
+  };
+  const debouncedProgress = () => {
+    clearTimeout(progressTimer);
+    progressTimer = setTimeout(updateProgress, 150);
+  };
   ["name","desc","category","date","time","venue","city","address"].forEach(field => {
-    if (ev[field]) ev[field].addEventListener("input", updatePreview);
+    if (ev[field]) ev[field].addEventListener("input", debouncedPreview);
     if (ev[field] && ev[field].tagName === "SELECT") ev[field].addEventListener("change", updatePreview);
   });
 
   // ---- Progress bar ----
+  const progressSteps = document.querySelectorAll(".ev-progress-step");
+  const progressLines = document.querySelectorAll(".ev-progress-line");
   function updateProgress() {
-    const steps = document.querySelectorAll(".ev-progress-step");
-    const lines = document.querySelectorAll(".ev-progress-line");
     let done = 0;
     // Step 1: name + date
     if (ev.name.value.trim() && ev.date.value) done = 1;
@@ -1969,20 +2096,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // Step 4: pricing (all types have prices)
     if (done === 3 && evSeatTypes.every(t => t.price > 0)) done = 4;
 
-    steps.forEach((step, i) => {
+    progressSteps.forEach((step, i) => {
       const idx = i + 1;
       step.classList.remove("active", "done");
       if (idx <= done) step.classList.add("done");
       else if (idx === done + 1) step.classList.add("active");
     });
-    lines.forEach((line, i) => {
+    progressLines.forEach((line, i) => {
       line.classList.toggle("done", i + 1 <= done);
     });
   }
 
   // ---- Live input progress ----
   ["name","date","rows","cols"].forEach(field => {
-    if (ev[field]) ev[field].addEventListener("input", updateProgress);
+    if (ev[field]) ev[field].addEventListener("input", debouncedProgress);
     if (ev[field] && ev[field].tagName === "SELECT") ev[field].addEventListener("change", updateProgress);
   });
 
@@ -2105,7 +2232,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = ev.name.value.trim() || "Nombre del Evento";
     const venueShort = (ev.venue.value || "").split(",")[0].trim() || "Lugar";
     const dateObj = ev.date.value ? new Date(ev.date.value + "T" + (ev.time.value || "20:00")) : null;
-    const dateDisplay = dateObj ? dateObj.toLocaleDateString("es-DO", { day: "numeric", month: "short", year: "numeric" }) : "Fecha";
+    const dateDisplay = dateObj ? I18n.date(dateObj, { day: "numeric", month: "short", year: "numeric" }) : "Fecha";
     const desc = ev.desc.value.trim() || "Descripción del evento";
     const prices = evSeatTypes.map(t => t.price).filter(p => p > 0);
     const minPrice = prices.length ? Math.min(...prices) : 0;
@@ -2132,6 +2259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(toast);
     setTimeout(() => { toast.style.opacity = "0"; toast.style.transition = "opacity 0.3s"; setTimeout(() => toast.remove(), 400); }, 2500);
   }
+  window.showToast = showToast;
 
   // ---- Render admin events ----
   async function renderAdminEvents() {
@@ -2157,21 +2285,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const minPrice = Math.min(...(evt.zones || []).map(z => z.price).filter(p => p > 0));
       const totalSeats = evt.capacity || (evt.zones || []).reduce((sum, z) => sum + (z.qty || z.rows * z.cols || 0), 0);
       const dateObj = new Date(evt.date + "T" + (evt.time || "20:00"));
-      const dateDisplay = dateObj.toLocaleDateString("es-DO", { day: "numeric", month: "short", year: "numeric" });
+      const dateDisplay = I18n.date(dateObj, { day: "numeric", month: "short", year: "numeric" });
       const statusBadge = evt.status === "draft" ? "badge-info" : "badge-success";
       const statusLabel = evt.status === "draft" ? t('admin.ev_draft') : t('admin.active');
+      const evtName = I18n.eventName(evt.name);
 
       const card = document.createElement("div");
       card.className = "card event-card";
       card.innerHTML = `
         <div class="thumb">
-          <img src="${evt.image}" alt="${evt.name}" loading="lazy" onerror="this.src='multimedia/logo.svg'" />
+          <img src="${evt.image}" alt="${evtName}" loading="lazy" decoding="async" onerror="this.src='multimedia/logo.svg'" />
           <span class="badge ${statusBadge}">${statusLabel}</span>
         </div>
         <div class="body">
           <div class="flex-between" style="margin-bottom: 6px;">
-            <h3 style="font-size: 1rem;">${evt.name}</h3>
-            <button class="btn-ghost btn" style="padding: 6px;" data-event-id="${evt.id}" data-open-event-modal><span class="material-symbols-outlined">edit</span></button>
+            <h3 style="font-size: 1rem;">${evtName}</h3>
+            <div style="display: flex; gap: 6px;">
+              <a class="btn-ghost btn" style="padding: 6px;" href="reporte-evento.html?evento=${encodeURIComponent(evt.id)}" title="${t('admin.report_event')}"><span class="material-symbols-outlined">monitoring</span></a>
+              <button class="btn-ghost btn" style="padding: 6px;" data-event-id="${evt.id}" data-open-event-modal><span class="material-symbols-outlined">edit</span></button>
+            </div>
           </div>
           <p class="meta">${evt.venue || ''} · ${dateDisplay}</p>
           <div class="price-row">
@@ -2185,36 +2317,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   renderAdminEvents();
+  window.addEventListener("astro:langchange", () => renderAdminEvents());
   } // end if (!ev.creator) bail
 
   /* ============================================================
      DECORACIONES Y ANIMACIONES
      ============================================================ */
 
-  /* ---------- Scroll reveal: elementos aparecen al entrar en viewport ---------- */
+  /* ---------- Scroll reveal: elementos aparecen al entrar en viewport ----------
+     Se omite si el usuario prefiere menos movimiento. Los elementos ya
+     visibles en la carga no se ocultan (protege el LCP); solo se animan
+     los que están por debajo del pliegue. */
   const revealTargets = document.querySelectorAll(
     ".card, .glass-panel, .stat-card, .event-card, .section-head, .email-preview, .steps"
   );
 
-  revealTargets.forEach((el, i) => {
-    el.style.opacity = "0";
-    el.style.transform = "translateY(24px)";
-    el.style.transition = `opacity 0.5s cubic-bezier(0.4,0,0.2,1) ${(i % 6) * 0.07}s, transform 0.5s cubic-bezier(0.4,0,0.2,1) ${(i % 6) * 0.07}s`;
-  });
+  if (revealTargets.length && !reduceMotion) {
+    const viewportH = window.innerHeight || document.documentElement.clientHeight;
+    let revealIdx = 0;
+    revealTargets.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.top < viewportH * 0.9) return; // ya en (o cerca de) la primera pantalla: no ocultar
+      el.style.opacity = "0";
+      el.style.transform = "translateY(24px)";
+      el.style.transition = `opacity 0.5s cubic-bezier(0.4,0,0.2,1) ${(revealIdx % 6) * 0.07}s, transform 0.5s cubic-bezier(0.4,0,0.2,1) ${(revealIdx % 6) * 0.07}s`;
+      revealIdx++;
+    });
 
-  const revealObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = "1";
-          entry.target.style.transform = "translateY(0)";
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.08 }
-  );
-  revealTargets.forEach((el) => revealObserver.observe(el));
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = "1";
+            entry.target.style.transform = "translateY(0)";
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08 }
+    );
+    revealTargets.forEach((el) => revealObserver.observe(el));
+  }
 
   /* ---------- Contadores animados en stat cards ---------- */
   document.querySelectorAll(".stat-card .value").forEach((el) => {
@@ -2274,48 +2417,104 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* ---------- Cursor glow: resplandor que sigue al mouse ---------- */
+  /* ---------- Cursor glow: resplandor que sigue al mouse ----------
+     Solo anima mientras el mouse se mueve; se detiene tras 2 s de
+     inactividad y se pausa cuando la pestaña no es visible. */
   const glow = document.createElement("div");
   glow.className = "cursor-glow";
   document.body.appendChild(glow);
 
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
-  document.addEventListener("mousemove", (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-  });
+  let glowRaf = 0;
+  let glowIdleTimer = 0;
+  let glowActive = false;
+
+  function stopGlow() {
+    glowActive = false;
+    if (glowRaf) { cancelAnimationFrame(glowRaf); glowRaf = 0; }
+    clearTimeout(glowIdleTimer);
+  }
+
   function animateGlow() {
     glowX += (mouseX - glowX) * 0.08;
     glowY += (mouseY - glowY) * 0.08;
     glow.style.transform = `translate(${glowX - 150}px, ${glowY - 150}px)`;
-    requestAnimationFrame(animateGlow);
+    if (Math.abs(mouseX - glowX) < 0.4 && Math.abs(mouseY - glowY) < 0.4) {
+      stopGlow();
+      return;
+    }
+    glowRaf = requestAnimationFrame(animateGlow);
   }
-  animateGlow();
+
+  function startGlow() {
+    if (reduceMotion) return;
+    if (document.hidden) return;
+    if (!glowActive) {
+      glowActive = true;
+      clearTimeout(glowIdleTimer);
+      glowRaf = requestAnimationFrame(animateGlow);
+    }
+    clearTimeout(glowIdleTimer);
+    glowIdleTimer = setTimeout(stopGlow, 2000);
+  }
+
+  document.addEventListener("mousemove", (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    startGlow();
+  }, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopGlow();
+    else startGlow();
+  });
 
   /* ---------- Efecto parallax en atmosphere al scroll ---------- */
   const glowA = document.querySelector(".atmosphere .glow-a");
   const glowB = document.querySelector(".atmosphere .glow-b");
   if (glowA && glowB) {
-    window.addEventListener("scroll", () => {
-      const y = window.scrollY;
-      glowA.style.transform = `translate(${y * 0.02}px, ${y * -0.03}px)`;
-      glowB.style.transform = `translate(${y * -0.025}px, ${y * 0.02}px)`;
-    }, { passive: true });
+    let paraRaf = 0;
+    const onParaScroll = () => {
+      if (paraRaf) return;
+      paraRaf = requestAnimationFrame(() => {
+        paraRaf = 0;
+        const y = window.scrollY;
+        glowA.style.transform = `translate(${y * 0.02}px, ${y * -0.03}px)`;
+        glowB.style.transform = `translate(${y * -0.025}px, ${y * 0.02}px)`;
+      });
+    };
+    window.addEventListener("scroll", onParaScroll, { passive: true });
   }
 
-  /* ---------- Tilt 3D en event cards ---------- */
-  document.querySelectorAll(".event-card").forEach((card) => {
-    card.addEventListener("mousemove", (e) => {
-      const rect = card.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      card.style.transform =
+  /* ---------- Tilt 3D en event cards (con rAF throttle y rect cacheado) ---------- */
+  const tiltableCards = document.querySelectorAll(".event-card");
+  if (!reduceMotion && tiltableCards.length) {
+    let tiltRaf = 0;
+    let tiltCard = null;
+    let tiltRect = null;
+
+    const applyTilt = () => {
+      tiltRaf = 0;
+      if (!tiltCard || !tiltRect) return;
+      const { x, y } = tiltCard._tilt;
+      tiltCard.style.transform =
         `translateY(-6px) perspective(600px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg)`;
+    };
+
+    tiltableCards.forEach((card) => {
+      card.addEventListener("mousemove", (e) => {
+        if (tiltCard !== card) { tiltCard = card; tiltRect = card.getBoundingClientRect(); }
+        const x = (e.clientX - tiltRect.left) / tiltRect.width - 0.5;
+        const y = (e.clientY - tiltRect.top) / tiltRect.height - 0.5;
+        card._tilt = { x, y };
+        if (!tiltRaf) tiltRaf = requestAnimationFrame(applyTilt);
+      });
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "";
+        if (tiltCard === card) tiltCard = null;
+      });
     });
-    card.addEventListener("mouseleave", () => {
-      card.style.transform = "";
-    });
-  });
+  }
 
   /* ---------- Bar chart animado ---------- */
   document.querySelectorAll(".bar-chart .bar").forEach((bar) => {
@@ -2369,22 +2568,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ---------- Navbar activo: highlight según scroll ---------- */
+  /* ---------- Navbar activo: highlight según scroll (throttle + offsets cacheados) ---------- */
   const sections = document.querySelectorAll("#resumen, #eventos, #usuarios, #transacciones");
   if (sections.length) {
     const navLinksMap = {};
     document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach((a) => {
       navLinksMap[a.getAttribute("href")] = a;
     });
+    const refreshOffsets = () => {
+      sectionOffsets = Array.from(sections).map((sec) => ({ id: sec.id, top: sec.offsetTop }));
+    };
+    let sectionOffsets = [];
+    refreshOffsets();
+    window.addEventListener("resize", refreshOffsets, { passive: true });
+
+    let navRaf = 0;
+    let currentSection = "";
     window.addEventListener("scroll", () => {
-      let current = "";
-      sections.forEach((sec) => {
-        if (window.scrollY >= sec.offsetTop - 120) {
-          current = "#" + sec.id;
+      if (navRaf) return;
+      navRaf = requestAnimationFrame(() => {
+        navRaf = 0;
+        let current = "";
+        const y = window.scrollY;
+        for (let i = 0; i < sectionOffsets.length; i++) {
+          if (y >= sectionOffsets[i].top - 120) current = "#" + sectionOffsets[i].id;
         }
+        if (current === currentSection) return;
+        currentSection = current;
+        const prev = document.querySelector(".nav-links a.active, .admin-sidebar a.active");
+        if (prev) prev.classList.remove("active");
+        if (navLinksMap[current]) navLinksMap[current].classList.add("active");
       });
-      Object.values(navLinksMap).forEach((a) => a.classList.remove("active"));
-      if (navLinksMap[current]) navLinksMap[current].classList.add("active");
     }, { passive: true });
   }
 

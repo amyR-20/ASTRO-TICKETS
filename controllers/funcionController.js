@@ -29,11 +29,12 @@ function validarFechaHora(fecha, hora) {
 /** GET /api/eventos/:eventoId/funciones — funciones de un evento. */
 async function listar(req, res) {
   try {
-    const evento = await eventoModel.buscarPorId(req.params.eventoId);
-    if (!evento) {
+    const existe = await eventoModel.existe(req.params.eventoId);
+    if (!existe) {
       return res.status(404).json({ error: "Evento no encontrado." });
     }
-    return res.json({ funciones: evento.funciones || [] });
+    const funciones = await funcionModel.listarPorEvento(req.params.eventoId);
+    return res.json({ funciones });
   } catch (err) {
     console.error("Error listando funciones:", err);
     return res.status(500).json({ error: "Error interno al listar las funciones." });
@@ -68,7 +69,7 @@ async function crear(req, res) {
       return res.status(400).json({ error: errores.join(" ") });
     }
 
-    const evento = await eventoModel.buscarPorId(req.params.eventoId);
+    const evento = await eventoModel.buscarEstado(req.params.eventoId);
     if (!evento) {
       return res.status(404).json({ error: "Evento no encontrado." });
     }
@@ -78,7 +79,7 @@ async function crear(req, res) {
       fecha,
       hora,
       sala,
-      estado: estado || (evento.status === "published" ? "activa" : "programada"),
+      estado: estado || (evento.estado === "published" ? "activa" : "programada"),
       usuarioId: req.usuario.id,
       razon: razon || null,
     });

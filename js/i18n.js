@@ -73,9 +73,79 @@ const dict = {
     "catalog.conferences": "Conferencias",
     "catalog.available": "Disponible",
     "catalog.sellingfast": "Vendiéndose rápido",
+    "catalog.soldout": "Agotado",
     "catalog.tickets": "boletos disp.",
     "catalog.price": "RD$",
     "catalog.eyebrow": "Próximos eventos",
+
+    "report.title": "Reporte por evento",
+    "report.subtitle": "Selecciona un evento para ver ventas, compradores y tendencia.",
+    "report.select": "Seleccionar evento",
+    "report.select_placeholder": "Elige un evento…",
+    "report.loading": "Cargando reporte…",
+    "report.empty": "Selecciona un evento para ver su reporte.",
+    "report.back": "Volver al panel",
+    "report.print": "Imprimir / PDF",
+    "report.ingresos": "Ingresos",
+    "report.boletos": "Boletos vendidos",
+    "report.transacciones": "Transacciones",
+    "report.compradores": "Compradores",
+    "report.capacidad": "Capacidad",
+    "report.ocupacion": "Ocupación",
+    "report.por_funcion": "Ventas por función",
+    "report.por_zona": "Ventas por zona",
+    "report.tendencia": "Tendencia · últimos 14 días",
+    "report.compradores_lista": "Compradores",
+    "report.transacciones_lista": "Últimas transacciones",
+    "report.col_fecha": "Fecha",
+    "report.col_hora": "Hora",
+    "report.col_sala": "Sala",
+    "report.col_estado": "Estado",
+    "report.col_vendidos": "Vendidos",
+    "report.col_disponibles": "Disponibles",
+    "report.col_ingresos": "Ingresos",
+    "report.col_boletos": "Boletos",
+    "report.col_comprador": "Comprador",
+    "report.col_email": "Email",
+    "report.col_gastado": "Gastado",
+    "report.col_ultima": "Última compra",
+    "report.col_metodo": "Método",
+    "report.col_total": "Total",
+    "report.sin_ventas": "Sin ventas todavía",
+    "report.sin_funciones": "Este evento aún no tiene funciones.",
+    "report.no_events": "No hay eventos disponibles.",
+    "report.estado_activa": "Activa",
+    "report.estado_agotada": "Agotada",
+    "report.estado_programada": "Programada",
+    "report.estado_finalizada": "Finalizada",
+    "report.estado_cancelada": "Cancelada",
+    "report.dias": "días",
+    "report.reembolsos_lista": "Reembolsos",
+    "report.sin_reembolsos": "No hay reembolsos para este evento.",
+    "report.col_monto": "Monto",
+    "report.col_motivo": "Motivo",
+    "report.col_autorizado": "Autorizado por",
+    "report.refund_solicitado": "Solicitado",
+    "report.refund_aprobado": "Aprobado",
+    "report.refund_rechazado": "Rechazado",
+
+    "reembolsos.title": "Mis reembolsos",
+    "reembolsos.sub": "Solicita la devolución de una compra; el administrador la revisará y te notificará el resultado.",
+    "reembolsos.loading": "Cargando…",
+    "reembolsos.historial": "Mis solicitudes",
+    "reembolsos.reembolsables": "Compras que puedes reembolsar",
+    "reembolsos.no_orders": "No tienes compras reembolsables.",
+    "reembolsos.no_requests": "Aún no has solicitado ningún reembolso.",
+    "reembolsos.request": "Solicitar reembolso",
+    "reembolsos.motivo_prompt": "¿Por qué deseas reembolsar esta compra?",
+    "reembolsos.request_done": "Solicitud de reembolso enviada. El administrador la revisará.",
+    "reembolsos.request_error": "No se pudo enviar la solicitud de reembolso.",
+    "reembolsos.col_evento": "Evento",
+    "reembolsos.col_monto": "Monto",
+    "reembolsos.col_motivo": "Motivo",
+    "reembolsos.col_estado": "Estado",
+    "reembolsos.col_fecha": "Fecha",
+    "reembolsos.col_total": "Total",
 
     "event.back": "Volver al catálogo",
     "event.step1": "Evento",
@@ -112,6 +182,9 @@ const dict = {
     "event.tickets": "Boletos",
     "event.total": "Total a pagar",
     "event.continue": "Continuar al pago",
+    "event.waitlist": "Avísame cuando haya boletos",
+    "event.waitlist_on": "Anotado en la lista de espera · Clic para retirarte",
+    "event.waitlist_login": "Inicia sesión para que te avisemos cuando haya boletos",
 
     "payment.title": "Información de pago",
     "payment.subtitle": "Tus datos se transmiten cifrados y no se almacenan.",
@@ -160,6 +233,7 @@ const dict = {
     "receipt.purchase_date": "Fecha de compra",
     "receipt.email_sent": "Correo de confirmación",
     "receipt.my_purchases": "Mis Compras",
+    "receipt.ticket": "Boleto",
     "receipt.toasttitle": "Notificación enviada",
     "receipt.toastmsg": "Confirmamos tu compra por correo electrónico.",
 
@@ -248,6 +322,7 @@ const dict = {
     "admin.panel": "Panel de administración",
     "admin.resumen": "Resumen general",
     "admin.report": "Reporte de boletos",
+    "admin.report_event": "Reporte por evento",
     "admin.reports_title": "Centro de reportes",
     "admin.reports_sub": "Descarga un PDF consolidado o archivos compatibles con Excel.",
     "admin.report_pdf": "Reporte general PDF",
@@ -311,6 +386,24 @@ const dict = {
     "admin.txn_monto": "Monto",
     "admin.sellingfast": "Vendiéndose rápido",
     "admin.crearevento": "Crear evento",
+    "admin.refunds_title": "Reembolsos",
+    "admin.refunds_sub": "Procesa devoluciones de órdenes pagadas; los asientos vuelven a venderse.",
+    "admin.refunds_order": "Orden",
+    "admin.refunds_reason": "Motivo",
+    "admin.refunds_by": "Autorizado por",
+    "admin.refund": "Reembolsar",
+    "admin.refund_reason": "Motivo del reembolso:",
+    "admin.refund_done": "Reembolso procesado correctamente.",
+    "admin.no_refundable": "No hay órdenes pagadas pendientes de reembolso.",
+    "admin.no_refunds": "Aún no hay reembolsos registrados.",
+    "admin.paid": "Pagada",
+    "admin.refunds_requests_title": "Solicitudes de reembolso",
+    "admin.refunds_requests_sub": "Usuarios que pidieron devolver su dinero. Apruébalos para liberar los asientos y reembolsar.",
+    "admin.approve": "Aprobar",
+    "admin.reject": "Rechazar",
+    "admin.approved": "Reembolso aprobado correctamente.",
+    "admin.rejected": "Reembolso rechazado.",
+    "admin.no_requests": "No hay solicitudes de reembolso pendientes.",
     "admin.ev_title": "Crear Nuevo Evento",
     "admin.ev_sub": "Configura todos los detalles del evento, distribución de asientos y precios antes de publicarlo.",
     "admin.ev_step1": "Información",
@@ -371,6 +464,7 @@ const dict = {
     "admin.ev_legend": "Tipos de asiento",
     "admin.ev_required": "Completa el nombre y la fecha del evento antes de publicar.",
     "admin.ev_required_name": "Ingresa al menos el nombre del evento para guardar.",
+    "admin.ev_select_date": "Selecciona una fecha",
     "admin.ev_published_toast": "Evento publicado correctamente",
     "admin.ev_draft_toast": "Evento guardado como borrador",
     "admin.ev_preview_title": "Vista previa en catálogo",
@@ -383,6 +477,55 @@ const dict = {
     "userpanel.adminlabel": "Administrador",
     "userpanel.userlabel": "Usuario",
 
+    "category.concert": "Concierto",
+    "category.theater": "Teatro",
+    "category.sports": "Deportes",
+    "category.conference": "Conferencia",
+
+    "history.bought": "Comprado",
+    "history.view_ticket": "Ver boleto",
+    "history.print_ticket": "Imprimir boleto",
+    "history.resend_ticket": "Reenviar confirmación",
+    "history.no_tickets_to_download": "No hay entradas para descargar.",
+    "history.transfer": "Transferir",
+    "history.transfer_prompt": "Correo de la persona a la que transfieres este boleto:",
+    "history.transfer_invalid_email": "Ingresa un correo electrónico válido.",
+    "history.transfer_done": "Entrada transferida.",
+    "history.transfer_failed": "No se pudo transferir la entrada.",
+
+    "admin.agotada": "Agotada",
+    "admin.device_mobile": "Móvil",
+    "admin.device_desktop": "Escritorio",
+    "admin.successful": "Exitoso",
+    "admin.failed": "Fallido",
+    "admin.qr_granted": "Acceso concedido",
+    "admin.qr_invalid": "Entrada inválida",
+    "admin.qr_validated_at": "Validada a las",
+    "admin.transaction_word": "transacciones",
+    "admin.delta_sold": "Entradas vendidas",
+    "admin.delta_active": "Cuentas activas",
+    "admin.delta_published": "Publicados",
+    "admin.qr_placeholder": "Código QR de la entrada",
+    "admin.qr_validate": "Validar QR",
+    "admin.qr_scan": "Escanear con cámara",
+    "admin.qr_camera_close": "Cerrar cámara",
+    "admin.qr_new": "Nueva validación",
+    "admin.qr_validating": "Validando…",
+    "admin.qr_type_hint": "Escribe o pega el código QR de la entrada.",
+    "admin.qr_unavailable": "El módulo de validación no está disponible.",
+    "admin.no_txns": "Sin transacciones todavía. Compra una entrada desde el catálogo para verla aquí.",
+    "admin.no_functions": "Sin funciones registradas.",
+    "admin.no_data": "Sin datos.",
+    "admin.no_users": "Sin usuarios.",
+    "admin.no_access": "Sin accesos registrados.",
+    "admin.loading": "Cargando…",
+    "admin.validate_qr": "Validar QR",
+    "admin.team_eyebrow": "EQUIPO ADMINISTRATIVO",
+    "admin.team_title": "Perfiles del panel",
+    "admin.team_sub": "Cada administrador conserva su propia contraseña, actividad y perfil.",
+    "admin.current_badge": "Sesión actual",
+    "admin.edit_profile": "Editar mi perfil",
+
     "footer": "© 2026 Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.",
     "footer.tag": "Tu viaje comienza aquí.",
     "footer.full": "Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.",
@@ -392,6 +535,13 @@ const dict = {
     "footer.terms": "Términos del servicio",
     "footer.privacy": "Política de privacidad",
     "footer.help": "Centro de ayuda",
+    "footer.badge": "Admin",
+    "footer.manage": "Gestión",
+    "footer.sections": "Secciones",
+    "footer.session": "Sesión",
+    "footer.switch": "Cambiar perfil",
+    "footer.admin_tag": "Panel de administración",
+    "footer.admin_full": "Astro Tickets Admin · Proyecto académico — Ingeniería de Software II, UNPHU.",
 
     "lang.es": "Español",
     "lang.en": "English",
@@ -465,9 +615,79 @@ const dict = {
     "catalog.conferences": "Conferences",
     "catalog.available": "Available",
     "catalog.sellingfast": "Selling Fast",
+    "catalog.soldout": "Sold Out",
     "catalog.tickets": "tickets avail.",
     "catalog.price": "RD$",
     "catalog.eyebrow": "Upcoming Events",
+
+    "report.title": "Event Report",
+    "report.subtitle": "Pick an event to see sales, buyers and trend.",
+    "report.select": "Select event",
+    "report.select_placeholder": "Choose an event…",
+    "report.loading": "Loading report…",
+    "report.empty": "Select an event to see its report.",
+    "report.back": "Back to panel",
+    "report.print": "Print / PDF",
+    "report.ingresos": "Revenue",
+    "report.boletos": "Tickets sold",
+    "report.transacciones": "Transactions",
+    "report.compradores": "Buyers",
+    "report.capacidad": "Capacity",
+    "report.ocupacion": "Occupancy",
+    "report.por_funcion": "Sales by showtime",
+    "report.por_zona": "Sales by zone",
+    "report.tendencia": "Trend · last 14 days",
+    "report.compradores_lista": "Buyers",
+    "report.transacciones_lista": "Latest transactions",
+    "report.col_fecha": "Date",
+    "report.col_hora": "Time",
+    "report.col_sala": "Venue",
+    "report.col_estado": "Status",
+    "report.col_vendidos": "Sold",
+    "report.col_disponibles": "Available",
+    "report.col_ingresos": "Revenue",
+    "report.col_boletos": "Tickets",
+    "report.col_comprador": "Buyer",
+    "report.col_email": "Email",
+    "report.col_gastado": "Spent",
+    "report.col_ultima": "Last purchase",
+    "report.col_metodo": "Method",
+    "report.col_total": "Total",
+    "report.sin_ventas": "No sales yet",
+    "report.sin_funciones": "This event has no showtimes yet.",
+    "report.no_events": "No events available.",
+    "report.estado_activa": "Active",
+    "report.estado_agotada": "Sold out",
+    "report.estado_programada": "Scheduled",
+    "report.estado_finalizada": "Ended",
+    "report.estado_cancelada": "Cancelled",
+    "report.dias": "days",
+    "report.reembolsos_lista": "Refunds",
+    "report.sin_reembolsos": "No refunds for this event.",
+    "report.col_monto": "Amount",
+    "report.col_motivo": "Reason",
+    "report.col_autorizado": "Authorized by",
+    "report.refund_solicitado": "Requested",
+    "report.refund_aprobado": "Approved",
+    "report.refund_rechazado": "Rejected",
+
+    "reembolsos.title": "My refunds",
+    "reembolsos.sub": "Request a refund for a purchase; the administrator will review it and notify you of the result.",
+    "reembolsos.loading": "Loading…",
+    "reembolsos.historial": "My requests",
+    "reembolsos.reembolsables": "Purchases you can refund",
+    "reembolsos.no_orders": "You have no refundable purchases.",
+    "reembolsos.no_requests": "You have not requested any refund yet.",
+    "reembolsos.request": "Request refund",
+    "reembolsos.motivo_prompt": "Why do you want to refund this purchase?",
+    "reembolsos.request_done": "Refund request sent. The administrator will review it.",
+    "reembolsos.request_error": "Could not send the refund request.",
+    "reembolsos.col_evento": "Event",
+    "reembolsos.col_monto": "Amount",
+    "reembolsos.col_motivo": "Reason",
+    "reembolsos.col_estado": "Status",
+    "reembolsos.col_fecha": "Date",
+    "reembolsos.col_total": "Total",
 
     "event.back": "Back to Catalog",
     "event.step1": "Event",
@@ -504,6 +724,9 @@ const dict = {
     "event.tickets": "Tickets",
     "event.total": "Total to Pay",
     "event.continue": "Continue to Payment",
+    "event.waitlist": "Notify me when tickets are available",
+    "event.waitlist_on": "You're on the waitlist · Click to leave",
+    "event.waitlist_login": "Log in to be notified when tickets are available",
 
     "payment.title": "Payment Information",
     "payment.subtitle": "Your data is encrypted and not stored.",
@@ -553,6 +776,7 @@ const dict = {
     "receipt.purchase_date": "Purchase Date",
     "receipt.email_sent": "Confirmation Email",
     "receipt.my_purchases": "My Purchases",
+    "receipt.ticket": "Ticket",
     "receipt.toasttitle": "Notification Sent",
     "receipt.toastmsg": "We confirmed your purchase by email.",
 
@@ -640,6 +864,7 @@ const dict = {
     "admin.panel": "Admin Panel",
     "admin.resumen": "General Overview",
     "admin.report": "Ticket Report",
+    "admin.report_event": "Event report",
     "admin.reports_title": "Report Center",
     "admin.reports_sub": "Download a consolidated PDF or Excel-compatible files.",
     "admin.report_pdf": "General PDF report",
@@ -703,6 +928,24 @@ const dict = {
     "admin.txn_monto": "Amount",
     "admin.sellingfast": "Selling Fast",
     "admin.crearevento": "Create Event",
+    "admin.refunds_title": "Refunds",
+    "admin.refunds_sub": "Process refunds for paid orders; seats become available again.",
+    "admin.refunds_order": "Order",
+    "admin.refunds_reason": "Reason",
+    "admin.refunds_by": "Authorized by",
+    "admin.refund": "Refund",
+    "admin.refund_reason": "Refund reason:",
+    "admin.refund_done": "Refund processed successfully.",
+    "admin.no_refundable": "No paid orders pending refund.",
+    "admin.no_refunds": "No refunds recorded yet.",
+    "admin.paid": "Paid",
+    "admin.refunds_requests_title": "Refund requests",
+    "admin.refunds_requests_sub": "Users who asked for their money back. Approve them to free seats and refund.",
+    "admin.approve": "Approve",
+    "admin.reject": "Reject",
+    "admin.approved": "Refund approved successfully.",
+    "admin.rejected": "Refund rejected.",
+    "admin.no_requests": "No pending refund requests.",
     "admin.ev_title": "Create New Event",
     "admin.ev_sub": "Configure all event details, seat distribution and pricing before publishing.",
     "admin.ev_step1": "Info",
@@ -763,6 +1006,7 @@ const dict = {
     "admin.ev_legend": "Seat types",
     "admin.ev_required": "Complete the event name and date before publishing.",
     "admin.ev_required_name": "Enter at least the event name to save.",
+    "admin.ev_select_date": "Select a date",
     "admin.ev_published_toast": "Event published successfully",
     "admin.ev_draft_toast": "Event saved as draft",
     "admin.ev_preview_title": "Catalog Preview",
@@ -775,6 +1019,55 @@ const dict = {
     "userpanel.adminlabel": "Administrator",
     "userpanel.userlabel": "User",
 
+    "category.concert": "Concert",
+    "category.theater": "Theater",
+    "category.sports": "Sports",
+    "category.conference": "Conference",
+
+    "history.bought": "Purchased",
+    "history.view_ticket": "View Ticket",
+    "history.print_ticket": "Print Ticket",
+    "history.resend_ticket": "Resend Confirmation",
+    "history.no_tickets_to_download": "No tickets to download.",
+    "history.transfer": "Transfer",
+    "history.transfer_prompt": "Email of the person you are transferring this ticket to:",
+    "history.transfer_invalid_email": "Enter a valid email address.",
+    "history.transfer_done": "Ticket transferred.",
+    "history.transfer_failed": "Could not transfer the ticket.",
+
+    "admin.agotada": "Sold out",
+    "admin.device_mobile": "Mobile",
+    "admin.device_desktop": "Desktop",
+    "admin.successful": "Successful",
+    "admin.failed": "Failed",
+    "admin.qr_granted": "Access granted",
+    "admin.qr_invalid": "Invalid ticket",
+    "admin.qr_validated_at": "Validated at",
+    "admin.transaction_word": "transactions",
+    "admin.delta_sold": "Tickets sold",
+    "admin.delta_active": "Active accounts",
+    "admin.delta_published": "Published",
+    "admin.qr_placeholder": "Ticket QR code",
+    "admin.qr_validate": "Validate QR",
+    "admin.qr_scan": "Scan with camera",
+    "admin.qr_camera_close": "Close camera",
+    "admin.qr_new": "New validation",
+    "admin.qr_validating": "Validating…",
+    "admin.qr_type_hint": "Type or paste the ticket QR code.",
+    "admin.qr_unavailable": "The validation module is not available.",
+    "admin.no_txns": "No transactions yet. Buy a ticket from the catalog to see it here.",
+    "admin.no_functions": "No functions registered.",
+    "admin.no_data": "No data.",
+    "admin.no_users": "No users.",
+    "admin.no_access": "No accesses recorded.",
+    "admin.loading": "Loading…",
+    "admin.validate_qr": "Validate QR",
+    "admin.team_eyebrow": "ADMIN TEAM",
+    "admin.team_title": "Panel profiles",
+    "admin.team_sub": "Each administrator keeps their own password, activity and profile.",
+    "admin.current_badge": "Current session",
+    "admin.edit_profile": "Edit my profile",
+
     "footer": "© 2026 Astro Tickets. Your journey starts here. Academic Project — Software Engineering II, UNPHU.",
     "footer.tag": "Your journey starts here.",
     "footer.full": "Astro Tickets. Your journey starts here. Academic Project — Software Engineering II, UNPHU.",
@@ -784,11 +1077,40 @@ const dict = {
     "footer.terms": "Terms of Service",
     "footer.privacy": "Privacy Policy",
     "footer.help": "Help Center",
+    "footer.badge": "Admin",
+    "footer.manage": "Manage",
+    "footer.sections": "Sections",
+    "footer.session": "Session",
+    "footer.switch": "Switch profile",
+    "footer.admin_tag": "Administration panel",
+    "footer.admin_full": "Astro Tickets Admin · Academic Project — Software Engineering II, UNPHU.",
 
     "lang.es": "Spanish",
     "lang.en": "English",
     "lang.title": "Select a language",
   }
+};
+
+const eventNameMap = {
+  "Noche de Jazz en Vivo": "event.jazz.name",
+  "Festival Ritmo Urbano": "event.urbano.name",
+  "Hamlet, Obra de Teatro": "event.hamlet.name",
+  "Clásico de Baloncesto": "event.baloncesto.name",
+  "Conferencia de Innovación Digital": "event.conferencia.name",
+  "Sinfónica de Otoño": "event.sinfonica.name",
+  "evt-demo-jazz": "event.jazz.name",
+  "evt-demo-urbano": "event.urbano.name",
+  "evt-demo-hamlet": "event.hamlet.name",
+  "evt-demo-baloncesto": "event.baloncesto.name",
+  "evt-demo-conferencia": "event.conferencia.name",
+  "evt-demo-sinfonica": "event.sinfonica.name"
+};
+
+const categoryMap = {
+  "Concierto": "Concert",
+  "Teatro": "Theater",
+  "Deportes": "Sports",
+  "Conferencia": "Conference"
 };
 
 const I18n = (() => {
@@ -803,6 +1125,44 @@ const I18n = (() => {
   function t(key) {
     const lang = getLang();
     return dict[lang]?.[key] ?? dict["es"]?.[key] ?? key;
+  }
+
+  function locale() {
+    return getLang() === "en" ? "en-US" : "es-DO";
+  }
+
+  function eventName(name) {
+    if (!name || getLang() === "es") return name;
+    const key = eventNameMap[String(name).trim()] || eventNameMap[String(name)];
+    return key ? dict.en[key] || name : name;
+  }
+
+  function category(cat) {
+    if (!cat || getLang() === "es") return cat;
+    return categoryMap[String(cat)] || cat;
+  }
+
+  function time(hora) {
+    if (hora == null || hora === "") return "—";
+    if (hora instanceof Date && !isNaN(hora.getTime())) {
+      return hora.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+    const m = String(hora).match(/^(\d{1,2}):(\d{2})/);
+    if (m) return String(m[1]).padStart(2, "0") + ":" + m[2];
+    return String(hora).slice(0, 5);
+  }
+
+  function date(value, opts) {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value == null ? "—" : String(value);
+    return d.toLocaleDateString(locale(), opts || { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function dateTime(value, opts) {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "—";
+    const base = Object.assign({ hour12: false }, opts || { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString(locale(), base);
   }
 
   function translatePage() {
@@ -837,11 +1197,12 @@ const I18n = (() => {
         const next = current === "es" ? "en" : "es";
         setLang(next);
         translatePage();
+        window.dispatchEvent(new CustomEvent("astro:langchange", { detail: { lang: next } }));
       });
     }
   }
 
-  return { init, t, getLang, translatePage };
+  return { init, t, getLang, setLang, translatePage, eventName, category, time, date, dateTime };
 })();
 
 document.addEventListener("DOMContentLoaded", () => I18n.init());

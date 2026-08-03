@@ -233,6 +233,48 @@ const Auth = (() => {
         wrapper.className = "user-panel-wrapper";
         wrapper.style.position = "relative";
 
+        // Campana de notificaciones
+        const bellWrap = document.createElement("div");
+        bellWrap.className = "nav-bell-wrap";
+        bellWrap.style.position = "relative";
+        const bellBtn = document.createElement("button");
+        bellBtn.className = "nav-user-avatar nav-bell-btn";
+        bellBtn.title = "Notificaciones";
+        bellBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:1.25rem;">notifications_none</span><span class="nav-bell-badge" style="display:none;"></span>';
+        const bellPanel = document.createElement("div");
+        bellPanel.className = "user-panel-dropdown nav-bell-panel";
+        bellPanel.innerHTML = `
+          <div style="padding:14px 16px;border-bottom:1px solid var(--color-outline-variant);">
+            <strong style="font-size:0.9rem;">Notificaciones</strong>
+          </div>
+          <div class="nav-bell-list" style="max-height:320px;overflow-y:auto;"></div>
+          <div style="padding:10px 16px;border-top:1px solid var(--color-outline-variant);text-align:right;">
+            <button class="btn btn-ghost" style="padding:6px 10px;font-size:0.72rem;" data-bell-read-all>Marcar todas como leídas</button>
+          </div>`;
+        bellBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const wasOpen = bellPanel.classList.contains("show");
+          document.querySelectorAll(".nav-bell-panel.show, .user-panel-dropdown.show").forEach((p) => p.classList.remove("show"));
+          if (!wasOpen) {
+            bellPanel.classList.add("show");
+            cargarNotificaciones();
+          }
+        });
+        bellPanel.addEventListener("click", (e) => e.stopPropagation());
+        const readAllBtn = bellPanel.querySelector("[data-bell-read-all]");
+        if (readAllBtn) {
+          readAllBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            if (typeof Api !== "undefined" && Api.marcarNotificacionesLeidas) {
+              try { await Api.marcarNotificacionesLeidas(); } catch (_) {}
+            }
+            cargarNotificaciones();
+          });
+        }
+        bellWrap.appendChild(bellBtn);
+        bellWrap.appendChild(bellPanel);
+        wrapper.appendChild(bellWrap);
+
         const avatarBtn = document.createElement("button");
         avatarBtn.className = "nav-user-avatar";
         avatarBtn.innerHTML = session.avatarUrl ? `<img src="${session.avatarUrl}" alt="${session.nombre}">` : session.avatar;
@@ -267,6 +309,7 @@ const Auth = (() => {
 
         avatarBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+          bellPanel.classList.remove("show");
           panel.classList.toggle("show");
         });
 
@@ -290,13 +333,84 @@ const Auth = (() => {
     });
   }
 
+  /* ---------- Campana de notificaciones ---------- */
+  async function cargarNotificaciones() {
+    if (typeof Api === "undefined" || !Api.getNotificaciones) return;
+    try {
+      const data = await Api.getNotificaciones();
+      const lista = data.notificaciones || [];
+      const noLeidas = data.noLeidas || 0;
+
+      document.querySelectorAll(".nav-bell-badge").forEach((b) => {
+        b.textContent = noLeidas > 9 ? "9+" : String(noLeidas);
+        b.style.display = noLeidas ? "" : "none";
+      });
+
+      document.querySelectorAll(".nav-bell-list").forEach((list) => {
+        if (!lista.length) {
+          list.innerHTML = '<div class="text-muted" style="padding:16px;text-align:center;font-size:0.78rem;">No tienes notificaciones</div>';
+          return;
+        }
+        list.innerHTML = lista.map((n) => `
+          <div class="nav-bell-item${n.leida ? "" : " nav-bell-item-unread"}">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="font-size:1rem;color:var(--cosmic-purple);">${n.tipo === "reembolso" ? "currency_exchange" : "notifications"}</span>
+              <strong style="font-size:0.82rem;">${n.titulo || ""}</strong>
+            </div>
+            <p class="text-muted" style="font-size:0.76rem;margin:4px 0 2px;">${n.mensaje || ""}</p>
+            <span class="text-muted" style="font-size:0.68rem;">${new Date(n.creado_en).toLocaleString()}</span>
+          </div>`).join("");
+      });
+
+      if (noLeidas) {
+        try { await Api.marcarNotificacionesLeidas(); } catch (_) {}
+      }
+    } catch (_) { /* silencioso */ }
+  }
+
+  async function iniciarCampana() {
+    if (typeof Api === "undefined" || !Api.getNotificaciones) return;
+    try {
+      const data = await Api.getNotificaciones();
+      const noLeidas = data.noLeidas || 0;
+      document.querySelectorAll(".nav-bell-badge").forEach((b) => {
+        b.textContent = noLeidas > 9 ? "9+" : String(noLeidas);
+        b.style.display = noLeidas ? "" : "none";
+      });
+
+      const reembolsosNuevos = (data.notificaciones || []).filter((n) => n.tipo === "reembolso" && !n.leida);
+      if (reembolsosNuevos.length) {
+        let vistos = new Set();
+        try { vistos = new Set(JSON.parse(sessionStorage.getItem("astro_notif_toasted") || "[]")); } catch (_) {}
+        const nuevo = reembolsosNuevos.find((n) => !vistos.has(String(n.id)));
+        if (nuevo) {
+          vistos.add(String(nuevo.id));
+          try { sessionStorage.setItem("astro_notif_toasted", JSON.stringify([...vistos])); } catch (_) {}
+          const msg = (nuevo.titulo || "Notificación") + ". " + (nuevo.mensaje || "");
+          setTimeout(() => {
+            if (typeof showToast === "function") showToast(msg);
+            else alert(msg);
+          }, 1200);
+        }
+      }
+    } catch (_) { /* silencioso */ }
+  }
+
   /* ---------- Init on DOMContentLoaded ---------- */
   function init() {
 
     /* ---------- Guard de páginas privadas ---------- */
     const page = (location.pathname.split("/").pop() || "").toLowerCase();
-    const requiereAdmin = page === "admin.html";
+    const requiereAdmin = page === "admin.html" || page === "reporte-evento.html";
     const requiereSesion = page === "historial.html";
+
+    // Los administradores no compran boletos: se les saca del catálogo,
+    // del detalle del evento y del flujo de pago hacia su panel.
+    const paginaDeCliente = ["catalogo.html", "evento.html", "pago.html", "comprobante.html"].includes(page);
+    if (paginaDeCliente && isAdmin()) {
+      location.replace("admin.html");
+      return;
+    }
 
     // La pantalla administrativa siempre comienza con una eleccion explicita.
     // Evita que una sesion anterior (por ejemplo, Victor) entre de forma
@@ -492,6 +606,7 @@ if (adminForm) {
 
     // Update navbars
     updateNavUser();
+    iniciarCampana();
 
     // Build user panel if container exists
     const panelContainer = document.getElementById("user-panel-container");
