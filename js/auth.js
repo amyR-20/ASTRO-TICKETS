@@ -6,7 +6,7 @@
 const Auth = (() => {
 
   /* ---------- Conexión al backend real ---------- */
-  const API_BASE = "http://localhost:3000/api";
+  const API_BASE = AstroConfig.API_BASE;
   const SESSION_KEY = "astro_session";
   const TOKEN_KEY = "astro_token";
 

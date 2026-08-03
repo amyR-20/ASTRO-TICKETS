@@ -85,6 +85,7 @@
         <a href="#crear-evento"><span class="material-symbols-outlined">add_circle</span><span class="txt" data-i18n="admin.crearevento">Crear evento</span></a>
         <a href="#usuarios"><span class="material-symbols-outlined">group</span><span class="txt" data-i18n="admin.usuarios">Usuarios</span></a>
         <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
+        <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt">Validar QR</span></a>
         <a href="#" data-coming-soon><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
         <a href="#" data-coming-soon><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
       </nav>
@@ -117,26 +118,26 @@
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">payments</span>
       <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.ingresos">Ingresos totales</p>
-      <p class="value">RD$ 1.2M</p>
-      <p class="delta">+12.4% este mes</p>
+      <p class="value" id="stat-ingresos">RD$ 0</p>
+      <p class="delta" id="stat-ingresos-delta">Sin ventas todavía</p>
     </div>
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">confirmation_number</span>
       <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.emitidos">Boletos emitidos</p>
-      <p class="value">48,290</p>
-      <p class="delta">+5.2% este mes</p>
+      <p class="value" id="stat-boletos">0</p>
+      <p class="delta" id="stat-boletos-delta">Entradas vendidas</p>
     </div>
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">groups</span>
       <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.registrados">Usuarios registrados</p>
-      <p class="value">12,492</p>
-      <p class="delta">+3.1% este mes</p>
+      <p class="value" id="stat-usuarios">0</p>
+      <p class="delta" id="stat-usuarios-delta">Cuentas activas</p>
     </div>
     <div class="card stat-card">
       <span class="icon material-symbols-outlined">event_available</span>
       <p class="text-muted" style="margin-top: 12px;" data-i18n="admin.activos">Eventos activos</p>
-      <p class="value">18</p>
-      <p class="delta">99.9% del tiempo operativo</p>
+      <p class="value" id="stat-eventos">0</p>
+      <p class="delta" id="stat-eventos-delta">Publicados</p>
     </div>
   </div>
 
@@ -149,13 +150,8 @@
         <option data-i18n="admin.last12">Últimos 12 meses</option>
       </select>
     </div>
-    <div class="bar-chart">
-      <div class="bar-col"><div class="bar" style="height: 45%;"></div><span class="bar-label">Jazz</span></div>
-      <div class="bar-col"><div class="bar" style="height: 90%;"></div><span class="bar-label">Ritmo Urb.</span></div>
-      <div class="bar-col"><div class="bar" style="height: 60%;"></div><span class="bar-label">Hamlet</span></div>
-      <div class="bar-col"><div class="bar" style="height: 75%;"></div><span class="bar-label">Baloncesto</span></div>
-      <div class="bar-col"><div class="bar" style="height: 30%;"></div><span class="bar-label">Conferencia</span></div>
-      <div class="bar-col"><div class="bar" style="height: 55%;"></div><span class="bar-label">Sinfónica</span></div>
+    <div class="bar-chart" id="bar-chart">
+      <div class="bar-col"><div class="bar" style="height: 8%;"></div><span class="bar-label">Sin ventas</span></div>
     </div>
   </div>
 
@@ -170,6 +166,26 @@
         <span style="font-weight: 600;" data-i18n="admin.createnew">Crear nuevo evento</span>
         <span class="text-muted" style="font-size: 0.82rem; text-align: center;" data-i18n="admin.createnewsub">Define nombre, fecha, lugar, zonas, filas y asientos.</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Validación de acceso -->
+  <div class="card table-wrap" id="validar" style="margin-bottom: 36px;">
+    <div style="padding: 28px;">
+      <div class="flex-between" style="align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h2 style="font-size: 1.25rem;">Validación de accesos</h2>
+          <p class="text-muted" style="margin-top: 4px;">Escanea o pega el código QR de una entrada para verificar el acceso al evento.</p>
+        </div>
+        <button class="btn btn-ghost" id="qr-reset-btn" style="display: none;"><span class="material-symbols-outlined">refresh</span> Nueva validación</button>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+        <input class="input" id="qr-input" placeholder="Código QR de la entrada" style="flex: 1; min-width: 240px;" />
+        <button class="btn btn-primary" id="qr-validate-btn" style="border-radius: 12px; padding: 0 22px;">
+          <span class="material-symbols-outlined">qr_code_scanner</span> Validar QR
+        </button>
+      </div>
+      <div id="qr-result" style="margin-top: 16px;"></div>
     </div>
   </div>
 
@@ -188,28 +204,8 @@
           <th data-i18n="admin.status">Estado</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td style="font-weight: 600;">Noche de Jazz en Vivo</td>
-          <td>1,500</td>
-          <td>1,240</td>
-          <td>260</td>
-          <td><span class="badge badge-success" data-i18n="admin.available">Disponible</span></td>
-        </tr>
-        <tr>
-          <td style="font-weight: 600;">Festival Ritmo Urbano</td>
-          <td>5,000</td>
-          <td>4,890</td>
-          <td>110</td>
-          <td><span class="badge badge-warning" data-i18n="admin.sellingfast">Vendiéndose rápido</span></td>
-        </tr>
-        <tr>
-          <td style="font-weight: 600;">Hamlet, Obra de Teatro</td>
-          <td>400</td>
-          <td>190</td>
-          <td>210</td>
-          <td><span class="badge badge-success" data-i18n="admin.available">Disponible</span></td>
-        </tr>
+      <tbody id="tickets-table">
+        <tr><td colspan="5" class="text-muted">Cargando…</td></tr>
       </tbody>
     </table>
   </div>
@@ -236,56 +232,12 @@
           <th class="text-right" data-i18n="admin.actions">Acciones</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">AT</div>
-              <div>
-                <p style="font-weight: 600;">Aris Torres</p>
-                <p class="text-muted" style="font-size: 0.78rem;">aris@correo.com</p>
-              </div>
-            </div>
-          </td>
-          <td class="text-muted">#0942</td>
-          <td><span class="badge badge-success" data-i18n="admin.verified">Verificado</span></td>
-          <td class="text-muted">Hace 2.4 h</td>
-          <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
-        </tr>
-        <tr>
-          <td>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--nebula-pink), #f472b6); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">KV</div>
-              <div>
-                <p style="font-weight: 600;">Kaelen Vargas</p>
-                <p class="text-muted" style="font-size: 0.78rem;">vox@correo.com</p>
-              </div>
-            </div>
-          </td>
-          <td class="text-muted">#1123</td>
-          <td><span class="badge badge-success" data-i18n="admin.verified">Verificado</span></td>
-          <td class="text-muted">Hace 12.1 h</td>
-          <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
-        </tr>
-        <tr>
-          <td>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--stellar-blue), #38bdf8); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">JD</div>
-              <div>
-                <p style="font-weight: 600;">Jara Díaz</p>
-                <p class="text-muted" style="font-size: 0.78rem;">jara@correo.com</p>
-              </div>
-            </div>
-          </td>
-          <td class="text-muted">#0387</td>
-          <td><span class="badge badge-warning" data-i18n="admin.pending">Pendiente</span></td>
-          <td class="text-muted">Justo ahora</td>
-          <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
-        </tr>
+      <tbody id="users-table">
+        <tr><td colspan="5" class="text-muted">Cargando…</td></tr>
       </tbody>
     </table>
     <div class="flex-between" style="padding: 18px 28px; border-top: 1px solid rgba(108, 63, 209, 0.06);">
-      <p class="text-muted" style="font-size: 0.78rem;"><span data-i18n="admin.showing">Mostrando</span> 3 <span data-i18n="admin.of">de</span> 12,492 <span data-i18n="admin.users">usuarios</span></p>
+      <p class="text-muted" style="font-size: 0.78rem;"><span id="users-count">Mostrando 0 usuarios</span></p>
       <div style="display: flex; gap: 6px;">
         <button class="btn-ghost btn" style="padding: 8px;" disabled><span class="material-symbols-outlined">chevron_left</span></button>
         <button class="btn-ghost btn" style="padding: 8px;"><span class="material-symbols-outlined">chevron_right</span></button>
@@ -310,31 +262,8 @@
           <th data-i18n="admin.status">Estado</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td class="text-muted">#TXN-3391</td>
-          <td>Aris Torres</td>
-          <td style="font-weight: 500;">Noche de Jazz en Vivo</td>
-          <td style="font-weight: 600;">RD$ 3,600</td>
-          <td class="text-muted">10:42 am</td>
-          <td><span class="badge badge-success" data-i18n="admin.completed">Completada</span></td>
-        </tr>
-        <tr>
-          <td class="text-muted">#TXN-3392</td>
-          <td>Kaelen Vargas</td>
-          <td style="font-weight: 500;">Festival Ritmo Urbano</td>
-          <td style="font-weight: 600;">RD$ 12,800</td>
-          <td class="text-muted">11:15 am</td>
-          <td><span class="badge badge-success" data-i18n="admin.completed">Completada</span></td>
-        </tr>
-        <tr>
-          <td class="text-muted">#TXN-3393</td>
-          <td>Jara Díaz</td>
-          <td style="font-weight: 500;">Hamlet, Obra de Teatro</td>
-          <td style="font-weight: 600;">RD$ 1,200</td>
-          <td class="text-muted">1:03 pm</td>
-          <td><span class="badge badge-warning" data-i18n="admin.pending">Pendiente</span></td>
-        </tr>
+      <tbody id="txns-table">
+        <tr><td colspan="6" class="text-muted">Cargando…</td></tr>
       </tbody>
     </table>
   </div>
@@ -700,10 +629,185 @@
 </div>
 
 <script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 
 <script src="js/main.js"></script>
+<script>
+/* ============================================================
+   Panel admin — datos reales del backend + validación de QR
+   ============================================================ */
+(function () {
+  const fmt = (n) => (Number(n) || 0).toLocaleString('es-DO');
+  const fmtMoney = (n) => 'RD$ ' + fmt(Math.round(Number(n) || 0));
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  async function cargarDashboard() {
+    if (typeof Api === 'undefined' || !Api.getAdminDashboard) return;
+    try {
+      const data = await Api.getAdminDashboard();
+      const st = data.stats || {};
+
+      const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      set('stat-ingresos', fmtMoney(st.ingresos));
+      set('stat-boletos', fmt(st.boletos));
+      set('stat-usuarios', fmt(st.usuarios));
+      set('stat-eventos', fmt(st.eventosActivos));
+      set('stat-ingresos-delta', (st.transacciones || 0) + ' transacciones');
+      set('stat-boletos-delta', 'Entradas vendidas');
+      set('stat-usuarios-delta', 'Cuentas activas');
+      set('stat-eventos-delta', 'Publicados');
+
+      // Gráfico de ventas por evento
+      const chart = document.getElementById('bar-chart');
+      const ventas = (data.ventasPorEvento || []).filter(v => (v.boletos || 0) > 0);
+      if (chart && ventas.length) {
+        const max = Math.max(...ventas.map(v => Number(v.boletos) || 0)) || 1;
+        chart.innerHTML = ventas.slice(0, 8).map(v => {
+          const h = Math.max(4, Math.round((Number(v.boletos) / max) * 100));
+          const name = (v.nombre || '').split(' ').slice(0, 2).join(' ');
+          return `<div class="bar-col"><div class="bar" style="height:${h}%;" title="${esc(v.nombre)} · ${fmt(v.boletos)} boletos · ${fmtMoney(v.ingresos)}"></div><span class="bar-label">${esc(name)}</span></div>`;
+        }).join('');
+      }
+
+      // Boletos disponibles por evento
+      try {
+        const res = await Api.getAdminResumen();
+        const tbody = document.getElementById('tickets-table');
+        if (tbody && res.eventos && res.eventos.length) {
+          const filas = [];
+          res.eventos.forEach((item) => {
+            const ev = item.evento || {};
+            const funcs = item.funciones || [];
+            funcs.forEach((f) => {
+              const stats = f.stats || {};
+              const cap = stats.capacidad != null ? stats.capacidad : (ev.capacity || 0);
+              const sold = stats.vendidos || 0;
+              const disp = Math.max(0, cap - sold);
+              const estado = stats.agotada
+                ? '<span class="badge badge-warning">Agotada</span>'
+                : '<span class="badge badge-success">Disponible</span>';
+              filas.push(`<tr>
+                <td style="font-weight: 600;">${esc(ev.nombre)}</td>
+                <td>${fmt(cap)}</td>
+                <td>${fmt(sold)}</td>
+                <td>${fmt(disp)}</td>
+                <td>${estado}</td>
+              </tr>`);
+            });
+          });
+          tbody.innerHTML = filas.join('') || '<tr><td colspan="5" class="text-muted">Sin funciones registradas.</td></tr>';
+        } else if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Sin datos.</td></tr>';
+        }
+      } catch (_) {}
+
+      // Usuarios recientes
+      const uTbody = document.getElementById('users-table');
+      if (uTbody) {
+        const users = data.usuarios || [];
+        uTbody.innerHTML = users.length
+          ? users.map((u) => {
+              const ini = (u.nombre || '?').trim().split(/\s+/).map(w => w[0]).join('').substring(0, 2).toUpperCase();
+              const last = u.ultimo_login ? new Date(u.ultimo_login).toLocaleString('es-DO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+              return `<tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--cosmic-purple), var(--nebula-pink)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">${esc(ini)}</div>
+                    <div>
+                      <p style="font-weight: 600;">${esc(u.nombre)}${u.role === 'admin' ? ' <span class="badge badge-warning">admin</span>' : ''}</p>
+                      <p class="text-muted" style="font-size: 0.78rem;">${esc(u.email)}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-muted">#${esc(u.id)}</td>
+                <td><span class="badge ${u.estado === 'activo' ? 'badge-success' : 'badge-warning'}">${esc(u.estado || 'activo')}</span></td>
+                <td class="text-muted">${last}</td>
+                <td class="text-right"><button class="btn-ghost btn" style="padding: 6px;"><span class="material-symbols-outlined">more_vert</span></button></td>
+              </tr>`;
+            }).join('')
+          : '<tr><td colspan="5" class="text-muted">Sin usuarios.</td></tr>';
+        const c = document.getElementById('users-count');
+        if (c) c.textContent = 'Mostrando ' + users.length + ' usuarios';
+      }
+
+      // Transacciones recientes
+      const tTbody = document.getElementById('txns-table');
+      if (tTbody) {
+        const txns = data.transacciones || [];
+        tTbody.innerHTML = txns.length
+          ? txns.map((t) => {
+              const hora = t.creada_en ? new Date(t.creada_en).toLocaleString('es-DO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+              const ok = t.estado === 'paid' || t.estado === 'completada';
+              return `<tr>
+                <td class="text-muted">#${esc(t.transaccion || t.id)}</td>
+                <td>${esc(t.usuario_nombre || '—')}</td>
+                <td style="font-weight: 500;">${esc(t.evento_nombre || '—')}</td>
+                <td style="font-weight: 600;">${fmtMoney(t.total)}</td>
+                <td class="text-muted">${hora}</td>
+                <td><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${ok ? 'Completada' : esc(t.estado || '—')}</span></td>
+              </tr>`;
+            }).join('')
+          : '<tr><td colspan="6" class="text-muted">Sin transacciones todavía. Compra una entrada desde el catálogo para verla aquí.</td></tr>';
+      }
+    } catch (err) {
+      console.error("Error cargando dashboard:", err);
+    }
+  }
+
+  /* ---- Validación de QR ---- */
+  const qrInput = document.getElementById('qr-input');
+  const qrBtn = document.getElementById('qr-validate-btn');
+  const qrResult = document.getElementById('qr-result');
+  const qrReset = document.getElementById('qr-reset-btn');
+
+  function pintarResultado(ok, html) {
+    if (!qrResult) return;
+    qrResult.innerHTML = `<div class="qr-result ${ok ? 'qr-result-ok' : 'qr-result-err'}">${html}</div>`;
+    if (qrReset) qrReset.style.display = '';
+  }
+
+  async function validarQr() {
+    const val = (qrInput ? qrInput.value : '').trim();
+    if (!val) { pintarResultado(false, '<span class="material-symbols-outlined">error</span> Escribe o pega el código QR de la entrada.'); return; }
+    if (typeof Api === 'undefined' || !Api.validarEntrada) { pintarResultado(false, 'El módulo de validación no está disponible.'); return; }
+    if (qrBtn) { qrBtn.disabled = true; qrBtn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Validando…'; }
+    try {
+      const res = await Api.validarEntrada(val);
+      const e = res.entrada || {};
+      const f = e.fecha ? new Date(e.fecha).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      pintarResultado(true, `
+        <span class="qr-result-icon material-symbols-outlined">verified_user</span>
+        <div>
+          <strong>Acceso concedido</strong>
+          <p>${esc(e.evento || '')}${f ? ' · ' + esc(f) : ''}</p>
+          <p>Zona ${esc(e.zona || '—')} · Asiento ${esc(e.asiento || '—')}</p>
+          <p class="text-muted">Validada a las ${e.usado_en ? new Date(e.usado_en).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : '—'}</p>
+        </div>`);
+    } catch (err) {
+      const extra = err.status === 409 && err.entrada ? ` · ${err.entrada.zona || ''} ${err.entrada.asiento || ''}` : '';
+      pintarResultado(false, `<span class="qr-result-icon material-symbols-outlined">block</span><div><strong>${esc(err.message || 'Entrada inválida')}</strong><p class="text-muted">${esc(extra)}</p></div>`);
+    } finally {
+      if (qrBtn) { qrBtn.disabled = false; qrBtn.innerHTML = '<span class="material-symbols-outlined">qr_code_scanner</span> Validar QR'; }
+    }
+  }
+
+  if (qrBtn) qrBtn.addEventListener('click', validarQr);
+  if (qrInput) qrInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validarQr(); });
+  if (qrReset) qrReset.addEventListener('click', () => {
+    if (qrInput) qrInput.value = '';
+    if (qrResult) qrResult.innerHTML = '';
+    qrReset.style.display = 'none';
+    if (qrInput) qrInput.focus();
+  });
+
+  cargarDashboard();
+})();
+</script>
 
 </body>
 </html>

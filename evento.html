@@ -150,6 +150,7 @@
 </footer>
 
 <script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
 <script src="js/api.js"></script>
 
 <script src="js/main.js"></script>
@@ -190,6 +191,14 @@
       .map(s => s.id);
     main.dataset.takenSeats = JSON.stringify(taken);
 
+    // Todos los asientos y zonas reales para dibujar el mapa completo
+    main.dataset.seats = JSON.stringify(evt.seats || []);
+    main.dataset.zones = JSON.stringify(evt.zones || []);
+
+    // Función activa contra la que se reserva y se compra
+    const funcs = (evt.funciones || []).filter(f => f.estado === 'activa');
+    main.dataset.funcionId = (funcs[0] || (evt.funciones || [])[0] || {}).id || '';
+
     document.title = 'Astro Tickets · ' + evt.name;
     const img = document.querySelector('.detail-image img');
     if (img) img.src = evt.image || 'multimedia/logo.svg';
@@ -208,6 +217,9 @@
     }
     const descCard = document.querySelector('.card p');
     if (descCard) descCard.textContent = evt.description || '';
+
+    // Reconstruir el mapa con asientos/zonas/precios reales del evento
+    if (typeof window.renderSeatMap === 'function') window.renderSeatMap();
   }
 
   // Cargar desde el backend; si falla, desde localStorage

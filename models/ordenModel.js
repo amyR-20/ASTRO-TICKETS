@@ -1,10 +1,14 @@
 /* ============================================================
-   Astro Tickets — models/ordenModel.js
-   Acceso a datos de las tablas ordenes, entradas y asientos
+   Astro Tickets — models/ordenModel.js (Fases 4 + 5)
+   Acceso a datos de las tablas ordenes, entradas y asientos.
+   La compra valida en la BD (con SELECT ... FOR UPDATE) que las
+   reservas del usuario siguen activas y que la función no se
+   agotó, y cobra el PRECIO REAL de la zona, nunca el del cliente.
    ============================================================ */
 
 const { pool } = require("../config/database");
 const crypto = require("crypto");
+const { liberarReservasVencidas } = require("./funcionModel");
 
 /**
  * Genera un código único de entrada. UUIDv4 completo (32 caracteres
@@ -17,38 +21,86 @@ function generarCodigoEntrada() {
 
 /**
  * Crea una orden de compra y sus entradas en una transacción.
- * También marca los asientos vendidos como "sold".
+ * Recalcula subtotal/tarifa/total desde la BD (nunca del cliente),
+ * valida que cada asiento reservado por el usuario siga activo y
+ * que la función no esté cancelada, y marca los asientos "sold".
  *
- * datos: {
- *   usuarioId, eventoId,
- *   payment: { method, cardBrand, cardLast4, cardHolder, transactionId, reservationCode },
- *   seats: [{ id, zone, price }],
- *   pricing: { subtotal, fee, total },
- *   purchasedAt (ISO) | opcional
- * }
+ * datos: { usuarioId, funcionId, payment: { transactionId, reservationCode } }
  */
 async function crear(datos) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    // Liberar reservas vencidas antes de validar
+    await liberarReservasVencidas();
+
+    const funcion = (await client.query(
+      `SELECT f.*, e.id AS evento_id FROM funciones_evento f
+       JOIN eventos e ON e.id = f.evento_id
+       WHERE f.id = $1 FOR UPDATE`,
+      [datos.funcionId]
+    )).rows[0];
+
+    if (!funcion) {
+      await client.query("ROLLBACK");
+      return { status: 404, mensaje: "Función no encontrada." };
+    }
+    if (funcion.estado === "cancelada") {
+      await client.query("ROLLBACK");
+      return { status: 409, mensaje: "La función fue cancelada." };
+    }
+
+    // Reservas activas del usuario para esta función (con FOR UPDATE)
+    const { rows: reservas } = await client.query(
+      `SELECT r.* FROM reservas r
+       JOIN asientos a ON a.funcion_id = r.funcion_id AND a.asiento_id = r.asiento_id
+       WHERE r.usuario_id = $1 AND r.funcion_id = $2 AND r.estado = 'activa'
+         AND r.expira_en > now()
+       ORDER BY r.asiento_id
+       FOR UPDATE OF r, a`,
+      [datos.usuarioId, datos.funcionId]
+    );
+
+    if (!reservas.length) {
+      await client.query("ROLLBACK");
+      return { status: 409, mensaje: "Ya no tienes asientos reservados para esta función. Reserva de nuevo." };
+    }
+
+    // Recalcular totales desde la BD
+    let subtotal = 0;
+    const detalleAsientos = [];
+    for (const r of reservas) {
+      const precio = Number(r.precio);
+      if (Number.isNaN(precio) || precio < 0) {
+        await client.query("ROLLBACK");
+        return { status: 400, mensaje: `Precio inválido para el asiento ${r.asiento_id}.` };
+      }
+      subtotal += precio;
+      detalleAsientos.push(r);
+    }
+
+    const tarifa = Math.round(subtotal * 0.08 * 100) / 100;
+    const total = Math.round((subtotal + tarifa) * 100) / 100;
+
     const orden = await client.query(
       `INSERT INTO ordenes
-         (usuario_id, evento_id, transaccion, codigo_reserva, metodo_pago,
+         (usuario_id, evento_id, funcion_id, transaccion, codigo_reserva, metodo_pago,
           tarjeta_marca, tarjeta_ultimos4, subtotal, tarifa, total, estado, creada_en)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
         datos.usuarioId || null,
-        datos.eventoId,
+        funcion.evento_id,
+        datos.funcionId,
         datos.payment.transactionId,
         datos.payment.reservationCode,
-        datos.payment.method,
+        datos.payment.method || "tarjeta",
         datos.payment.cardBrand || null,
         datos.payment.cardLast4 || null,
-        datos.pricing.subtotal,
-        datos.pricing.fee,
-        datos.pricing.total,
+        subtotal,
+        tarifa,
+        total,
         datos.estado || "paid",
         datos.purchasedAt ? new Date(datos.purchasedAt) : new Date(),
       ]
@@ -56,23 +108,68 @@ async function crear(datos) {
 
     const ordenId = orden.rows[0].id;
 
-    for (const s of datos.seats) {
+    const entradasCreadas = [];
+    for (const r of detalleAsientos) {
       const codigoEntrada = generarCodigoEntrada();
+      const qrToken = crypto.randomUUID().replace(/-/g, "").toUpperCase();
       await client.query(
-        `INSERT INTO entradas (orden_id, evento_id, asiento_id, zona, precio, codigo)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [ordenId, datos.eventoId, s.id, s.zone || null, s.price, codigoEntrada]
+        `INSERT INTO entradas (orden_id, evento_id, funcion_id, asiento_id, zona, precio, codigo, qr_token)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [ordenId, funcion.evento_id, datos.funcionId, r.asiento_id, r.zona, r.precio, codigoEntrada, qrToken]
       );
-      // Marcar asiento como vendido
+      entradasCreadas.push({
+        id: r.asiento_id,
+        zone: r.zona,
+        price: Number(r.precio),
+        codigo: codigoEntrada,
+        qrToken,
+      });
+      // Marcar asiento como vendido (solo si aún no lo está)
       await client.query(
         `UPDATE asientos SET estado='sold'
-         WHERE evento_id=$1 AND asiento_id=$2`,
-        [datos.eventoId, s.id]
+         WHERE funcion_id=$1 AND asiento_id=$2 AND estado <> 'sold'`,
+        [datos.funcionId, r.asiento_id]
+      );
+      // Cerrar la reserva
+      await client.query(
+        `UPDATE reservas SET estado='completada'
+         WHERE id=$1 AND estado='activa'`,
+        [r.id]
       );
     }
 
+    // Auditar la compra
+    await client.query(
+      `INSERT INTO auditoria (usuario_id, accion, entidad, entidad_id, funcion_id, detalle, creado_en)
+       VALUES ($1,'orden.crear','ordenes',$2,$3,$4,now())`,
+      [
+        datos.usuarioId || null,
+        String(ordenId),
+        datos.funcionId,
+        JSON.stringify({ asientos: detalleAsientos.length, total }),
+      ]
+    );
+
+    // Si se agotaron todos los asientos de la función, marcarla agotada
+    await client.query(
+      `UPDATE funciones_evento f SET estado='agotada'
+       WHERE f.id=$1 AND f.estado='activa'
+         AND NOT EXISTS (
+           SELECT 1 FROM asientos a
+           WHERE a.funcion_id=f.id AND a.estado='available'
+         )`,
+      [datos.funcionId]
+    );
+
     await client.query("COMMIT");
-    return orden.rows[0];
+
+    return {
+      ...orden.rows[0],
+      subtotal,
+      tarifa,
+      total,
+      asientos: entradasCreadas,
+    };
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
@@ -112,7 +209,8 @@ async function listarPorUsuario(usuarioId) {
             'id', en.asiento_id,
             'zone', en.zona,
             'price', en.precio,
-            'codigo', en.codigo
+            'codigo', en.codigo,
+            'qrToken', en.qr_token
           )
         ) FILTER (WHERE en.id IS NOT NULL),
         '[]'

@@ -64,6 +64,12 @@
         <p class="text-muted" style="margin-top: 6px; font-size: 0.85rem;" data-i18n="payment.subtitle">Tus datos se transmiten cifrados y no se almacenan.</p>
       </div>
 
+      <!-- Error de compra -->
+      <div class="pay-error-box" id="pay-error" style="display: none;">
+        <span class="material-symbols-outlined">error</span>
+        <span id="pay-error-text"></span>
+      </div>
+
       <!-- Payment method tabs -->
       <div class="pay-method-tabs">
         <button class="pay-method-tab active" data-method="card">
@@ -159,7 +165,7 @@
 
       <!-- PayPal panel -->
       <div class="pay-method-panel" data-panel="paypal">
-        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'">
+        <button class="pay-alt-btn">
           <span class="material-symbols-outlined" style="color: #003087;">account_balance_wallet</span>
           <span data-i18n="payment.paypal">Continuar con PayPal</span>
         </button>
@@ -175,7 +181,7 @@
 
       <!-- Apple Pay panel -->
       <div class="pay-method-panel" data-panel="apple">
-        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'" style="background: #000; color: #fff; border-color: #000;">
+        <button class="pay-alt-btn" style="background: #000; color: #fff; border-color: #000;">
           <span class="material-symbols-outlined">phone_iphone</span>
           <span data-i18n="payment.apple">Pagar con Apple Pay</span>
         </button>
@@ -191,7 +197,7 @@
 
       <!-- Google Pay panel -->
       <div class="pay-method-panel" data-panel="google">
-        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'">
+        <button class="pay-alt-btn">
           <span class="material-symbols-outlined" style="color: #4285F4;">g_mobiledata</span>
           <span data-i18n="payment.google">Pagar con Google Pay</span>
         </button>
@@ -215,7 +221,7 @@
           <p>RNC: 123-45678-9</p>
           <p style="margin-top: 10px;" data-i18n="payment.transferinfo">Envía el comprobante a <strong>pagos@astroTickets.com</strong> con tu nombre completo.</p>
         </div>
-        <button class="pay-alt-btn" onclick="window.location.href='comprobante.html'">
+        <button class="pay-alt-btn">
           <span class="material-symbols-outlined">check_circle</span>
           <span data-i18n="payment.transfer">Ya realicé la transferencia</span>
         </button>
@@ -282,6 +288,8 @@
 </footer>
 
 <script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 
 <script src="js/main.js"></script>

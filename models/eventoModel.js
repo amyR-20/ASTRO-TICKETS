@@ -1,16 +1,18 @@
 /* ============================================================
-   Astro Tickets — models/eventoModel.js
-   Acceso a datos de las tablas eventos, zonas y asientos
+   Astro Tickets — models/eventoModel.js (Fases 4 + 5)
+   Acceso a datos de las tablas eventos, zonas y asientos.
+   Ahora cada evento tiene funciones (funciones_evento) y la
+   creación/edición/estado quedan registrados en auditoría.
    ============================================================ */
 
 const { query } = require("../config/database");
+const funcionModel = require("./funcionModel");
 
 /**
  * Convierte una fila de "eventos" al formato que espera el frontend
  * (el mismo que usaba localStorage: astro_events).
  */
-function aEventoFrontend(fila, zonas = [], asientos = []) {
-  // fecha (DATE) y hora (TIME) pueden llegar como Date o como string
+function aEventoFrontend(fila, zonas = [], asientos = [], funciones = []) {
   const fechaStr = fila.fecha instanceof Date
     ? fila.fecha.toISOString().slice(0, 10)
     : fila.fecha || null;
@@ -47,6 +49,14 @@ function aEventoFrontend(fila, zonas = [], asientos = []) {
       type: a.zona,
       status: a.estado,
     })),
+    funciones: funciones.map((f) => ({
+      id: f.id,
+      date: f.fecha instanceof Date ? f.fecha.toISOString().slice(0, 10) : f.fecha,
+      time: String(f.hora || "").slice(0, 5),
+      sala: f.sala,
+      estado: f.estado,
+      stats: f.stats || null,
+    })),
     createdAt: fila.creado_en ? fila.creado_en.toISOString() : null,
   };
 }
@@ -62,7 +72,7 @@ async function listar(estado) {
   return rows;
 }
 
-/** Busca un evento por su id, incluyendo sus zonas y asientos. */
+/** Busca un evento por su id, incluyendo zonas, asientos y funciones. */
 async function buscarPorId(id) {
   const { rows } = await query("SELECT * FROM eventos WHERE id = $1", [id]);
   if (!rows.length) return null;
@@ -72,18 +82,19 @@ async function buscarPorId(id) {
     [id]
   )).rows;
   const asientos = (await query(
-    "SELECT * FROM asientos WHERE evento_id = $1 ORDER BY fila, columna",
+    "SELECT * FROM asientos WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY fila, columna",
     [id]
   )).rows;
+  const funciones = await funcionModel.listarPorEvento(id);
 
-  return aEventoFrontend(rows[0], zonas, asientos);
+  return aEventoFrontend(rows[0], zonas, asientos, funciones);
 }
 
 /**
- * Crea un evento con sus zonas y asientos en una transacción.
- * datos: objeto del frontend (igual que collectEventData).
+ * Crea un evento con sus zonas, asientos (plantilla) y su primera
+ * función por defecto, en una transacción. Audita la creación.
  */
-async function crear(datos) {
+async function crear(datos, usuarioId = null, razon = null) {
   const client = await require("../config/database").pool.connect();
   try {
     await client.query("BEGIN");
@@ -130,6 +141,24 @@ async function crear(datos) {
       );
     }
 
+    // Primera función por defecto (la fecha/hora del formulario)
+    const estadoFuncion = ev.estado === "published" ? "activa" : "programada";
+    await funcionModel.crearEnCliente(client, {
+      eventoId: ev.id,
+      fecha: datos.date || new Date(),
+      hora: datos.time || "20:00",
+      sala: ev.lugar,
+      estado: estadoFuncion,
+      usuarioId,
+      razon,
+    });
+
+    await funcionModel.registrarAuditoria(client, {
+      usuarioId, accion: "evento.crear", entidad: "eventos",
+      entidadId: ev.id, razon,
+      detalle: { nombre: ev.nombre, estado: ev.estado },
+    });
+
     await client.query("COMMIT");
     return aEventoFrontend(ev);
   } catch (err) {
@@ -140,11 +169,17 @@ async function crear(datos) {
   }
 }
 
-/** Actualiza un evento completo (borra zonas/asientos y los reinserta). */
-async function actualizar(id, datos) {
+/** Actualiza un evento (borra zonas/asientos y los reinserta). Audita. */
+async function actualizar(id, datos, usuarioId = null, razon = null) {
   const client = await require("../config/database").pool.connect();
   try {
     await client.query("BEGIN");
+
+    const anterior = (await client.query(
+      `SELECT * FROM eventos WHERE id = $1 FOR UPDATE`,
+      [id]
+    )).rows[0];
+    if (!anterior) return null;
 
     await client.query(
       `UPDATE eventos SET
@@ -171,7 +206,7 @@ async function actualizar(id, datos) {
     );
 
     await client.query("DELETE FROM zonas WHERE evento_id=$1", [id]);
-    await client.query("DELETE FROM asientos WHERE evento_id=$1", [id]);
+    await client.query("DELETE FROM asientos WHERE evento_id=$1 AND funcion_id IS NULL", [id]);
 
     for (const z of datos.zones || []) {
       await client.query(
@@ -189,6 +224,48 @@ async function actualizar(id, datos) {
       );
     }
 
+    // Sincronizar la primera función con la nueva fecha/hora si el
+    // evento cambió y esa función aún no tiene ventas.
+    const funcs = (await client.query(
+      `SELECT * FROM funciones_evento WHERE evento_id = $1 ORDER BY id ASC`,
+      [id]
+    )).rows;
+    const fechaAnterior = anterior.fecha instanceof Date
+      ? anterior.fecha.toISOString().slice(0, 10)
+      : String(anterior.fecha || "").slice(0, 10);
+    const horaAnterior = String(anterior.hora || "").slice(0, 5);
+    const fechaNueva = String(datos.date || "").slice(0, 10);
+    const horaNueva = String(datos.time || "20:00").slice(0, 5);
+
+    if (funcs.length && (fechaAnterior !== fechaNueva || horaAnterior !== horaNueva)) {
+      const primera = funcs[0];
+      const conEntradas = (await client.query(
+        `SELECT 1 FROM entradas WHERE funcion_id = $1 LIMIT 1`,
+        [primera.id]
+      )).rows.length > 0;
+      if (!conEntradas) {
+        await client.query(
+          `UPDATE funciones_evento SET fecha=$1, hora=$2, actualizado_en=now()
+           WHERE id=$3`,
+          [fechaNueva || fechaAnterior || null, horaNueva, primera.id]
+        );
+      }
+    }
+
+    // Si el evento pasa a publicado, la primera función pasa a en_venta
+    if (datos.status === "published" && funcs.length && funcs[0].estado === "programada") {
+      await client.query(
+        `UPDATE funciones_evento SET estado='activa', actualizado_en=now() WHERE id=$1`,
+        [funcs[0].id]
+      );
+    }
+
+    await funcionModel.registrarAuditoria(client, {
+      usuarioId, accion: "evento.editar", entidad: "eventos",
+      entidadId: id, razon,
+      detalle: { desde: anterior.estado, hasta: datos.status || anterior.estado },
+    });
+
     await client.query("COMMIT");
     return buscarPorId(id);
   } catch (err) {
@@ -199,11 +276,71 @@ async function actualizar(id, datos) {
   }
 }
 
-/** Elimina un evento y todo lo relacionado (zonas, asientos, entradas). */
-async function eliminar(id) {
+/** Publica un evento (estado → published) y sus funciones a activa. */
+async function publicar(id, usuarioId = null, razon = null) {
   const client = await require("../config/database").pool.connect();
   try {
     await client.query("BEGIN");
+    await client.query(
+      `UPDATE eventos SET estado='published' WHERE id=$1`,
+      [id]
+    );
+    await client.query(
+      `UPDATE funciones_evento SET estado='activa', actualizado_en=now()
+       WHERE evento_id=$1 AND estado <> 'cancelada'`,
+      [id]
+    );
+    await funcionModel.registrarAuditoria(client, {
+      usuarioId, accion: "evento.publicar", entidad: "eventos",
+      entidadId: id, razon,
+    });
+    await client.query("COMMIT");
+    return true;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/** Cancela un evento y todas sus funciones. Audita con razón. */
+async function cancelar(id, usuarioId = null, razon = null) {
+  const client = await require("../config/database").pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `UPDATE eventos SET estado='cancelado' WHERE id=$1`,
+      [id]
+    );
+    await client.query(
+      `UPDATE funciones_evento SET estado='cancelada', actualizado_en=now()
+       WHERE evento_id=$1 AND estado <> 'cancelada'`,
+      [id]
+    );
+    await funcionModel.registrarAuditoria(client, {
+      usuarioId, accion: "evento.cancelar", entidad: "eventos",
+      entidadId: id, razon,
+    });
+    await client.query("COMMIT");
+    return true;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/** Elimina un evento y todo lo relacionado (zonas, asientos, entradas). */
+async function eliminar(id, usuarioId = null, razon = null) {
+  const client = await require("../config/database").pool.connect();
+  try {
+    await client.query("BEGIN");
+    await funcionModel.registrarAuditoria(client, {
+      usuarioId, accion: "evento.eliminar", entidad: "eventos",
+      entidadId: id, razon,
+    });
     await client.query("DELETE FROM entradas WHERE evento_id=$1", [id]);
     await client.query("DELETE FROM asientos WHERE evento_id=$1", [id]);
     await client.query("DELETE FROM zonas WHERE evento_id=$1", [id]);
@@ -218,4 +355,4 @@ async function eliminar(id) {
   }
 }
 
-module.exports = { listar, buscarPorId, crear, actualizar, eliminar, aEventoFrontend };
+module.exports = { listar, buscarPorId, crear, actualizar, publicar, cancelar, eliminar, aEventoFrontend };

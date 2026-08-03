@@ -1,34 +1,33 @@
-/* ============================================================
-   Astro Tickets — controllers/ordenController.js
+    /* ============================================================
+   Astro Tickets — controllers/ordenController.js (Fases 4 + 5)
+   La compra se hace contra una FUNCIÓN concreta. El backend
+   recalcula precios y totales desde la BD.
    ============================================================ */
 
 const ordenModel = require("../models/ordenModel");
-const eventoModel = require("../models/eventoModel");
 
 /** POST /api/ordenes — crea una compra (requiere sesión). */
 async function crear(req, res) {
   try {
-    const { eventoId, seats, pricing, payment } = req.body || {};
+    const { funcionId, payment } = req.body || {};
 
-    if (!eventoId || !Array.isArray(seats) || !seats.length || !payment) {
-      return res.status(400).json({ error: "Datos de compra incompletos." });
+    if (!funcionId) {
+      return res.status(400).json({ error: "Debes indicar la función del evento." });
     }
-    if (!payment.transactionId || !payment.reservationCode) {
+    if (!payment || !payment.transactionId || !payment.reservationCode) {
       return res.status(400).json({ error: "El pago no fue confirmado." });
-    }
-
-    const evento = await eventoModel.buscarPorId(eventoId);
-    if (!evento) {
-      return res.status(404).json({ error: "Evento no encontrado." });
     }
 
     const orden = await ordenModel.crear({
       usuarioId: req.usuario.id,
-      eventoId,
-      seats,
-      pricing: pricing || { subtotal: 0, fee: 0, total: 0 },
+      funcionId,
       payment,
     });
+
+    if (orden.status) {
+      // El modelo devolvió un error HTTP (404/409/400)
+      return res.status(orden.status).json({ error: orden.mensaje });
+    }
 
     return res.status(201).json({ orden });
   } catch (err) {

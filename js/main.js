@@ -101,7 +101,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Los formularios de login/registro los gestiona auth.js y se marcan
     // con data-auth-handled; para ellos NO se fuerza el redirect de 700ms,
     // evitando que se navegue aunque el login/registro haya fallado.
-    if (form.dataset.authHandled) return;
+    // #card-form se procesa de forma asíncrona con el backend (ver flujo
+    // de compra en PURCHASE FLOW), así que también se excluye aquí.
+    if (form.dataset.authHandled || form.id === "card-form" || form.id === "seat-form") return;
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');
@@ -148,40 +150,109 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (seatGridPlatino) {
     const evMain = document.querySelector('main[data-event-name]');
-    const PRICES = evMain ? {
-      platino: parseInt(evMain.dataset.pricePlatino) || 4500,
-      vip: parseInt(evMain.dataset.priceVip) || 3200,
-      general: parseInt(evMain.dataset.priceGeneral) || 1800
-    } : { platino: 4500, vip: 3200, general: 1800 };
-    const TAKEN_SEATS = new Set(["A3","A4","B2","B5","C1","C8","D4","D5","E6","F3","F7","G2","G9","H1","H5","H10","I4","I6"]);
-    // Sumar los asientos vendidos/reservados que vienen del backend (Neon)
+
+    // Asientos y zonas reales (backend) si la página trae un evento por ?id=
+    let ALL_SEATS = [];
+    let ZONE_PRICES = {};
     try {
-      const extra = evMain ? JSON.parse(evMain.dataset.takenSeats || "[]") : [];
-      if (Array.isArray(extra)) extra.forEach(id => TAKEN_SEATS.add(id));
+      ALL_SEATS = evMain ? JSON.parse(evMain.dataset.seats || '[]') : [];
+      const zones = evMain ? JSON.parse(evMain.dataset.zones || '[]') : [];
+      zones.forEach((z) => { ZONE_PRICES[z.name.toLowerCase()] = Number(z.price) || 0; });
     } catch (_) {}
+
+    let PRICES = evMain ? {
+      platino: ZONE_PRICES.platino || parseInt(evMain.dataset.pricePlatino) || 4500,
+      vip: ZONE_PRICES.vip || parseInt(evMain.dataset.priceVip) || 3200,
+      general: ZONE_PRICES.general || parseInt(evMain.dataset.priceGeneral) || 1800
+    } : { platino: 4500, vip: 3200, general: 1800 };
+    // Mostrar el precio real de cada zona en su etiqueta
+    document.querySelectorAll('.seat-zone-label').forEach((label, i) => {
+      const key = ['platino', 'vip', 'general'][i];
+      if (key && PRICES[key]) {
+        const span = label.querySelector('span');
+        const name = span ? span.textContent.trim() : key.charAt(0).toUpperCase() + key.slice(1);
+        label.innerHTML = `<span>${name}</span> · RD$ ${PRICES[key].toLocaleString('es-DO')}`;
+      }
+    });
+
+    let TAKEN_SEATS = new Set(
+      ALL_SEATS.length
+        ? ALL_SEATS.filter((s) => s.status !== 'available').map((s) => s.id)
+        : ["A3","A4","B2","B5","C1","C8","D4","D5","E6","F3","F7","G2","G9","H1","H5","H10","I4","I6"]
+    );
     const selectedSeats = new Map();
 
     function buildSeatGrid(container, zone, rows, cols) {
+      const zoneSeats = ALL_SEATS.filter((s) => (s.type || '').toLowerCase() === zone);
+      const nCols = zoneSeats.length ? Math.max(...zoneSeats.map((s) => s.col)) : cols;
+      const aisleAfter = Math.floor(nCols / 2);
+
       // Column labels
       const colRow = document.createElement("div");
       colRow.className = "seat-col-labels";
       const labelRowSpan = document.createElement("span");
       labelRowSpan.style.width = "22px";
       colRow.appendChild(labelRowSpan);
-      for (let c = 1; c <= cols; c++) {
+      for (let c = 1; c <= nCols; c++) {
         const colLabel = document.createElement("span");
         colLabel.textContent = c;
         colRow.appendChild(colLabel);
       }
       container.appendChild(colRow);
 
+      // Mapa real: agrupar los asientos por fila
+      if (zoneSeats.length) {
+        const byRow = {};
+        zoneSeats.forEach((s) => { (byRow[s.row] = byRow[s.row] || []).push(s); });
+        const rowKeys = Object.keys(byRow).sort((a, b) => (a < b ? -1 : 1));
+
+        rowKeys.forEach((rowKey) => {
+          const rowEl = document.createElement("div");
+          rowEl.className = "seat-row";
+          rowEl.innerHTML = `<span class="seat-row-label">${rowKey}</span>`;
+
+          const seatMap = {};
+          byRow[rowKey].forEach((s) => { seatMap[s.col] = s; });
+
+          for (let c = 1; c <= nCols; c++) {
+            if (c === aisleAfter + 1) {
+              const aisle = document.createElement("div");
+              aisle.className = "seat-aisle";
+              rowEl.appendChild(aisle);
+            }
+            const seatData = seatMap[c];
+            if (!seatData) {
+              const spacer = document.createElement("div");
+              spacer.className = "seat-aisle";
+              rowEl.appendChild(spacer);
+              continue;
+            }
+            const id = seatData.id;
+            const taken = seatData.status !== 'available';
+            const seat = document.createElement("div");
+            seat.className = "seat" + (taken ? " taken" : "");
+            seat.dataset.id = id;
+            seat.dataset.zone = zone;
+            seat.dataset.price = PRICES[zone];
+            seat.textContent = c;
+
+            if (!taken) {
+              seat.addEventListener("click", () => toggleSeat(seat));
+            }
+            rowEl.appendChild(seat);
+          }
+          container.appendChild(rowEl);
+        });
+        return;
+      }
+
+      // Fallback: mapa generado (filas x columnas) sin evento en la URL
       for (let r = 0; r < rows; r++) {
         const rowEl = document.createElement("div");
         rowEl.className = "seat-row";
         const rowLetter = String.fromCharCode(65 + r);
         rowEl.innerHTML = `<span class="seat-row-label">${rowLetter}</span>`;
 
-        const aisleAfter = Math.floor(cols / 2);
         for (let c = 1; c <= cols; c++) {
           if (c === aisleAfter + 1) {
             const aisle = document.createElement("div");
@@ -275,9 +346,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Save seat selection to sessionStorage on form submit
     const seatForm = document.getElementById('seat-form');
     if (seatForm) {
-      seatForm.addEventListener('submit', () => {
+      seatForm.addEventListener('submit', (e) => {
         const main = document.querySelector('main[data-event-name]');
         if (!main) return;
+
+        // Evento sin función activa → no se puede vender (evita llegar a
+        // pago.html y fallar al reservar con funcionId vacío).
+        if (!main.dataset.funcionId) {
+          e.preventDefault();
+          const btn = seatForm.querySelector('button[type="submit"]');
+          if (btn) btn.disabled = true;
+          const display = document.getElementById('selected-seats-display');
+          if (display) {
+            display.innerHTML = '<span style="color:var(--color-error);font-size:0.8rem;">Este evento aún no tiene funciones disponibles. Prueba con otro evento.</span>';
+          }
+          return;
+        }
+
         const seats = [];
         selectedSeats.forEach((data, id) => {
           seats.push({ id, zone: data.zone, price: parseInt(data.price) });
@@ -293,12 +378,64 @@ document.addEventListener("DOMContentLoaded", () => {
             venue: main.dataset.eventVenue,
             category: main.dataset.eventCategory
           },
+          funcionId: main.dataset.funcionId || '',
           seats,
           pricing: { subtotal, fee, total: subtotal + fee }
         };
         sessionStorage.setItem('astro_purchase', JSON.stringify(purchase));
+
+        // Navegar a pago.html (este form no lo gestiona el redirect genérico)
+        const btn = seatForm.querySelector('button[type="submit"]');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Continuar…';
+        }
+        window.location.href = 'pago.html';
       });
     }
+
+    /* ---- Re-render del mapa con los datos reales del evento ----
+       El script inline de evento.html (applyEvent) llama a
+       window.renderSeatMap() tras recibir el evento del backend, para
+       que asientos, zonas y precios mostrados sean los reales. */
+    function renderSeatMap() {
+      const ev = document.querySelector('main[data-event-name]');
+      try {
+        ALL_SEATS = ev ? JSON.parse(ev.dataset.seats || '[]') : [];
+        const zones = ev ? JSON.parse(ev.dataset.zones || '[]') : [];
+        ZONE_PRICES = {};
+        zones.forEach((z) => { ZONE_PRICES[z.name.toLowerCase()] = Number(z.price) || 0; });
+      } catch (_) { ALL_SEATS = []; ZONE_PRICES = {}; }
+
+      PRICES = ev ? {
+        platino: ZONE_PRICES.platino || parseInt(ev.dataset.pricePlatino) || 4500,
+        vip: ZONE_PRICES.vip || parseInt(ev.dataset.priceVip) || 3200,
+        general: ZONE_PRICES.general || parseInt(ev.dataset.priceGeneral) || 1800
+      } : { platino: 4500, vip: 3200, general: 1800 };
+
+      document.querySelectorAll('.seat-zone-label').forEach((label, i) => {
+        const key = ['platino', 'vip', 'general'][i];
+        if (key && PRICES[key]) {
+          const span = label.querySelector('span');
+          const name = span ? span.textContent.trim() : key.charAt(0).toUpperCase() + key.slice(1);
+          label.innerHTML = `<span>${name}</span> · RD$ ${PRICES[key].toLocaleString('es-DO')}`;
+        }
+      });
+
+      TAKEN_SEATS = new Set(
+        ALL_SEATS.length
+          ? ALL_SEATS.filter((s) => s.status !== 'available').map((s) => s.id)
+          : ["A3","A4","B2","B5","C1","C8","D4","D5","E6","F3","F7","G2","G9","H1","H5","H10","I4","I6"]
+      );
+
+      selectedSeats.clear();
+      [seatGridPlatino, seatGridVip, seatGridGeneral].forEach((g) => { if (g) g.innerHTML = ''; });
+      buildSeatGrid(seatGridPlatino, "platino", 2, 10);
+      buildSeatGrid(seatGridVip, "vip", 3, 10);
+      buildSeatGrid(seatGridGeneral, "general", 3, 10);
+      updateSeatDisplay();
+    }
+    window.renderSeatMap = renderSeatMap;
   }
 
   /* ============================================================
@@ -506,6 +643,79 @@ document.addEventListener("DOMContentLoaded", () => {
             year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
           });
         }
+
+        /* ---- comprobante.html: boletos digitales (QR + descarga) ---- */
+        const ticketsEl = document.getElementById('receipt-tickets');
+        const btnViewTicket = document.getElementById('btn-view-ticket');
+        const btnResend = document.getElementById('btn-resend');
+
+        if (ticketsEl && (s.seats || []).length) {
+          ticketsEl.innerHTML = '';
+          (s.seats || []).forEach((seat, i) => {
+            const zoneLabel = seat.zone
+              ? seat.zone.charAt(0).toUpperCase() + seat.zone.slice(1)
+              : '—';
+            const card = document.createElement('div');
+            card.className = 'receipt-ticket';
+            card.innerHTML = `
+              <div class="receipt-ticket-qr"><span class="qr-placeholder">QR</span></div>
+              <div class="receipt-ticket-info">
+                <span class="receipt-ticket-label">Boleto ${i + 1}</span>
+                <span class="receipt-ticket-seat">${seat.id} · ${zoneLabel}</span>
+                <span class="receipt-ticket-code">${seat.codigo || '—'}</span>
+              </div>
+              <button class="btn-ticket-download" type="button" data-download="${seat.codigo || ''}">
+                <span class="material-symbols-outlined">download</span> ${t('history.download_pdf')}
+              </button>
+            `;
+            ticketsEl.appendChild(card);
+
+            // Cargar el QR real desde el backend
+            const qrBox = card.querySelector('.receipt-ticket-qr');
+            if (seat.codigo && typeof Api !== 'undefined' && Api.qrDataUrl) {
+              Api.qrDataUrl(seat.codigo)
+                .then((url) => { if (qrBox) qrBox.innerHTML = `<img src="${url}" alt="QR ${seat.id}" class="receipt-qr-img" />`; })
+                .catch(() => { if (qrBox) qrBox.innerHTML = `<span class="qr-placeholder">${seat.id}</span>`; });
+            } else if (qrBox) {
+              qrBox.innerHTML = `<span class="qr-placeholder">${seat.id}</span>`;
+            }
+
+            // Descargar el PDF de este boleto
+            const dlBtn = card.querySelector('[data-download]');
+            if (dlBtn) {
+              dlBtn.addEventListener('click', async () => {
+                const codigo = dlBtn.dataset.download;
+                if (!codigo) { alert('Este boleto aún no tiene PDF generado.'); return; }
+                try { await Api.descargarPdfEntrada(codigo); }
+                catch (err) { alert(err.message || 'Error al descargar el boleto.'); }
+              });
+            }
+          });
+        }
+
+        // Botón "Ver mi Boleto": mostrar la sección de boletos
+        if (btnViewTicket && ticketsEl) {
+          btnViewTicket.addEventListener('click', () => {
+            ticketsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+        }
+
+        // Botón "Reenviar Confirmación"
+        if (btnResend) {
+          btnResend.addEventListener('click', async () => {
+            const first = (s.seats || []).find((x) => x.codigo);
+            if (!first) { alert('No hay boletos para reenviar.'); return; }
+            btnResend.disabled = true;
+            try {
+              const res = await Api.reenviarPdfEntrada(first.codigo);
+              alert(res.mensaje || 'Entrada reenviada a tu correo.');
+            } catch (err) {
+              alert(err.message || 'No se pudo reenviar la entrada.');
+            } finally {
+              btnResend.disabled = false;
+            }
+          });
+        }
       }
     } catch (_) {}
   }
@@ -514,7 +724,7 @@ document.addEventListener("DOMContentLoaded", () => {
      HISTORY — Save & Render Purchase History
      ============================================================ */
 
-  /* ---- Save completed purchase to backend + localStorage ---- */
+  /* ---- Save completed purchase to localStorage (historial offline) ---- */
   function savePurchaseToHistory(purchase) {
     const history = JSON.parse(localStorage.getItem('astro_history') || '[]');
     if (!purchase.purchasedAt) purchase.purchasedAt = new Date().toISOString();
@@ -526,26 +736,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!exists && purchase.payment) {
       history.unshift(purchase);
       localStorage.setItem('astro_history', JSON.stringify(history));
-    }
-
-    // Enviar la compra al backend para guardarla en Neon
-    if (typeof Api !== "undefined" && purchase.payment) {
-      Api.crearOrden({
-        eventoId: purchase.event.id,
-        seats: purchase.seats,
-        pricing: purchase.pricing,
-        payment: {
-          method: purchase.payment.method,
-          cardBrand: purchase.payment.cardBrand,
-          cardLast4: purchase.payment.cardLast4,
-          cardHolder: purchase.payment.cardHolder,
-          transactionId: purchase.payment.transactionId,
-          reservationCode: purchase.payment.reservationCode
-        },
-        purchasedAt: purchase.purchasedAt
-      }).catch((err) => {
-        console.warn("No se pudo guardar la compra en el backend:", err.message);
-      });
     }
   }
 
@@ -837,10 +1027,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
       listEl.querySelectorAll('[data-action="download"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          // Placeholder — could trigger print or PDF generation
-          alert('PDF download: ' + history[parseInt(btn.dataset.index)].payment?.transactionId);
+          const p = history[parseInt(btn.dataset.index)];
+          const codigos = (p.seats || []).map(s => s.codigo).filter(Boolean);
+          if (!codigos.length) {
+            alert(I18n.t('history.no_tickets_to_download') || 'No hay entradas para descargar.');
+            return;
+          }
+          try {
+            for (const codigo of codigos) await Api.descargarPdfEntrada(codigo);
+          } catch (err) {
+            alert(err.message || 'Error al descargar la entrada.');
+          }
         });
       });
     }
@@ -890,7 +1089,11 @@ document.addEventListener("DOMContentLoaded", () => {
       ? (p.payment.cardBrand || 'Card') + ' ****' + (p.payment.cardLast4 || '')
       : (p.payment?.method || '—');
 
-    const emailDisplay = 'user@example.com'; // placeholder
+    let emailDisplay = 'user@example.com';
+    try {
+      const s = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+      if (s && s.email) emailDisplay = s.email;
+    } catch (_) {}
 
     const statusDot = statusClassMap[status] || 'paid';
     const statusLabel = statusLabelMap[status] || status;
@@ -962,14 +1165,35 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
 
       <div class="detail-actions">
-        <button class="btn-purchase-download">
+        <button class="btn-purchase-download" data-detail-download>
           <span class="material-symbols-outlined">download</span> ${t('history.download_pdf')}
         </button>
-        <button class="btn-purchase-details" onclick="window.print()">
-          <span class="material-symbols-outlined">print</span> ${t('history.print')}
+        <button class="btn-purchase-details" data-detail-comprobante>
+          <span class="material-symbols-outlined">confirmation_number</span> ${t('history.view_receipt') || 'Ver comprobante'}
         </button>
       </div>
     `;
+
+    // Descargar los PDFs de esta compra
+    const dlBtn = detailContent.querySelector('[data-detail-download]');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', async () => {
+        const codigos = (p.seats || []).map((s) => s.codigo).filter(Boolean);
+        if (!codigos.length) { alert('No hay entradas para descargar.'); return; }
+        try {
+          for (const codigo of codigos) await Api.descargarPdfEntrada(codigo);
+        } catch (err) { alert(err.message || 'Error al descargar las entradas.'); }
+      });
+    }
+
+    // Abrir el comprobante completo en una sección propia (no window.print)
+    const compBtn = detailContent.querySelector('[data-detail-comprobante]');
+    if (compBtn) {
+      compBtn.addEventListener('click', () => {
+        sessionStorage.setItem('astro_purchase', JSON.stringify(p));
+        window.location.href = 'comprobante.html';
+      });
+    }
 
     detailPanel.classList.add('open');
     detailOverlay.classList.add('show');
@@ -985,60 +1209,122 @@ document.addEventListener("DOMContentLoaded", () => {
   if (detailClose) detailClose.addEventListener('click', closeDetailPanel);
   if (detailOverlay) detailOverlay.addEventListener('click', closeDetailPanel);
 
+  /* ============================================================
+     PURCHASE FLOW REAL — reserva + compra contra el backend
+     (pago.html → comprobante.html)
+     ============================================================ */
+  function buildTxnId(now) {
+    return 'TXN-' + now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') + '-' +
+      Math.random().toString(36).substring(2, 6).toUpperCase();
+  }
+  function buildResvCode() {
+    return 'RSV-' + Math.random().toString(36).substring(2, 6).toUpperCase() +
+      Math.random().toString(36).substring(2, 4).toUpperCase();
+  }
+
+  function showPayError(msg) {
+    const box = document.getElementById('pay-error');
+    if (box) { box.textContent = msg; box.style.display = 'flex'; }
+    if (typeof alert === 'function') alert(msg);
+  }
+
+  async function realizarCompra(method, extraPayment, btn) {
+    const purchase = JSON.parse(sessionStorage.getItem('astro_purchase') || '{}');
+
+    if (typeof Auth !== "undefined" && Auth.getToken && !Auth.getToken()) {
+      showPayError('Inicia sesión para completar la compra.');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    const funcionId = purchase.funcionId;
+    const seatIds = (purchase.seats || []).map((s) => s.id);
+    if (!funcionId) { showPayError('Falta información de la función del evento. Vuelve a elegir tus asientos.'); return; }
+    if (!seatIds.length) { showPayError('No seleccionaste ningún asiento.'); return; }
+
+    const original = btn ? btn.innerHTML : null;
+    const setBusy = (busy) => {
+      if (!btn) return;
+      btn.disabled = busy;
+      btn.innerHTML = busy
+        ? '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">progress_activity</span> Procesando…'
+        : original;
+    };
+
+    try {
+      setBusy(true);
+
+      // 1) Reservar los asientos elegidos en la función
+      await Api.reservarAsientos(funcionId, seatIds);
+
+      // 2) Confirmar la compra en el backend
+      const now = new Date();
+      const payment = Object.assign({
+        method,
+        transactionId: buildTxnId(now),
+        reservationCode: buildResvCode(),
+      }, extraPayment || {});
+
+      const data = await Api.crearOrden({ funcionId, payment });
+      const orden = data.orden || {};
+
+      // 3) Guardar el resultado para el comprobante e historial
+      const entradas = orden.asientos || [];
+      purchase.seats = purchase.seats.map((s, i) => {
+        const e = entradas[i] || {};
+        return {
+          ...s,
+          codigo: e.codigo || s.codigo,
+          qrToken: e.qrToken || s.qrToken,
+          estado: e.estado || 'activa',
+        };
+      });
+      purchase.payment = Object.assign({}, payment, {
+        cardBrand: extraPayment ? extraPayment.cardBrand : undefined,
+        cardLast4: extraPayment ? extraPayment.cardLast4 : undefined,
+        cardHolder: extraPayment ? extraPayment.cardHolder : undefined,
+      });
+      purchase.purchasedAt = now.toISOString();
+      purchase.status = 'paid';
+      purchase.ordenId = orden.id;
+      sessionStorage.setItem('astro_purchase', JSON.stringify(purchase));
+      savePurchaseToHistory(purchase);
+
+      window.location.href = 'comprobante.html';
+    } catch (err) {
+      setBusy(false);
+      console.error("Error en la compra:", err);
+      showPayError(err.message || 'No se pudo completar la compra. Inténtalo de nuevo.');
+      // Liberar la reserva para que otros puedan tomar los asientos
+      try { await Api.cancelarReservas(funcionId, seatIds); } catch (_) {}
+    }
+  }
+
   const cardForm = document.getElementById('card-form');
   if (cardForm) {
-    cardForm.addEventListener('submit', () => {
-      const purchase = JSON.parse(sessionStorage.getItem('astro_purchase') || '{}');
-      if (!purchase.payment) {
-        const cardNumber = (document.getElementById('card-number')?.value || '').replace(/\s/g, '');
-        const last4 = cardNumber.slice(-4);
-        const brand = document.getElementById('card-brand-display')?.textContent || 'VISA';
-        const holder = document.getElementById('card-name')?.value || 'Titular';
-        const now = new Date();
-        const txnId = 'TXN-' + now.getFullYear() + '-' +
-          String(now.getMonth() + 1).padStart(2, '0') +
-          String(now.getDate()).padStart(2, '0') + '-' +
-          Math.random().toString(36).substring(2, 6).toUpperCase();
-        const resvCode = 'RSV-' + Math.random().toString(36).substring(2, 6).toUpperCase() +
-          Math.random().toString(36).substring(2, 4).toUpperCase();
-        purchase.payment = {
-          method: 'card',
-          cardBrand: brand,
-          cardLast4: last4,
-          cardHolder: holder,
-          transactionId: txnId,
-          reservationCode: resvCode
-        };
-        purchase.purchasedAt = now.toISOString();
-        sessionStorage.setItem('astro_purchase', JSON.stringify(purchase));
-        savePurchaseToHistory(purchase);
-      }
+    cardForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cardNumber = (document.getElementById('card-number')?.value || '').replace(/\s/g, '');
+      const extra = {
+        cardBrand: document.getElementById('card-brand-display')?.textContent || 'VISA',
+        cardLast4: cardNumber.slice(-4),
+        cardHolder: document.getElementById('card-name')?.value || 'Titular',
+      };
+      const btn = cardForm.querySelector('button[type="submit"]');
+      realizarCompra('card', extra, btn);
     });
   }
 
-  /* ---- Alt payment buttons: save & redirect ---- */
+  /* ---- Alt payment buttons: pagar y guardar ---- */
   document.querySelectorAll('.pay-alt-btn').forEach(btn => {
     btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
       const panel = this.closest('.pay-method-panel');
       const method = panel ? panel.dataset.panel : 'unknown';
-      const purchase = JSON.parse(sessionStorage.getItem('astro_purchase') || '{}');
-      if (!purchase.payment) {
-        const now = new Date();
-        const txnId = 'TXN-' + now.getFullYear() + '-' +
-          String(now.getMonth() + 1).padStart(2, '0') +
-          String(now.getDate()).padStart(2, '0') + '-' +
-          Math.random().toString(36).substring(2, 6).toUpperCase();
-        const resvCode = 'RSV-' + Math.random().toString(36).substring(2, 6).toUpperCase() +
-          Math.random().toString(36).substring(2, 4).toUpperCase();
-        purchase.payment = {
-          method,
-          transactionId: txnId,
-          reservationCode: resvCode
-        };
-        purchase.purchasedAt = now.toISOString();
-        sessionStorage.setItem('astro_purchase', JSON.stringify(purchase));
-        savePurchaseToHistory(purchase);
-      }
+      realizarCompra(method, null, this);
     });
   });
 

@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · Clásico de Baloncesto</title>
 <link rel="stylesheet" href="../css/styles.css" />
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
 <link rel="icon" type="image/png" href="../multimedia/favicon.svg" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -20,6 +32,11 @@
     <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
       <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
+    <div class="theme-switch" role="group" aria-label="Cambiar tema">
+      <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro"><span class="material-symbols-outlined">light_mode</span><span class="txt" data-i18n="theme.light">Claro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro"><span class="material-symbols-outlined">dark_mode</span><span class="txt" data-i18n="theme.dark">Oscuro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático"><span class="material-symbols-outlined">brightness_auto</span><span class="txt" data-i18n="theme.auto">Auto</span></button>
+    </div>
     <nav class="nav-links">
       <a class="active" href="../catalogo.html" data-i18n="nav.eventos">Eventos</a>
       <a href="../historial.html" data-i18n="nav.boletos">Mis compras</a>
@@ -141,6 +158,9 @@
 </footer>
 
 <script src="../js/i18n.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+
 <script src="../js/main.js"></script>
 </body>
 </html>

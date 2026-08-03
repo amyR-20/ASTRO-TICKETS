@@ -11,24 +11,34 @@ const path = require("path"); // AGREGADO
 const authRoutes = require("./routes/authRoutes");
 const eventoRoutes = require("./routes/eventoRoutes");
 const ordenRoutes = require("./routes/ordenRoutes");
+const funcionRoutes = require("./routes/funcionRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const entradaRoutes = require("./routes/entradaRoutes");
 
 const app = express();
 
 // --- Middlewares globales ---
-// CORS restringido a los orígenes usados en desarrollo local:
+// CORS restringido a una lista explícita de orígenes (nunca "*"):
 //   - el propio servidor (Express sirve el frontend en :3000)
 //   - Live Server (.vscode/settings.json usa el puerto 5501)
 //   - "null": apertura directa de archivos HTML desde el disco (file://)
-// En producción se debe reemplazar por el dominio real del frontend.
-app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5501",
-    "http://127.0.0.1:5501",
-    "null"
-  ]
-}));
+//   - GitHub Pages (frontend publicado en producción)
+//   - CORS_ORIGINS (env, opcional): orígenes extra separados por coma.
+const ORIGENES_PERMITIDOS = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:5501",
+  "http://127.0.0.1:5501",
+  "https://amyr-20.github.io",
+  "null"
+];
+if (process.env.CORS_ORIGINS) {
+  for (const origen of process.env.CORS_ORIGINS.split(",")) {
+    const limpio = origen.trim();
+    if (limpio) ORIGENES_PERMITIDOS.push(limpio);
+  }
+}
+app.use(cors({ origin: ORIGENES_PERMITIDOS }));
 app.use(express.json());
 
 // AGREGADO: permite servir los archivos HTML, CSS y JavaScript
@@ -36,8 +46,11 @@ app.use(express.static(path.join(__dirname)));
 
 // --- Rutas ---
 app.use("/api/auth", authRoutes);
+app.use("/api", funcionRoutes);
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/ordenes", ordenRoutes);
+app.use("/api/entradas", entradaRoutes);
+app.use("/api", adminRoutes);
 
 // AGREGADO: muestra index.html al entrar a localhost:3000
 app.get("/", (req, res) => {

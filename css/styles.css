@@ -1654,6 +1654,45 @@ main {
 }
 .pay-info-box strong { color: var(--color-on-surface); }
 
+/* Error de compra */
+.pay-error-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: var(--color-error, #dc2626);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.pay-error-box .material-symbols-outlined { font-size: 1.1rem; flex-shrink: 0; }
+
+/* Resultado de validación de QR (admin) */
+.qr-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.qr-result .qr-result-icon { font-size: 1.5rem; flex-shrink: 0; }
+.qr-result-ok {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #059669;
+}
+.qr-result-ok strong { color: #047857; }
+.qr-result-err {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: var(--color-error, #dc2626);
+}
+
 /* Order summary sidebar */
 .order-summary {
   padding: var(--space-3);
@@ -2162,6 +2201,92 @@ main {
   color: #777;
   margin: 0 0 20px;
   line-height: 1.5;
+}
+
+/* Boletos digitales con QR */
+.receipt-tickets {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 4px 0 24px;
+}
+.receipt-ticket {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(108, 63, 209, 0.14);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(108, 63, 209, 0.06);
+}
+.receipt-ticket-qr {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #f7f5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.receipt-ticket-qr .qr-placeholder {
+  font-size: 0.7rem;
+  color: #a78bfa;
+  font-weight: 700;
+}
+.receipt-ticket-qr .receipt-qr-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.receipt-ticket-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.receipt-ticket-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a78bfa;
+  font-weight: 700;
+}
+.receipt-ticket-seat {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+.receipt-ticket-code {
+  font-family: "Space Grotesk", monospace;
+  font-size: 0.72rem;
+  color: #6b7280;
+  word-break: break-all;
+}
+.btn-ticket-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(108, 63, 209, 0.25);
+  background: transparent;
+  color: #6c3fd1;
+  font-family: "Inter", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.btn-ticket-download:hover {
+  background: rgba(108, 63, 209, 0.08);
+}
+.btn-ticket-download .material-symbols-outlined {
+  font-size: 1rem;
 }
 
 /* Primary button */

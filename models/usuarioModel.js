@@ -89,10 +89,23 @@ async function actualizarLogin(usuarioId) {
   await query(sql, [usuarioId]);
 }
 
+/** Lista usuarios (panel admin). Sin datos sensibles. */
+async function listar({ limite = 50 } = {}) {
+  const sql = `
+    SELECT id, nombre, email, role, avatar, estado, ultimo_login, creado_en
+    FROM usuarios
+    ORDER BY creado_en DESC
+    LIMIT $1
+  `;
+  const { rows } = await query(sql, [Math.min(Number(limite) || 50, 500)]);
+  return rows;
+}
+
 module.exports = {
   buscarPorEmail,
   buscarPorId,
   crear,
   registrarAcceso,
   actualizarLogin,
+  listar,
 };
