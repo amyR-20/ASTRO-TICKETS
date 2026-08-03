@@ -30,12 +30,24 @@ function verificarToken(req, res, next) {
 /**
  * Uso: router.post("/eventos", verificarToken, soloAdmin, controller)
  * Debe usarse SIEMPRE después de verificarToken.
+ * Verifica el rol contra la base de datos, no solo contra el payload del
+ * JWT, para que un rol desactualizado o alterado no conceda acceso.
  */
-function soloAdmin(req, res, next) {
-  if (!req.usuario || req.usuario.role !== "admin") {
+async function soloAdmin(req, res, next) {
+  if (!req.usuario) {
     return res.status(403).json({ error: "Acceso restringido a administradores." });
   }
-  next();
+  try {
+    const usuarioModel = require("../models/usuarioModel");
+    const usuario = await usuarioModel.buscarPorId(req.usuario.id);
+    if (!usuario || usuario.role !== "admin") {
+      return res.status(403).json({ error: "Acceso restringido a administradores." });
+    }
+    next();
+  } catch (err) {
+    console.error("Error verificando rol de administrador:", err);
+    return res.status(500).json({ error: "Error interno al verificar permisos." });
+  }
 }
 
 module.exports = { verificarToken, soloAdmin };

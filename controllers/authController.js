@@ -5,6 +5,7 @@
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { body, validationResult } = require("express-validator");
 const usuarioModel = require("../models/usuarioModel");
 
 const SALT_ROUNDS = 10;
@@ -16,18 +17,30 @@ const SALT_ROUNDS = 10;
  */
 async function registro(req, res) {
   try {
-    const { nombre, email, password, password2 } = req.body;
+    // --- Validaciones con express-validator (mismos campos que el frontend) ---
+    const validaciones = [
+      body("nombre").trim().notEmpty().withMessage("Todos los campos son obligatorios."),
+      body("email")
+        .trim()
+        .toLowerCase()
+        .notEmpty().withMessage("Todos los campos son obligatorios.")
+        .bail()
+        .isEmail().withMessage("Ingresa un correo electrónico válido."),
+      body("password")
+        .notEmpty().withMessage("Todos los campos son obligatorios.")
+        .bail()
+        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres."),
+      body("password2")
+        .custom((value, { req: r }) => value === r.body.password)
+        .withMessage("Las contraseñas no coinciden."),
+    ];
+    await Promise.all(validaciones.map((v) => v.run(req)));
+    const errores = validationResult(req);
+    if (!errores.isEmpty()) {
+      return res.status(400).json({ error: errores.array()[0].msg });
+    }
 
-    // --- Validaciones (equivalentes a las que ya hacía auth.js) ---
-    if (!nombre || !email || !password || !password2) {
-      return res.status(400).json({ error: "Todos los campos son obligatorios." });
-    }
-    if (password !== password2) {
-      return res.status(400).json({ error: "Las contraseñas no coinciden." });
-    }
-    if (password.length < 8) {
-      return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres." });
-    }
+    const { nombre, email, password } = req.body;
 
     const existente = await usuarioModel.buscarPorEmail(email.trim().toLowerCase());
     if (existente) {
@@ -60,11 +73,24 @@ async function registro(req, res) {
  */
 async function login(req, res) {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "Correo y contraseña son obligatorios." });
+    // --- Validaciones con express-validator ---
+    const validaciones = [
+      body("email")
+        .trim()
+        .toLowerCase()
+        .notEmpty().withMessage("Correo y contraseña son obligatorios.")
+        .bail()
+        .isEmail().withMessage("Ingresa un correo electrónico válido."),
+      body("password")
+        .notEmpty().withMessage("Correo y contraseña son obligatorios."),
+    ];
+    await Promise.all(validaciones.map((v) => v.run(req)));
+    const errores = validationResult(req);
+    if (!errores.isEmpty()) {
+      return res.status(400).json({ error: errores.array()[0].msg });
     }
+
+    const { email, password } = req.body;
 
     const usuario = await usuarioModel.buscarPorEmail(email.trim().toLowerCase());
 

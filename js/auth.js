@@ -259,6 +259,41 @@ const Auth = (() => {
 
   /* ---------- Init on DOMContentLoaded ---------- */
   function init() {
+
+    /* ---------- Guard de páginas privadas ---------- */
+    const page = (location.pathname.split("/").pop() || "").toLowerCase();
+    const requiereAdmin = page === "admin.html";
+    const requiereSesion = page === "historial.html";
+
+    if (requiereAdmin) {
+      // Solo administradores pueden abrir admin.html (un usuario normal
+      // o un visitante sin sesión sale inmediatamente al login).
+      if (!isAdmin()) {
+        location.replace("index.html");
+        return;
+      }
+    } else if (requiereSesion) {
+      if (!isLoggedIn()) {
+        location.replace("index.html");
+        return;
+      }
+    }
+
+    // En páginas privadas se valida el token contra el backend. Si el
+    // backend responde 401 (token inválido/expirado), api.js ya limpió
+    // astro_token/astro_session y aquí se redirige al login.
+    async function verificarTokenServidor() {
+      try {
+        if (typeof Api === "undefined" || !Api.perfil) return;
+        await Api.perfil();
+      } catch (err) {
+        if (err && err.status === 401) {
+          location.replace("index.html");
+        }
+      }
+    }
+    if (requiereAdmin || requiereSesion) verificarTokenServidor();
+
     // Admin login form
    const adminForm = document.getElementById("admin-login-form");
 
@@ -335,6 +370,9 @@ if (adminForm) {
     const loginPassword = document.getElementById("password");
 
     if (loginForm && loginEmail && loginPassword) {
+      // Este formulario lo gestiona auth.js; main.js no debe forzar el
+      // redirect genérico de 700ms (que navegaba aunque el login fallara).
+      loginForm.dataset.authHandled = "true";
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const remember = document.getElementById("remember")?.checked;
@@ -370,6 +408,9 @@ if (adminForm) {
     const regPassword2 = document.getElementById("password2");
 
     if (regForm && regName && regEmail && regPassword && regPassword2) {
+      // Este formulario lo gestiona auth.js; main.js no debe forzar el
+      // redirect genérico de 700ms (navegaba aunque el registro fallara).
+      regForm.dataset.authHandled = "true";
       regForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nombre = regName.value.trim();
