@@ -53,10 +53,16 @@ async function reservar({ usuarioId, funcionId, asientoIds }) {
     );
 
     // Precios de las zonas desde la BD
-    const { rows: zonas } = await client.query(
-      `SELECT nombre, precio FROM zonas WHERE evento_id = $1`,
-      [funcion.evento_id]
+    let { rows: zonas } = await client.query(
+      `SELECT nombre, precio FROM zonas WHERE funcion_id = $1`,
+      [funcionId]
     );
+    if (!zonas.length) {
+      ({ rows: zonas } = await client.query(
+        `SELECT nombre, precio FROM zonas WHERE evento_id = $1 AND funcion_id IS NULL`,
+        [funcion.evento_id]
+      ));
+    }
     const precioDe = (zona) => {
       const z = zonas.find((x) => x.nombre.toLowerCase() === (zona || "").toLowerCase());
       return z ? Number(z.precio) : null;
@@ -193,4 +199,17 @@ async function activasDeUsuario(usuarioId, funcionId) {
   return rows;
 }
 
-module.exports = { reservar, cancelar, activasDeUsuario };
+async function resumenActivasDeUsuario(usuarioId, funcionId) {
+  const reservas = await activasDeUsuario(usuarioId, funcionId);
+  const activas = reservas.filter((r) => new Date(r.expira_en).getTime() > Date.now());
+  const subtotal = activas.reduce((total, r) => total + Number(r.precio), 0);
+  const tarifa = Math.round(subtotal * 0.08 * 100) / 100;
+  return {
+    reservas: activas.map((r) => ({ asiento: r.asiento_id, zona: r.zona, precio: Number(r.precio), expiraEn: r.expira_en })),
+    subtotal,
+    tarifa,
+    total: Math.round((subtotal + tarifa) * 100) / 100,
+  };
+}
+
+module.exports = { reservar, cancelar, activasDeUsuario, resumenActivasDeUsuario };

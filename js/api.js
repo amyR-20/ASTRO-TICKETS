@@ -65,6 +65,10 @@ const Api = (() => {
     return data.evento;
   }
 
+  async function getFuncion(id) {
+    return request("/funciones/" + encodeURIComponent(id));
+  }
+
   async function crearEvento(datos) {
     return request("/eventos", { method: "POST", body: datos });
   }
@@ -87,6 +91,15 @@ const Api = (() => {
     return data.compras || [];
   }
 
+  async function getOrden(id) {
+    const data = await request("/ordenes/" + encodeURIComponent(id));
+    return data.orden;
+  }
+
+  async function reenviarOrden(id) {
+    return request("/ordenes/" + encodeURIComponent(id) + "/reenviar", { method: "POST" });
+  }
+
   /* ---------- Funciones / reservas ---------- */
   /** Reserva asientos para una función (requiere sesión). */
   async function reservarAsientos(funcionId, asientos) {
@@ -102,6 +115,10 @@ const Api = (() => {
       "/funciones/" + encodeURIComponent(funcionId) + "/reservas",
       { method: "DELETE", body: { asientos } }
     );
+  }
+
+  async function getMisReservas(funcionId) {
+    return request("/funciones/" + encodeURIComponent(funcionId) + "/mis-reservas");
   }
 
   /* ---------- Entradas (PDF / QR) ---------- */
@@ -173,23 +190,36 @@ const Api = (() => {
     return request("/admin/resumen");
   }
 
+  async function descargarReporte(path, filename) {
+    const headers={}; const token=typeof Auth!=="undefined"&&Auth.getToken?Auth.getToken():null;
+    if(token) headers.Authorization="Bearer "+token;
+    const res=await fetch(API_BASE+path,{headers});
+    if(!res.ok){let data={};try{data=await res.json();}catch(_){}throw new Error(data.error||"No se pudo descargar el reporte.");}
+    const url=URL.createObjectURL(await res.blob());const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
   return {
     perfil,
     getEventos,
     getEvento,
+    getFuncion,
     crearEvento,
     actualizarEvento,
     eliminarEvento,
     crearOrden,
     getMisCompras,
+    getOrden,
+    reenviarOrden,
     reservarAsientos,
     cancelarReservas,
+    getMisReservas,
     descargarPdfEntrada,
     reenviarPdfEntrada,
     qrDataUrl,
     validarEntrada,
     getAdminDashboard,
     getAdminResumen,
+    descargarReporte,
   };
 
 })();

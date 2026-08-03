@@ -78,7 +78,7 @@ async function buscarPorId(id) {
   if (!rows.length) return null;
 
   const zonas = (await query(
-    "SELECT * FROM zonas WHERE evento_id = $1 ORDER BY id",
+    "SELECT * FROM zonas WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY id",
     [id]
   )).rows;
   const asientos = (await query(
@@ -205,7 +205,9 @@ async function actualizar(id, datos, usuarioId = null, razon = null) {
       ]
     );
 
-    await client.query("DELETE FROM zonas WHERE evento_id=$1", [id]);
+    // Las zonas de funciones existentes conservan el precio e inventario
+    // histórico. Sólo se actualiza la plantilla para funciones futuras.
+    await client.query("DELETE FROM zonas WHERE evento_id=$1 AND funcion_id IS NULL", [id]);
     await client.query("DELETE FROM asientos WHERE evento_id=$1 AND funcion_id IS NULL", [id]);
 
     for (const z of datos.zones || []) {

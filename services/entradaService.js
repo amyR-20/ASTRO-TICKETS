@@ -12,9 +12,9 @@ const VIOLETA = "#7C3AED";
 const GRIS = "#6B7280";
 
 /** Formatea el precio en pesos chilenos ($ 1.200). */
-function formatCLP(valor) {
+function formatRD(valor) {
   const n = Number(valor || 0);
-  return "$ " + Math.round(n).toLocaleString("es-CL");
+  return "RD$ " + Math.round(n).toLocaleString("es-DO");
 }
 
 /** Devuelve la fecha de un evento en formato "jueves 3 de agosto". */
@@ -90,6 +90,7 @@ async function generarPdfEntrada(entrada) {
       40, 154, { width: pageW - 200 }
     );
   doc.text(`Lugar: ${entrada.evento_lugar || "Por confirmar"}`, 40, 172, { width: pageW - 200 });
+  doc.text(`Sala: ${entrada.funcion_sala || "Por confirmar"}`, 40, 188, { width: pageW - 200 });
 
   // ---- Código QR ----
   const qrSize = 150;
@@ -107,7 +108,7 @@ async function generarPdfEntrada(entrada) {
   const detalleRows = [
     ["Zona", entrada.zona || "General"],
     ["Asiento", entrada.asiento || entrada.asiento_id || "—"],
-    ["Precio", formatCLP(entrada.precio)],
+    ["Precio", formatRD(entrada.precio)],
     ["Estado", entrada.estado === "usada" ? "Ya utilizada" : "Válida"],
   ];
   let yRow = 250;
@@ -123,6 +124,8 @@ async function generarPdfEntrada(entrada) {
   doc.font("Courier-Bold").fontSize(10).fillColor(INDIGO).text(entrada.codigo || "—", 40, yCodes + 12);
   doc.fontSize(8).fillColor(GRIS).text("CÓDIGO DE LA COMPRA", 40, yCodes + 34);
   doc.font("Courier").fontSize(10).fillColor(INDIGO).text(entrada.codigo_reserva || "—", 40, yCodes + 46);
+
+  doc.fontSize(8).fillColor(GRIS).text(`Subtotal: ${formatRD(entrada.subtotal)}   Tarifa: ${formatRD(entrada.tarifa)}   Total: ${formatRD(entrada.total)}`, 40, yCodes + 72);
 
   // ---- Pie ----
   doc.font("Helvetica").fontSize(7.5).fillColor(GRIS).text(
@@ -158,7 +161,7 @@ async function generarQrPng(qrToken) {
 function nombreArchivo(entrada) {  const limpio = (entrada.evento_nombre || "evento")
     .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  return `entrada-${limpio}-${entrada.asiento || entrada.asiento_id || entrada.id}.pdf`;
+  return `astro-ticket_${limpio}_${entrada.asiento || entrada.asiento_id || entrada.id}.pdf`;
 }
 
 // ---- Correo ----
@@ -203,4 +206,4 @@ async function enviarPdfPorEmail(entrada) {
   return { enviado: true };
 }
 
-module.exports = { generarPdfEntrada, generarQrPng, nombreArchivo, enviarPdfPorEmail, formatCLP };
+module.exports = { generarPdfEntrada, generarQrPng, nombreArchivo, enviarPdfPorEmail, formatRD };

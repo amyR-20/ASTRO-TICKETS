@@ -79,12 +79,12 @@ const Auth = (() => {
    * Llama a POST /api/auth/registro. Devuelve { mensaje, usuario } si es
    * exitoso, o lanza un Error con el mensaje que mandó el backend.
    */
-  async function registroRequest(nombre, email, password, password2) {
+  async function registroRequest(username, nombre, email, password, password2) {
     try {
       const res = await fetch(`${API_BASE}/auth/registro`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, email, password, password2 }),
+        body: JSON.stringify({ username, nombre, email, password, password2 }),
       });
 
       const contentType = res.headers.get("content-type") || "";
@@ -428,16 +428,18 @@ if (adminForm) {
     const regForm = document.querySelector('form[data-redirect="index.html"]');
     const regName = document.getElementById("nombre");
     const regEmail = document.getElementById("email");
+    const regUsername = document.getElementById("username");
     const regPassword = document.getElementById("password");
     const regPassword2 = document.getElementById("password2");
 
-    if (regForm && regName && regEmail && regPassword && regPassword2) {
+    if (regForm && regName && regUsername && regEmail && regPassword && regPassword2) {
       // Este formulario lo gestiona auth.js; main.js no debe forzar el
       // redirect genérico de 700ms (navegaba aunque el registro fallara).
       regForm.dataset.authHandled = "true";
       regForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nombre = regName.value.trim();
+        const username = regUsername.value.trim().toLowerCase();
         const email = regEmail.value.trim().toLowerCase();
         const password = regPassword.value;
         const password2 = regPassword2.value;
@@ -450,13 +452,17 @@ if (adminForm) {
           alert("Las contraseñas no coinciden.");
           return;
         }
-        if (password.length < 8) {
-          alert("La contraseña debe tener al menos 8 caracteres.");
+        if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+          alert("El usuario debe tener 3 a 24 caracteres: letras, números o guion bajo.");
+          return;
+        }
+        if (password.length < 10 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+          alert("Usa 10 caracteres o más, con mayúscula, minúscula, número y símbolo.");
           return;
         }
 
         try {
-          const data = await registroRequest(nombre, email, password, password2);
+          const data = await registroRequest(username, nombre, email, password, password2);
           alert(data.mensaje || "¡Cuenta creada! Ahora inicia sesión.");
           window.location.href = "index.html";
         } catch (err) {

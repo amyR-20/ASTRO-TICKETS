@@ -724,20 +724,8 @@ document.addEventListener("DOMContentLoaded", () => {
      HISTORY — Save & Render Purchase History
      ============================================================ */
 
-  /* ---- Save completed purchase to localStorage (historial offline) ---- */
-  function savePurchaseToHistory(purchase) {
-    const history = JSON.parse(localStorage.getItem('astro_history') || '[]');
-    if (!purchase.purchasedAt) purchase.purchasedAt = new Date().toISOString();
-    if (!purchase.status) purchase.status = 'paid';
-    const exists = history.some(h =>
-      h.payment && purchase.payment &&
-      h.payment.transactionId === purchase.payment.transactionId
-    );
-    if (!exists && purchase.payment) {
-      history.unshift(purchase);
-      localStorage.setItem('astro_history', JSON.stringify(history));
-    }
-  }
+  // Las compras viven exclusivamente en Neon.
+  function savePurchaseToHistory() {}
 
   /* ---- Helpers ---- */
   function t(key) { return typeof I18n !== 'undefined' ? I18n.t(key) : key; }
@@ -811,12 +799,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }));
       }
-    } catch (_) { history = []; }
-
-    // Fallback a localStorage si no hay backend
-    if (!history.length) {
-      history = JSON.parse(localStorage.getItem('astro_history') || '[]');
-    }
+    } catch (err) { console.error("No se pudo cargar el historial:", err); history = []; }
 
     function formatEventDate(evt) {
       if (!evt || !evt.date) return evt && evt.date;
@@ -831,7 +814,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Seed demo data if empty (solo si no hay nada en ninguna parte)
-    if (history.length === 0) {
+    if (false && history.length === 0) {
       const now = new Date();
       const demoData = [
         {
@@ -971,6 +954,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Venue short
         const venueShort = (p.event.venue || '').split(',')[0];
+        const functionTime = p.funcion?.hora || (p.event.date || '').split(' · ')[1] || '—';
+        const purchaseDateDisplay = p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString('es-DO', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+        const orderId = p.orderId;
 
         const card = document.createElement('div');
         card.className = 'purchase-card';
@@ -988,6 +974,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span class="material-symbols-outlined">calendar_month</span> ${eventDateDisplay}
               </span>
               <span class="purchase-info-item">
+                <span class="material-symbols-outlined">schedule</span> ${functionTime}
+              </span>
+              <span class="purchase-info-item">
                 <span class="material-symbols-outlined">confirmation_number</span> ${qty} ${qty === 1 ? t('history.ticket') : t('history.tickets')}
               </span>
               <span class="purchase-info-item">
@@ -996,13 +985,22 @@ document.addEventListener("DOMContentLoaded", () => {
               <span class="purchase-info-item">
                 <span class="material-symbols-outlined">location_on</span> ${venueShort || '—'}
               </span>
+              <span class="purchase-info-item">
+                <span class="material-symbols-outlined">shopping_bag</span> Comprado: ${purchaseDateDisplay}
+              </span>
             </div>
             <div class="purchase-actions">
               <button class="btn-purchase-download" data-action="download" data-index="${idx}">
                 <span class="material-symbols-outlined">download</span> ${I18n.t('history.download_pdf')}
               </button>
-              <button class="btn-purchase-details" data-action="details" data-index="${idx}">
-                <span class="material-symbols-outlined">visibility</span> ${I18n.t('history.view_details')}
+              <button class="btn-purchase-details" data-action="ticket" data-order-id="${orderId}">
+                <span class="material-symbols-outlined">confirmation_number</span> Ver boleto
+              </button>
+              <button class="btn-purchase-details" data-action="print" data-order-id="${orderId}">
+                <span class="material-symbols-outlined">print</span> Imprimir boleto
+              </button>
+              <button class="btn-purchase-details" data-action="resend" data-order-id="${orderId}">
+                <span class="material-symbols-outlined">mail</span> Reenviar confirmación
               </button>
             </div>
             <span class="purchase-order">${orderNum}</span>
@@ -1020,12 +1018,21 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       // Wire up buttons
-      listEl.querySelectorAll('[data-action="details"]').forEach(btn => {
+      listEl.querySelectorAll('[data-action="ticket"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          openDetailPanel(parseInt(btn.dataset.index), history);
+          window.location.href = 'comprobante.html?orden=' + encodeURIComponent(btn.dataset.orderId);
         });
       });
+      listEl.querySelectorAll('[data-action="print"]').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation(); window.open('comprobante.html?orden=' + encodeURIComponent(btn.dataset.orderId) + '&print=1', '_blank', 'noopener');
+      }));
+      listEl.querySelectorAll('[data-action="resend"]').forEach(btn => btn.addEventListener('click', async (e) => {
+        e.stopPropagation(); const original = btn.innerHTML; btn.disabled = true; btn.textContent = 'Enviando...';
+        try { await Api.reenviarOrden(btn.dataset.orderId); alert('Confirmación enviada al correo registrado.'); }
+        catch (err) { alert(err.message || 'No se pudo enviar la confirmación.'); }
+        finally { btn.disabled = false; btn.innerHTML = original; }
+      }));
       listEl.querySelectorAll('[data-action="download"]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -1089,11 +1096,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? (p.payment.cardBrand || 'Card') + ' ****' + (p.payment.cardLast4 || '')
       : (p.payment?.method || '—');
 
-    let emailDisplay = 'user@example.com';
-    try {
-      const s = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
-      if (s && s.email) emailDisplay = s.email;
-    } catch (_) {}
+    const emailDisplay = p.comprador?.email || '—';
 
     const statusDot = statusClassMap[status] || 'paid';
     const statusLabel = statusLabelMap[status] || status;
@@ -1169,7 +1172,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <span class="material-symbols-outlined">download</span> ${t('history.download_pdf')}
         </button>
         <button class="btn-purchase-details" data-detail-comprobante>
-          <span class="material-symbols-outlined">confirmation_number</span> ${t('history.view_receipt') || 'Ver comprobante'}
+          <span class="material-symbols-outlined">confirmation_number</span> Ver boleto
         </button>
       </div>
     `;
@@ -1190,8 +1193,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const compBtn = detailContent.querySelector('[data-detail-comprobante]');
     if (compBtn) {
       compBtn.addEventListener('click', () => {
-        sessionStorage.setItem('astro_purchase', JSON.stringify(p));
-        window.location.href = 'comprobante.html';
+        if (!p.orderId) { alert('No se pudo identificar la orden. Actualiza tu historial.'); return; }
+        window.location.href = 'comprobante.html?orden=' + encodeURIComponent(p.orderId);
       });
     }
 
@@ -1460,7 +1463,7 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("astro_events", JSON.stringify(demos));
   }
 
-  seedDemoEvents();
+  // Neon es la única fuente de eventos; no se generan datos demo en el navegador.
 
   // If not on admin page, skip creator init
   if (!ev.creator) { /* skip */ } else {

@@ -159,9 +159,14 @@ async function reservar(req, res) {
       return res.status(400).json({ error: "Asientos seleccionados no válidos." });
     }
 
+    const funcionId = Number(req.params.id);
+    if (!Number.isInteger(funcionId) || funcionId <= 0) {
+      return res.status(400).json({ error: "La función seleccionada no es válida." });
+    }
+
     const resultado = await reservaModel.reservar({
       usuarioId: req.usuario.id,
-      funcionId: req.params.id,
+      funcionId,
       asientoIds: idsUnicos,
     });
 
@@ -194,6 +199,20 @@ async function cancelarReservas(req, res) {
   } catch (err) {
     console.error("Error cancelando reservas:", err);
     return res.status(500).json({ error: "Error interno al cancelar las reservas." });
+  }
+}
+
+/** GET /api/funciones/:id/mis-reservas — resumen autoritativo del checkout. */
+async function misReservas(req, res) {
+  try {
+    const resumen = await reservaModel.resumenActivasDeUsuario(req.usuario.id, req.params.id);
+    if (!resumen.reservas.length) {
+      return res.status(404).json({ error: "No tienes reservas activas para esta función." });
+    }
+    return res.json(resumen);
+  } catch (err) {
+    console.error("Error consultando reservas:", err);
+    return res.status(500).json({ error: "Error interno al consultar tus reservas." });
   }
 }
 
@@ -249,6 +268,7 @@ module.exports = {
   eliminar,
   reservar,
   cancelarReservas,
+  misReservas,
   bloquearAsiento,
   restaurarAsiento,
 };

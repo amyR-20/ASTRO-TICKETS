@@ -86,7 +86,7 @@
         <a href="#usuarios"><span class="material-symbols-outlined">group</span><span class="txt" data-i18n="admin.usuarios">Usuarios</span></a>
         <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
         <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt">Validar QR</span></a>
-        <a href="#" data-coming-soon><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
+        <a href="#reportes"><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
         <a href="#" data-coming-soon><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
       </nav>
       <div class="admin-sidebar-foot">
@@ -108,7 +108,7 @@
       <p class="admin-welcome"><span data-i18n="admin.welcome">Bienvenido,</span> <strong id="admin-welcome-name"></strong></p>
     </div>
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-      <button class="btn btn-secondary"><span class="material-symbols-outlined">description</span> <span data-i18n="admin.report">Reporte de boletos</span></button>
+      <a class="btn btn-secondary" href="#reportes"><span class="material-symbols-outlined">description</span> <span data-i18n="admin.report">Abrir reportes</span></a>
       <button class="btn btn-primary" data-open-event-modal><span class="material-symbols-outlined">add</span> <span data-i18n="admin.newevent">Nuevo evento</span></button>
     </div>
   </div>
@@ -244,6 +244,22 @@
       </div>
     </div>
   </div>
+
+  <section class="card" id="reportes" style="margin-bottom:36px;padding:24px;">
+    <h2 style="font-size:1.25rem;" data-i18n="admin.reports_title">Centro de reportes</h2>
+    <p class="text-muted" data-i18n="admin.reports_sub">Descarga un PDF consolidado o archivos compatibles con Excel.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+      <button class="btn btn-primary" data-report="/admin/reportes/general.pdf" data-file="astro-tickets_reporte-general.pdf"><span class="material-symbols-outlined">picture_as_pdf</span><span data-i18n="admin.report_pdf">Reporte general PDF</span></button>
+      <button class="btn btn-ghost" data-report="/admin/reportes/usuarios.csv" data-file="usuarios.csv"><span class="material-symbols-outlined">table_view</span><span data-i18n="admin.report_users">Usuarios para Excel</span></button>
+      <button class="btn btn-ghost" data-report="/admin/reportes/accesos.csv" data-file="accesos.csv"><span class="material-symbols-outlined">table_view</span><span data-i18n="admin.report_access">Accesos para Excel</span></button>
+      <button class="btn btn-ghost" data-report="/admin/reportes/transacciones.csv" data-file="transacciones.csv"><span class="material-symbols-outlined">table_view</span><span data-i18n="admin.report_txns">Transacciones para Excel</span></button>
+    </div>
+  </section>
+
+  <section class="card table-wrap" id="accesos" style="margin-bottom:36px;">
+    <div style="padding:22px 24px 12px;"><h2 style="font-size:1.25rem;" data-i18n="admin.access_title">Historial de accesos</h2><p class="text-muted" data-i18n="admin.access_sub">Cada inicio de sesión aparece por separado, del más reciente al más antiguo.</p></div>
+    <table><thead><tr><th data-i18n="admin.access_date">Fecha</th><th data-i18n="admin.user">Usuario</th><th data-i18n="admin.access_result">Resultado</th><th>IP</th><th data-i18n="admin.access_device">Dispositivo</th></tr></thead><tbody id="access-table"><tr><td colspan="5" class="text-muted">Cargando…</td></tr></tbody></table>
+  </section>
 
   <!-- Transacciones diarias -->
   <div class="card table-wrap" id="transacciones">
@@ -735,6 +751,17 @@
         if (c) c.textContent = 'Mostrando ' + users.length + ' usuarios';
       }
 
+      // Historial de accesos: una fila por cada intento, sin agrupar usuarios.
+      const aTbody = document.getElementById('access-table');
+      if (aTbody) {
+        const accesses = data.accesos || [];
+        aTbody.innerHTML = accesses.length ? accesses.map((a) => {
+          const fecha = a.creado_en ? new Date(a.creado_en).toLocaleString(I18n.getLang()==='en'?'en-US':'es-DO') : '—';
+          const device = /mobile|android|iphone/i.test(a.user_agent || '') ? (I18n.getLang()==='en'?'Mobile':'Móvil') : (I18n.getLang()==='en'?'Desktop':'Escritorio');
+          return `<tr><td class="text-muted">${fecha}</td><td><strong>@${esc(a.username || 'desconocido')}</strong><br><span class="text-muted">${esc(a.nombre || a.email_intentado)}</span></td><td><span class="badge ${a.exitoso?'badge-success':'badge-warning'}">${a.exitoso?(I18n.getLang()==='en'?'Successful':'Exitoso'):(I18n.getLang()==='en'?'Failed':'Fallido')}</span></td><td class="text-muted">${esc(a.ip || '—')}</td><td class="text-muted">${device}</td></tr>`;
+        }).join('') : '<tr><td colspan="5" class="text-muted">Sin accesos registrados.</td></tr>';
+      }
+
       // Transacciones recientes
       const tTbody = document.getElementById('txns-table');
       if (tTbody) {
@@ -758,6 +785,13 @@
       console.error("Error cargando dashboard:", err);
     }
   }
+
+  document.querySelectorAll('[data-report]').forEach((btn) => btn.addEventListener('click', async () => {
+    const original=btn.innerHTML;btn.disabled=true;btn.textContent=I18n.getLang()==='en'?'Downloading…':'Descargando…';
+    try { await Api.descargarReporte(btn.dataset.report, btn.dataset.file); }
+    catch(err){ alert(err.message); }
+    finally{btn.disabled=false;btn.innerHTML=original;}
+  }));
 
   /* ---- Validación de QR ---- */
   const qrInput = document.getElementById('qr-input');

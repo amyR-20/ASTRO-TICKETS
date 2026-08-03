@@ -25,6 +25,9 @@ async function obtenerEntrada(codigo) {
       o.id                AS orden_id,
       o.transaccion,
       o.codigo_reserva,
+      o.subtotal,
+      o.tarifa,
+      o.total,
       u.id                AS usuario_id,
       u.nombre            AS comprador,
       u.email,
@@ -36,6 +39,7 @@ async function obtenerEntrada(codigo) {
       e.lugar             AS evento_lugar,
       f.id                AS funcion_id,
       f.estado            AS funcion_estado,
+      f.sala              AS funcion_sala,
       a.asiento_id        AS asiento,
       a.fila              AS asiento_fila
     FROM entradas en

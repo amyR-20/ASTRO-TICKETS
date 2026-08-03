@@ -12,7 +12,7 @@ const { query } = require("../config/database");
  */
 async function buscarPorEmail(email) {
   const sql = `
-    SELECT id, nombre, email, password_hash, role, avatar, estado, creado_en
+    SELECT id, username, nombre, email, password_hash, role, avatar, estado, creado_en
     FROM usuarios
     WHERE email = $1
   `;
@@ -22,7 +22,7 @@ async function buscarPorEmail(email) {
 
 async function buscarPorId(id) {
   const sql = `
-    SELECT id, nombre, email, role, avatar, estado, ultimo_login, creado_en, updated_at
+    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en, updated_at
     FROM usuarios
     WHERE id = $1
   `;
@@ -49,14 +49,19 @@ function calcularIniciales(nombre) {
  * nunca el texto plano, para mantener esa responsabilidad en el
  * controller/servicio de auth, no en el modelo.
  */
-async function crear({ nombre, email, passwordHash, role = "user" }) {
+async function buscarPorUsername(username) {
+  const { rows } = await query(`SELECT id, username FROM usuarios WHERE lower(username)=lower($1)`, [username]);
+  return rows[0] || null;
+}
+
+async function crear({ username, nombre, email, passwordHash, role = "user" }) {
   const avatar = calcularIniciales(nombre);
   const sql = `
-    INSERT INTO usuarios (nombre, email, password_hash, role, avatar)
-    VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, nombre, email, role, avatar, estado, creado_en
+    INSERT INTO usuarios (username, nombre, email, password_hash, role, avatar)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING id, username, nombre, email, role, avatar, estado, creado_en
   `;
-  const { rows } = await query(sql, [nombre, email, passwordHash, role, avatar]);
+  const { rows } = await query(sql, [username, nombre, email, passwordHash, role, avatar]);
   return rows[0];
 }
 
@@ -92,7 +97,7 @@ async function actualizarLogin(usuarioId) {
 /** Lista usuarios (panel admin). Sin datos sensibles. */
 async function listar({ limite = 50 } = {}) {
   const sql = `
-    SELECT id, nombre, email, role, avatar, estado, ultimo_login, creado_en
+    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en
     FROM usuarios
     ORDER BY creado_en DESC
     LIMIT $1
@@ -103,6 +108,7 @@ async function listar({ limite = 50 } = {}) {
 
 module.exports = {
   buscarPorEmail,
+  buscarPorUsername,
   buscarPorId,
   crear,
   registrarAcceso,

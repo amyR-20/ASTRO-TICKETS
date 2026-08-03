@@ -8,7 +8,7 @@ const router = express.Router();
 
 const {
   listar, ver, crear, actualizar, eliminar,
-  reservar, cancelarReservas, bloquearAsiento, restaurarAsiento,
+  reservar, cancelarReservas, misReservas, bloquearAsiento, restaurarAsiento,
 } = require("../controllers/funcionController");
 const { verificarToken, soloAdmin } = require("../middleware/authMiddleware");
 
@@ -25,6 +25,7 @@ router.post("/funciones/:id/asientos/:asiento/restaurar", verificarToken, soloAd
 
 // Usuario con sesión: reservar / liberar asientos
 router.post("/funciones/:id/reservar", verificarToken, reservar);
+router.get("/funciones/:id/mis-reservas", verificarToken, misReservas);
 router.delete("/funciones/:id/reservas", verificarToken, cancelarReservas);
 
 module.exports = router;

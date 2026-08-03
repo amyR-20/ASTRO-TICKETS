@@ -2489,7 +2489,7 @@ main {
    HISTORY PAGE — My Purchases (two-column)
    ============================================================ */
 .history-layout {
-  width: min(100% - 32px, 1400px);
+  width: min(calc(100% - 32px), 1400px);
   max-width: none;
   margin: 0 auto;
   padding: 40px 32px;
@@ -2678,6 +2678,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 /* Purchase Card */
@@ -2852,18 +2853,24 @@ main {
 .detail-panel {
   position: fixed;
   top: 0;
-  right: -480px;
+  right: 0;
   width: 480px;
   max-width: 100vw;
   height: 100vh;
   background: #F8FAFC;
   z-index: 999;
   overflow-y: auto;
-  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.35s;
   box-shadow: -8px 0 40px rgba(0,0,0,0.08);
 }
 .detail-panel.open {
-  right: 0;
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 .detail-panel-inner {
   position: relative;
@@ -4349,4 +4356,65 @@ html[data-theme="dark"] .btn-outline-gray:hover {
   .admin-page .brand .text-muted { display: none; }
   .pay-method-tabs { flex-wrap: wrap; }
   .pay-method-tab { white-space: normal; flex: 1 1 auto; min-width: 88px; }
+}
+
+/* Boleto y compras: el contenido no puede desbordar su columna. */
+.history-layout { grid-template-columns: minmax(260px, 300px) minmax(0, 1fr); }
+.history-right { min-width: 0; }
+.purchase-card { height: auto; min-height: 196px; }
+.purchase-card-body { min-width: 0; }
+.purchase-event-name { padding-right: 126px; overflow-wrap: anywhere; }
+.purchase-info { padding-right: 126px; }
+
+.receipt-ticket {
+  display: grid;
+  grid-template-columns: minmax(185px, .8fr) minmax(0, 1.45fr);
+  padding: 0;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(108, 63, 209, .16);
+}
+.receipt-ticket-poster {
+  min-height: 178px;
+  padding: 20px;
+  color: #fff;
+  background-position: center;
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  gap: 5px;
+}
+.receipt-ticket-poster span { font-size: .66rem; font-weight: 800; letter-spacing: .14em; }
+.receipt-ticket-poster strong { font-size: 1.05rem; line-height: 1.15; }
+.receipt-ticket-poster small { opacity: .9; }
+.receipt-ticket-main { min-width: 0; padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 12px; align-items: center; }
+.receipt-ticket-info > span:not(.receipt-ticket-label), .receipt-ticket-info code { color: var(--color-on-surface-variant); font-size: .82rem; }
+.receipt-ticket-info { gap: 7px; }
+.receipt-ticket-seat { font-size: 1rem; color: var(--color-on-surface); }
+.receipt-ticket-code { overflow-wrap: anywhere; }
+.receipt-ticket .btn-ticket-download { grid-column: 1 / -1; justify-self: start; }
+.receipt-pricing { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px 24px; padding: 14px 4px; color: var(--color-on-surface-variant); }
+.receipt-pricing strong { color: var(--color-on-surface); margin-left: 6px; }
+.purchase-actions { flex-wrap: wrap; }
+.purchase-actions .btn-purchase-details { white-space: nowrap; }
+html[data-theme="dark"] .receipt-ticket { background: #1b2038; border-color: rgba(167,139,250,.3); }
+html[data-theme="dark"] .receipt-ticket-seat { color: #f4f2ff; }
+
+@media (max-width: 700px) {
+  .history-layout { width: 100%; padding: 24px 16px; }
+  .purchase-card { flex-direction: column; }
+  .purchase-card-img { width: 100%; height: 150px; }
+  .purchase-event-name, .purchase-info { padding-right: 0; }
+  .purchase-order, .purchase-price { position: static; display: block; margin-top: 8px; }
+  .purchase-actions { flex-wrap: wrap; }
+  .receipt-ticket { grid-template-columns: 1fr; }
+  .receipt-ticket-main { grid-template-columns: minmax(0, 1fr) 78px; }
+}
+
+@media print {
+  .receipt-actions, .btn-ticket, .progress-steps, .site-footer, .navbar { display: none !important; }
+  .receipt-ticket { break-inside: avoid; box-shadow: none; }
+  .receipt-container { max-width: none; padding: 0; }
+  body.printing-one-ticket .receipt-ticket:not(.print-ticket-only) { display: none; }
 }

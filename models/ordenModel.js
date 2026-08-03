@@ -164,6 +164,7 @@ async function crear(datos) {
     await client.query("COMMIT");
 
     return {
+      orderId: orden.rows[0].id,
       ...orden.rows[0],
       subtotal,
       tarifa,
@@ -196,12 +197,18 @@ async function listarPorUsuario(usuarioId) {
       o.total,
       o.estado,
       o.creada_en,
+      o.funcion_id,
       e.id AS evento_id,
       e.nombre AS evento_nombre,
       e.imagen AS evento_imagen,
       e.categoria AS evento_categoria,
       e.fecha AS evento_fecha,
       e.hora AS evento_hora,
+      f.fecha AS funcion_fecha,
+      f.hora AS funcion_hora,
+      f.sala AS funcion_sala,
+      u.nombre AS comprador_nombre,
+      u.email AS comprador_email,
       e.lugar AS evento_lugar,
       COALESCE(
         json_agg(
@@ -217,9 +224,11 @@ async function listarPorUsuario(usuarioId) {
       ) AS entradas
     FROM ordenes o
     JOIN eventos e ON e.id = o.evento_id
+    JOIN funciones_evento f ON f.id = o.funcion_id
+    LEFT JOIN usuarios u ON u.id = o.usuario_id
     LEFT JOIN entradas en ON en.orden_id = o.id
     WHERE o.usuario_id = $1
-    GROUP BY o.id, e.id
+    GROUP BY o.id, e.id, f.id, u.id
     ORDER BY o.creada_en DESC
   `;
   const { rows } = await pool.query(sql, [usuarioId]);
@@ -229,13 +238,22 @@ async function listarPorUsuario(usuarioId) {
       ? new Date(r.evento_fecha.getTime() + 3600 * 1000).toISOString().slice(0, 10)
       : null;
     return {
+      orderId: r.orden_id,
       event: {
+        id: r.evento_id,
         name: r.evento_nombre,
         img: r.evento_imagen,
         date: fecha,
         venue: r.evento_lugar,
         category: r.evento_categoria,
       },
+      funcion: {
+        id: r.funcion_id,
+        fecha: r.funcion_fecha ? r.funcion_fecha.toISOString().slice(0, 10) : null,
+        hora: r.funcion_hora ? String(r.funcion_hora).slice(0, 5) : null,
+        sala: r.funcion_sala,
+      },
+      comprador: { nombre: r.comprador_nombre, email: r.comprador_email },
       seats: r.entradas,
       pricing: {
         subtotal: Number(r.subtotal),

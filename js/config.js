@@ -13,7 +13,7 @@
 const AstroConfig = (() => {
   /* Edita esta línea al publicar el backend (ej. Render):
      "https://tu-app.onrender.com/api" */
-  const PROD_API_BASE = "https://TU-BACKEND-URL-AQUI.onrender.com/api";
+  const PROD_API_BASE = "";
 
   const isLocal = () => {
     const h = (window.location.hostname || "").toLowerCase();

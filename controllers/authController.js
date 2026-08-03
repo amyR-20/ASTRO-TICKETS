@@ -22,6 +22,8 @@ async function registro(req, res) {
     // --- Validaciones con express-validator (mismos campos que el frontend) ---
     const validaciones = [
       body("nombre").trim().notEmpty().withMessage("Todos los campos son obligatorios."),
+      body("username").trim().toLowerCase().matches(/^[a-z0-9_]{3,24}$/)
+        .withMessage("El usuario debe tener 3 a 24 caracteres: letras, números o guion bajo."),
       body("email")
         .trim()
         .toLowerCase()
@@ -33,7 +35,11 @@ async function registro(req, res) {
       body("password")
         .notEmpty().withMessage("Todos los campos son obligatorios.")
         .bail()
-        .isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres."),
+        .isLength({ min: 10 }).withMessage("La contraseña debe tener al menos 10 caracteres.")
+        .bail().matches(/[a-z]/).withMessage("La contraseña debe incluir una minúscula.")
+        .bail().matches(/[A-Z]/).withMessage("La contraseña debe incluir una mayúscula.")
+        .bail().matches(/\d/).withMessage("La contraseña debe incluir un número.")
+        .bail().matches(/[^A-Za-z0-9]/).withMessage("La contraseña debe incluir un símbolo."),
       body("password2")
         .custom((value, { req: r }) => value === r.body.password)
         .withMessage("Las contraseñas no coinciden."),
@@ -46,17 +52,22 @@ async function registro(req, res) {
 
     const email = String(req.body.email || "").trim().toLowerCase();
     const nombre = String(req.body.nombre || "").trim();
+    const username = String(req.body.username || "").trim().toLowerCase();
     const password = req.body.password;
 
     const existente = await usuarioModel.buscarPorEmail(email);
     if (existente) {
       return res.status(409).json({ error: "Este correo ya está registrado. Inicia sesión." });
     }
+    if (await usuarioModel.buscarPorUsername(username)) {
+      return res.status(409).json({ error: "Ese nombre de usuario ya está ocupado." });
+    }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     const nuevoUsuario = await usuarioModel.crear({
       nombre,
+      username,
       email,
       passwordHash,
     });
@@ -67,6 +78,9 @@ async function registro(req, res) {
     });
   } catch (err) {
     console.error("Error en registro:", err);
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "El correo o nombre de usuario ya está registrado." });
+    }
     return res.status(500).json({ error: "Error interno al registrar el usuario." });
   }
 }
@@ -166,6 +180,7 @@ async function login(req, res) {
       token,
       usuario: {
         id: usuario.id,
+        username: usuario.username,
         nombre: usuario.nombre,
         email: usuario.email,
         role: usuario.role,

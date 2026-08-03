@@ -142,11 +142,21 @@ async function buscarPorId(id) {
     [id]
   )).rows;
 
-  const zonas = (await pool.query(
+  // Las zonas pertenecen a la función. Como compatibilidad con eventos que
+  // todavía sólo tienen plantilla, se usa la plantilla únicamente si no hay
+  // zonas propias para esta función; nunca se mezclan ambas listas.
+  let zonas = (await pool.query(
     `SELECT nombre, color, precio, cantidad, descripcion
-     FROM zonas WHERE evento_id = $1 ORDER BY id`,
-    [rows[0].evento_id]
+     FROM zonas WHERE funcion_id = $1 ORDER BY id`,
+    [id]
   )).rows;
+  if (!zonas.length) {
+    zonas = (await pool.query(
+      `SELECT nombre, color, precio, cantidad, descripcion
+       FROM zonas WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY id`,
+      [rows[0].evento_id]
+    )).rows;
+  }
 
   return {
     ...rows[0],
@@ -166,10 +176,10 @@ async function buscarPorId(id) {
     })),
     asientos: asientos.map((a) => ({
       id: a.asiento_id,
-      fila: a.fila,
-      columna: a.columna,
-      zona: a.zona,
-      estado: a.estado,
+      row: a.fila,
+      col: a.columna,
+      type: a.zona,
+      status: a.estado,
     })),
     stats: await estadisticas(id),
   };
@@ -234,6 +244,27 @@ async function crearEnCliente(client, { eventoId, fecha, hora, sala, estado = "p
       `INSERT INTO asientos (evento_id, funcion_id, asiento_id, fila, columna, zona, estado)
        VALUES ($1,$2,$3,$4,$5,$6,$7)`,
       [eventoId, funcion.id, a.asiento_id, a.fila, a.columna, a.zona || null, "available"]
+    );
+  }
+
+  // Cada función recibe su propia copia de precios. Así editar la plantilla
+  // nunca altera una función que ya está a la venta o tiene entradas.
+  const zonasPlantilla = (await client.query(
+    `SELECT nombre, color, precio, cantidad, descripcion
+     FROM zonas WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY id`,
+    [eventoId]
+  )).rows;
+  if (!zonasPlantilla.length || plantilla.some((a) => !a.zona)) {
+    throw new Error("No se puede crear una función sin asientos y zonas con precio válido.");
+  }
+  for (const zona of zonasPlantilla) {
+    if (!zona.nombre || Number(zona.precio) < 0) {
+      throw new Error("No se puede crear una función con una zona sin precio válido.");
+    }
+    await client.query(
+      `INSERT INTO zonas (evento_id, funcion_id, nombre, color, precio, cantidad, descripcion)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [eventoId, funcion.id, zona.nombre, zona.color, zona.precio, zona.cantidad, zona.descripcion]
     );
   }
 

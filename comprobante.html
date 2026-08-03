@@ -115,6 +115,12 @@
       </div>
     </div>
 
+    <div class="receipt-pricing" aria-label="Resumen del pago">
+      <span>Subtotal <strong id="receipt-subtotal">RD$ 0</strong></span>
+      <span>Tarifa <strong id="receipt-fee">RD$ 0</strong></span>
+      <span>Total <strong id="receipt-total">RD$ 0</strong></span>
+    </div>
+
     <!-- Extra details row: payment + transaction -->
     <div class="receipt-extra-grid">
       <div class="receipt-extra-card">
@@ -132,6 +138,17 @@
       <div class="receipt-extra-card">
         <span class="receipt-extra-label" data-i18n="receipt.email_sent">Correo de confirmación</span>
         <span class="receipt-extra-value" id="receipt-email-sent">usuario@ejemplo.com</span>
+      </div>
+    </div>
+
+    <div class="receipt-extra-grid receipt-identity-grid">
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label">Comprador</span>
+        <span class="receipt-extra-value" id="receipt-buyer-name">—</span>
+      </div>
+      <div class="receipt-extra-card">
+        <span class="receipt-extra-label">Sala</span>
+        <span class="receipt-extra-value" id="receipt-room">—</span>
       </div>
     </div>
 
@@ -166,6 +183,10 @@
 
     <!-- Bottom buttons -->
     <div class="receipt-actions">
+      <button class="btn-outline-primary" id="btn-print-ticket" type="button" aria-label="Imprimir boleto">
+        <span class="material-symbols-outlined" aria-hidden="true">print</span>
+        <span>Imprimir boleto</span>
+      </button>
       <button class="btn-outline-blue" id="btn-resend" aria-label="Reenviar confirmación por correo">
         <span class="material-symbols-outlined" aria-hidden="true">mail</span>
         <span data-i18n="receipt.resend">Reenviar Confirmación</span>
@@ -194,5 +215,6 @@
 <script src="js/api.js"></script>
 
 <script src="js/main.js"></script>
+<script src="js/stable-flow.js"></script>
 </body>
 </html>
