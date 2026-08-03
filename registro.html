@@ -20,6 +20,9 @@
     <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
       <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
+    <button class="btn-ghost btn nav-toggle" id="nav-toggle" aria-label="Menú" aria-expanded="false">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
     <nav class="nav-links">
       <a href="registro.html" class="active" data-i18n="nav.crear">Crear cuenta</a>
       <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
@@ -55,10 +58,10 @@
 
     <form data-redirect="index.html" autocomplete="off">
       <div class="field">
-        <label for="nombre" data-i18n="register.name">Nombre completo</label>
+        <label for="nombre" data-i18n="register.name">Nombre</label>
         <div class="input-wrap">
           <span class="material-symbols-outlined">person</span>
-          <input class="input" type="text" id="nombre" name="nombre" placeholder="Tu nombre y apellido" required />
+          <input class="input" type="text" id="nombre" name="nombre" placeholder="Tu nombre" required />
         </div>
       </div>
 
@@ -116,8 +119,40 @@
 
 </main>
 
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+        <p class="footer-name" data-i18n="brand">Astro Tickets</p>
+        <p class="footer-tag" data-i18n="footer.tag">Tu viaje comienza aquí.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.explore">Explora</h4>
+        <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+        <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.account">Cuenta</h4>
+        <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+        <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
+        <a href="admin.html" data-i18n="nav.admin">Administrador</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.support">Soporte</h4>
+        <a href="#" data-i18n="footer.terms">Términos del servicio</a>
+        <a href="#" data-i18n="footer.privacy">Política de privacidad</a>
+        <a href="#" data-i18n="footer.help">Centro de ayuda</a>
+      </div>
+    </div>
+    <p class="bottom">© <span class="footer-year"></span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
+  </div>
+</footer>
+
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
 <script src="js/main.js"></script>
 </body>
 </html>

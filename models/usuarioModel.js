@@ -12,7 +12,7 @@ const { query } = require("../config/database");
  */
 async function buscarPorEmail(email) {
   const sql = `
-    SELECT id, nombre, email, password_hash, role, avatar, creado_en
+    SELECT id, nombre, email, password_hash, role, avatar, estado, creado_en
     FROM usuarios
     WHERE email = $1
   `;
@@ -22,7 +22,7 @@ async function buscarPorEmail(email) {
 
 async function buscarPorId(id) {
   const sql = `
-    SELECT id, nombre, email, role, avatar, creado_en
+    SELECT id, nombre, email, role, avatar, estado, ultimo_login, creado_en, updated_at
     FROM usuarios
     WHERE id = $1
   `;
@@ -54,14 +54,45 @@ async function crear({ nombre, email, passwordHash, role = "user" }) {
   const sql = `
     INSERT INTO usuarios (nombre, email, password_hash, role, avatar)
     VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, nombre, email, role, avatar, creado_en
+    RETURNING id, nombre, email, role, avatar, estado, creado_en
   `;
   const { rows } = await query(sql, [nombre, email, passwordHash, role, avatar]);
   return rows[0];
+}
+
+/**
+ * Registra un intento de acceso en accesos_usuarios (auditoría).
+ * Nunca guarda contraseñas, hashes, tokens ni secretos.
+ * Es "best-effort": si falla, no debe romper el flujo de login.
+ */
+async function registrarAcceso({ usuarioId, email, exitoso, metodo = "password", motivoFallo, ip, userAgent }) {
+  const sql = `
+    INSERT INTO accesos_usuarios (usuario_id, email_intentado, exitoso, metodo, motivo_fallo, ip, user_agent)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+  `;
+  await query(sql, [
+    usuarioId || null,
+    email,
+    exitoso,
+    metodo,
+    motivoFallo || null,
+    ip || null,
+    userAgent || null,
+  ]);
+}
+
+/** Marca el último inicio de sesión del usuario. */
+async function actualizarLogin(usuarioId) {
+  const sql = `
+    UPDATE usuarios SET ultimo_login = now(), updated_at = now() WHERE id = $1
+  `;
+  await query(sql, [usuarioId]);
 }
 
 module.exports = {
   buscarPorEmail,
   buscarPorId,
   crear,
+  registrarAcceso,
+  actualizarLogin,
 };

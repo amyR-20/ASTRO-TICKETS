@@ -4,12 +4,24 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · Panel de administración</title>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
 <link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body class="admin-page">
 <div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
 
 <header class="navbar">
@@ -18,8 +30,34 @@
       <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
       <span class="text-muted" style="font-weight: 400; font-size: 0.85rem;">/ Admin</span>
     </a>
-    <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-      <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
+    <div class="admin-topbar">
+      <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
+      </button>
+      <div class="theme-switch" role="group" aria-label="Cambiar tema">
+        <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro">
+          <span class="material-symbols-outlined">light_mode</span>
+          <span class="txt" data-i18n="theme.light">Claro</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro">
+          <span class="material-symbols-outlined">dark_mode</span>
+          <span class="txt" data-i18n="theme.dark">Oscuro</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático">
+          <span class="material-symbols-outlined">brightness_auto</span>
+          <span class="txt" data-i18n="theme.auto">Auto</span>
+        </button>
+      </div>
+      <div class="admin-user-chip" id="admin-user-chip" aria-label="Administrador">
+        <span class="admin-user-avatar" id="admin-user-avatar">A</span>
+        <span class="admin-user-info">
+          <span class="admin-user-name" id="admin-user-name">—</span>
+          <span class="admin-user-email" id="admin-user-email">—</span>
+        </span>
+      </div>
+    </div>
+    <button class="btn-ghost btn nav-toggle" id="nav-toggle" aria-label="Menú" aria-expanded="false">
+      <span class="material-symbols-outlined">menu</span>
     </button>
     <nav class="nav-links">
       <a class="active" href="#resumen" data-i18n="admin.dashboard">Resumen</a>
@@ -32,7 +70,31 @@
   </div>
 </header>
 
-<main class="container section" id="resumen">
+<main id="resumen">
+  <div class="container section admin-layout">
+    <!-- Sidebar administrativa -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <img src="multimedia/logo.svg" alt="" class="admin-sidebar-logo" />
+        <span class="admin-sidebar-brand-name">Astro Tickets</span>
+      </div>
+      <p class="admin-sidebar-title" data-i18n="admin.panel">Panel de administración</p>
+      <nav class="admin-nav">
+        <a class="active" href="#resumen"><span class="material-symbols-outlined">dashboard</span><span class="txt" data-i18n="admin.dashboard">Resumen</span></a>
+        <a href="#eventos"><span class="material-symbols-outlined">event</span><span class="txt" data-i18n="admin.eventos">Gestión de eventos</span></a>
+        <a href="#crear-evento"><span class="material-symbols-outlined">add_circle</span><span class="txt" data-i18n="admin.crearevento">Crear evento</span></a>
+        <a href="#usuarios"><span class="material-symbols-outlined">group</span><span class="txt" data-i18n="admin.usuarios">Usuarios</span></a>
+        <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
+        <a href="#" data-coming-soon><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
+        <a href="#" data-coming-soon><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
+      </nav>
+      <div class="admin-sidebar-foot">
+        <a href="index.html"><span class="material-symbols-outlined">logout</span><span class="txt" data-i18n="admin.salir">Salir</span></a>
+      </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <div class="admin-content">
   <!-- User panel -->
   <div class="card admin-user-card" id="user-panel-container">
     <!-- JS will populate -->
@@ -42,8 +104,9 @@
     <div>
       <p class="eyebrow" data-i18n="admin.panel">Panel de administración</p>
       <h1 style="font-size: 2.2rem;" data-i18n="admin.resumen">Resumen general</h1>
+      <p class="admin-welcome"><span data-i18n="admin.welcome">Bienvenido,</span> <strong id="admin-welcome-name"></strong></p>
     </div>
-    <div style="display: flex; gap: 12px;">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
       <button class="btn btn-secondary"><span class="material-symbols-outlined">description</span> <span data-i18n="admin.report">Reporte de boletos</span></button>
       <button class="btn btn-primary" data-open-event-modal><span class="material-symbols-outlined">add</span> <span data-i18n="admin.newevent">Nuevo evento</span></button>
     </div>
@@ -275,6 +338,8 @@
       </tbody>
     </table>
   </div>
+    </div><!-- /.admin-content -->
+  </div><!-- /.container.admin-layout -->
 </main>
 
 
@@ -579,8 +644,31 @@
 
 <footer class="site-footer">
   <div class="container">
-    <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
-    <p class="bottom" data-i18n="footer">© 2026 Astro Tickets. Proyecto académico — Ingeniería de Software II, UNPHU.</p>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+        <p class="footer-name" data-i18n="brand">Astro Tickets</p>
+        <p class="footer-tag" data-i18n="footer.tag">Tu viaje comienza aquí.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.explore">Explora</h4>
+        <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+        <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.account">Cuenta</h4>
+        <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+        <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
+        <a href="admin.html" data-i18n="nav.admin">Administrador</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.support">Soporte</h4>
+        <a href="#" data-i18n="footer.terms">Términos del servicio</a>
+        <a href="#" data-i18n="footer.privacy">Política de privacidad</a>
+        <a href="#" data-i18n="footer.help">Centro de ayuda</a>
+      </div>
+    </div>
+    <p class="bottom">© <span class="footer-year"></span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
   </div>
 </footer>
 
@@ -613,6 +701,8 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
 <script src="js/main.js"></script>
 
 </body>

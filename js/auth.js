@@ -10,6 +10,8 @@ const Auth = (() => {
   const SESSION_KEY = "astro_session";
   const TOKEN_KEY = "astro_token";
 
+  const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+
   /**
    * Llama a POST /api/auth/login. Devuelve { token, usuario } si es
    * exitoso, o lanza un Error con el mensaje que mandó el backend.
@@ -78,14 +80,36 @@ const Auth = (() => {
    * exitoso, o lanza un Error con el mensaje que mandó el backend.
    */
   async function registroRequest(nombre, email, password, password2) {
-    const res = await fetch(`${API_BASE}/auth/registro`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, email, password, password2 }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Error al registrar la cuenta.");
-    return data; // { mensaje, usuario }
+    try {
+      const res = await fetch(`${API_BASE}/auth/registro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, email, password, password2 }),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      let data;
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text || "El servidor devolvió una respuesta inválida.");
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || data.mensaje || "Error al registrar la cuenta.");
+      }
+
+      return data; // { mensaje, usuario } — solo si el backend respondió 2xx
+    } catch (err) {
+      console.error("Error en registroRequest:", err);
+      if (err instanceof TypeError) {
+        throw new Error(
+          "No se pudo conectar con el servidor. Verifica que npm run dev esté ejecutándose."
+        );
+      }
+      throw err;
+    }
   }
 
   /* ---------- Session ---------- */
@@ -414,12 +438,14 @@ if (adminForm) {
       regForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nombre = regName.value.trim();
-        const email = regEmail.value.trim();
+        const email = regEmail.value.trim().toLowerCase();
         const password = regPassword.value;
         const password2 = regPassword2.value;
 
-        // Estas dos validaciones se pueden dejar en el cliente para dar
-        // feedback inmediato, pero el backend las vuelve a validar igual.
+        if (!EMAIL_REGEX.test(email)) {
+          alert("Ingresa un correo electrónico válido.");
+          return;
+        }
         if (password !== password2) {
           alert("Las contraseñas no coinciden.");
           return;

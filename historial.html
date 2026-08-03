@@ -4,6 +4,18 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · My Purchases</title>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
 <link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
@@ -12,12 +24,20 @@
 <body>
 
 <header class="navbar">
-  <div class="container" style="max-width: 1400px;">
+  <div class="container">
     <a class="brand" href="catalogo.html">
       <img src="multimedia/logo.svg" alt="Astro Tickets" class="brand-logo" />
     </a>
     <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
       <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
+    </button>
+    <div class="theme-switch" role="group" aria-label="Cambiar tema">
+      <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro"><span class="material-symbols-outlined">light_mode</span><span class="txt" data-i18n="theme.light">Claro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro"><span class="material-symbols-outlined">dark_mode</span><span class="txt" data-i18n="theme.dark">Oscuro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático"><span class="material-symbols-outlined">brightness_auto</span><span class="txt" data-i18n="theme.auto">Auto</span></button>
+    </div>
+    <button class="btn-ghost btn nav-toggle" id="nav-toggle" aria-label="Menú" aria-expanded="false">
+      <span class="material-symbols-outlined">menu</span>
     </button>
     <nav class="nav-links">
       <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
@@ -105,7 +125,40 @@
   </div>
 </aside>
 
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="multimedia/logo.svg" alt="Astro Tickets" class="footer-logo" />
+        <p class="footer-name" data-i18n="brand">Astro Tickets</p>
+        <p class="footer-tag" data-i18n="footer.tag">Tu viaje comienza aquí.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.explore">Explora</h4>
+        <a href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
+        <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.account">Cuenta</h4>
+        <a href="index.html" data-i18n="nav.login">Iniciar sesión</a>
+        <a href="registro.html" data-i18n="nav.crear">Crear cuenta</a>
+        <a href="admin.html" data-i18n="nav.admin">Administrador</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer.support">Soporte</h4>
+        <a href="#" data-i18n="footer.terms">Términos del servicio</a>
+        <a href="#" data-i18n="footer.privacy">Política de privacidad</a>
+        <a href="#" data-i18n="footer.help">Centro de ayuda</a>
+      </div>
+    </div>
+    <p class="bottom">© <span class="footer-year"></span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
+  </div>
+</footer>
+
 <script src="js/i18n.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
 <script src="js/main.js"></script>
 </body>
 </html>

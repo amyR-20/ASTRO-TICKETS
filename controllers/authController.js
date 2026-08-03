@@ -10,6 +10,8 @@ const usuarioModel = require("../models/usuarioModel");
 
 const SALT_ROUNDS = 10;
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+
 /**
  * POST /api/auth/registro
  * Body esperado: { nombre, email, password, password2 }
@@ -25,7 +27,9 @@ async function registro(req, res) {
         .toLowerCase()
         .notEmpty().withMessage("Todos los campos son obligatorios.")
         .bail()
-        .isEmail().withMessage("Ingresa un correo electrónico válido."),
+        .isEmail().withMessage("Ingresa un correo electrónico válido.")
+        .bail()
+        .matches(EMAIL_REGEX).withMessage("Ingresa un correo electrónico válido."),
       body("password")
         .notEmpty().withMessage("Todos los campos son obligatorios.")
         .bail()
@@ -40,9 +44,11 @@ async function registro(req, res) {
       return res.status(400).json({ error: errores.array()[0].msg });
     }
 
-    const { nombre, email, password } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const nombre = String(req.body.nombre || "").trim();
+    const password = req.body.password;
 
-    const existente = await usuarioModel.buscarPorEmail(email.trim().toLowerCase());
+    const existente = await usuarioModel.buscarPorEmail(email);
     if (existente) {
       return res.status(409).json({ error: "Este correo ya está registrado. Inicia sesión." });
     }
@@ -50,8 +56,8 @@ async function registro(req, res) {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     const nuevoUsuario = await usuarioModel.crear({
-      nombre: nombre.trim(),
-      email: email.trim().toLowerCase(),
+      nombre,
+      email,
       passwordHash,
     });
 
@@ -94,16 +100,55 @@ async function login(req, res) {
 
     const usuario = await usuarioModel.buscarPorEmail(email.trim().toLowerCase());
 
+    const ip = req.ip;
+    const userAgent = req.get("user-agent");
+
+    // Auditoría de accesos (best-effort: si falla, no rompe el login)
+    const registrar = async (datos) => {
+      try {
+        await usuarioModel.registrarAcceso(datos);
+      } catch (err) {
+        console.error("Error auditando acceso:", err.message);
+      }
+    };
+
     // Mensaje genérico a propósito: no revelar si el email existe o no,
     // por seguridad (evita que alguien "adivine" cuentas registradas).
     if (!usuario) {
+      await registrar({
+        email: email.trim().toLowerCase(),
+        exitoso: false,
+        metodo: "password",
+        motivoFallo: "usuario_no_encontrado",
+        ip,
+        userAgent,
+      });
       return res.status(401).json({ error: "Correo o contraseña incorrectos." });
     }
 
     const passwordValido = await bcrypt.compare(password, usuario.password_hash);
     if (!passwordValido) {
+      await registrar({
+        usuarioId: usuario.id,
+        email: usuario.email,
+        exitoso: false,
+        metodo: "password",
+        motivoFallo: "password_incorrecta",
+        ip,
+        userAgent,
+      });
       return res.status(401).json({ error: "Correo o contraseña incorrectos." });
     }
+
+    await registrar({
+      usuarioId: usuario.id,
+      email: usuario.email,
+      exitoso: true,
+      metodo: "password",
+      ip,
+      userAgent,
+    });
+    await usuarioModel.actualizarLogin(usuario.id);
 
     const payload = {
       id: usuario.id,

@@ -4,6 +4,18 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Astro Tickets · Noche de Jazz en Vivo</title>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("astro_theme");
+    var theme = (stored === "light" || stored === "dark") ? stored : "auto";
+    if (theme === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {}
+})();
+</script>
 <link rel="icon" type="image/png" href="multimedia/favicon.svg" />
 <link rel="stylesheet" href="css/styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
@@ -20,6 +32,11 @@
     <button class="btn-ghost btn lang-btn" id="lang-btn" aria-label="Idioma" style="margin-left: auto; margin-right: 8px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
       <span class="material-symbols-outlined" style="font-size: 1.3rem;">translate</span>
     </button>
+    <div class="theme-switch" role="group" aria-label="Cambiar tema">
+      <button type="button" class="theme-opt" data-theme-value="light" aria-pressed="false" aria-label="Tema claro"><span class="material-symbols-outlined">light_mode</span><span class="txt" data-i18n="theme.light">Claro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="dark" aria-pressed="false" aria-label="Tema oscuro"><span class="material-symbols-outlined">dark_mode</span><span class="txt" data-i18n="theme.dark">Oscuro</span></button>
+      <button type="button" class="theme-opt" data-theme-value="auto" aria-pressed="false" aria-label="Tema automático"><span class="material-symbols-outlined">brightness_auto</span><span class="txt" data-i18n="theme.auto">Auto</span></button>
+    </div>
     <nav class="nav-links">
       <a class="active" href="catalogo.html" data-i18n="nav.eventos">Eventos</a>
       <a href="historial.html" data-i18n="nav.boletos">Mis compras</a>
@@ -133,53 +150,80 @@
 </footer>
 
 <script src="js/i18n.js"></script>
+<script src="js/api.js"></script>
+
 <script src="js/main.js"></script>
 <script>
-/* Load event from localStorage if ?id=EVT_ID is provided */
+/* Load event from backend (?id=EVT_ID) — fallback a localStorage */
 (function() {
   const params = new URLSearchParams(window.location.search);
   const eventId = params.get('id');
   if (!eventId) return;
 
-  const events = JSON.parse(localStorage.getItem('astro_events') || '[]');
-  const evt = events.find(e => e.id === eventId);
-  if (!evt) return;
-
   const main = document.querySelector('main');
   if (!main) return;
 
-  main.dataset.eventName = evt.name;
-  main.dataset.eventImg = evt.image || 'multimedia/logo.svg';
-  main.dataset.eventCategory = evt.category || '';
+  function applyEvent(evt) {
+    main.dataset.eventId = evt.id;
+    main.dataset.eventName = evt.name;
+    main.dataset.eventImg = evt.image || 'multimedia/logo.svg';
+    main.dataset.eventCategory = evt.category || '';
 
-  const dateObj = new Date(evt.date + 'T' + (evt.time || '20:00'));
-  const dateStr = dateObj.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + (evt.time || '20:00');
-  main.dataset.eventDate = dateStr;
-  main.dataset.eventVenue = evt.venue || '';
+    const dateObj = new Date(evt.date + 'T' + (evt.time || '20:00'));
+    const dateStr = dateObj.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + (evt.time || '20:00');
+    main.dataset.eventDate = dateStr;
+    main.dataset.eventVenue = evt.venue || '';
 
-  const defaultPrices = { platino: 4500, vip: 3200, general: 1800 };
-  main.dataset.pricePlatino = defaultPrices.platino;
-  main.dataset.priceVip = defaultPrices.vip;
-  main.dataset.priceGeneral = defaultPrices.general;
+    // Precios desde las zonas reales del evento
+    const zones = evt.zones || [];
+    const priceOf = (name) => {
+      const z = zones.find(z => z.name.toLowerCase() === name);
+      return z ? z.price : null;
+    };
+    main.dataset.pricePlatino = priceOf('platino') || 4500;
+    main.dataset.priceVip = priceOf('vip') || 3200;
+    main.dataset.priceGeneral = priceOf('general') || 1800;
 
-  document.title = 'Astro Tickets · ' + evt.name;
-  const img = document.querySelector('.detail-image img');
-  if (img) img.src = evt.image || 'multimedia/logo.svg';
-  const catEl = document.querySelector('.eyebrow');
-  if (catEl) catEl.textContent = evt.category || '';
-  const titleEl = document.querySelector('h1');
-  if (titleEl) titleEl.textContent = evt.name;
-  const dateSpan = document.querySelector('.text-muted .material-symbols-outlined');
-  if (dateSpan) {
-    const parent = dateSpan.parentElement;
-    if (parent) parent.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">calendar_month</span> ' + dateStr;
+    // Asientos vendidos/reservados (para marcar el mapa)
+    const taken = (evt.seats || [])
+      .filter(s => s.status === 'sold' || s.status === 'reserved' || s.status === 'blocked')
+      .map(s => s.id);
+    main.dataset.takenSeats = JSON.stringify(taken);
+
+    document.title = 'Astro Tickets · ' + evt.name;
+    const img = document.querySelector('.detail-image img');
+    if (img) img.src = evt.image || 'multimedia/logo.svg';
+    const catEl = document.querySelector('.eyebrow');
+    if (catEl) catEl.textContent = evt.category || '';
+    const titleEl = document.querySelector('h1');
+    if (titleEl) titleEl.textContent = evt.name;
+    const dateSpan = document.querySelector('.text-muted .material-symbols-outlined');
+    if (dateSpan) {
+      const parent = dateSpan.parentElement;
+      if (parent) parent.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">calendar_month</span> ' + dateStr;
+    }
+    const venueSpan = document.querySelectorAll('.text-muted')[1];
+    if (venueSpan) {
+      venueSpan.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">location_on</span> ' + (evt.venue || '');
+    }
+    const descCard = document.querySelector('.card p');
+    if (descCard) descCard.textContent = evt.description || '';
   }
-  const venueSpan = document.querySelectorAll('.text-muted')[1];
-  if (venueSpan) {
-    venueSpan.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--color-primary);">location_on</span> ' + (evt.venue || '');
+
+  // Cargar desde el backend; si falla, desde localStorage
+  if (typeof Api !== 'undefined') {
+    Api.getEvento(eventId)
+      .then(applyEvent)
+      .catch(() => {
+        const events = JSON.parse(localStorage.getItem('astro_events') || '[]');
+        const evt = events.find(e => e.id === eventId);
+        if (evt) applyEvent(evt);
+      });
+  } else {
+    const events = JSON.parse(localStorage.getItem('astro_events') || '[]');
+    const evt = events.find(e => e.id === eventId);
+    if (evt) applyEvent(evt);
   }
-  const descCard = document.querySelector('.card p');
-  if (descCard) descCard.textContent = evt.description || '';
 })();
 </script>
 </body>

@@ -18,6 +18,48 @@ document.addEventListener("DOMContentLoaded", () => {
     onScroll();
   }
 
+  /* ---------- Footer: año dinámico ---------- */
+  document.querySelectorAll(".footer-year").forEach((el) => {
+    el.textContent = new Date().getFullYear();
+  });
+
+  /* ---------- Menú móvil (hamburguesa) ---------- */
+  const navToggleBtn = document.getElementById("nav-toggle");
+  const navLinksEl = document.querySelector(".nav-links");
+  const adminSidebarEl = document.querySelector(".admin-sidebar");
+  if (navToggleBtn && (navLinksEl || adminSidebarEl)) {
+    const drawerIsAdmin = !!adminSidebarEl;
+    const drawerEl = drawerIsAdmin ? adminSidebarEl : navLinksEl;
+    const toggleClass = drawerIsAdmin ? "open" : "nav-open";
+    const iconEl = navToggleBtn.querySelector(".material-symbols-outlined");
+    const closeMenu = () => {
+      if (drawerEl) drawerEl.classList.remove(toggleClass);
+      navToggleBtn.classList.remove("open");
+      navToggleBtn.setAttribute("aria-expanded", "false");
+      if (iconEl) iconEl.textContent = "menu";
+    };
+    navToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = drawerEl && drawerEl.classList.contains(toggleClass);
+      if (drawerEl) drawerEl.classList.toggle(toggleClass, !isOpen);
+      navToggleBtn.classList.toggle("open", !isOpen);
+      navToggleBtn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+      if (iconEl) iconEl.textContent = isOpen ? "menu" : "close";
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeMenu();
+    });
+    document.addEventListener("click", (e) => {
+      const isOpen = drawerEl && drawerEl.classList.contains(toggleClass);
+      if (isOpen && !e.target.closest(drawerIsAdmin ? ".admin-sidebar" : ".nav-links") && !e.target.closest("#nav-toggle")) {
+        closeMenu();
+      }
+    });
+    if (drawerEl) {
+      drawerEl.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
+    }
+  }
+
   /* ---------- Mostrar/ocultar contraseña ---------- */
   document.querySelectorAll(".toggle-visibility").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -56,6 +98,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------- Formularios con redirect ---------- */
   document.querySelectorAll("form[data-redirect]").forEach((form) => {
+    // Los formularios de login/registro los gestiona auth.js y se marcan
+    // con data-auth-handled; para ellos NO se fuerza el redirect de 700ms,
+    // evitando que se navegue aunque el login/registro haya fallado.
+    if (form.dataset.authHandled) return;
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');
@@ -108,6 +154,11 @@ document.addEventListener("DOMContentLoaded", () => {
       general: parseInt(evMain.dataset.priceGeneral) || 1800
     } : { platino: 4500, vip: 3200, general: 1800 };
     const TAKEN_SEATS = new Set(["A3","A4","B2","B5","C1","C8","D4","D5","E6","F3","F7","G2","G9","H1","H5","H10","I4","I6"]);
+    // Sumar los asientos vendidos/reservados que vienen del backend (Neon)
+    try {
+      const extra = evMain ? JSON.parse(evMain.dataset.takenSeats || "[]") : [];
+      if (Array.isArray(extra)) extra.forEach(id => TAKEN_SEATS.add(id));
+    } catch (_) {}
     const selectedSeats = new Map();
 
     function buildSeatGrid(container, zone, rows, cols) {
@@ -235,6 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const fee = Math.round(subtotal * 0.05);
         const purchase = {
           event: {
+            id: main.dataset.eventId,
             name: main.dataset.eventName,
             img: main.dataset.eventImg,
             date: main.dataset.eventDate,
@@ -462,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
      HISTORY — Save & Render Purchase History
      ============================================================ */
 
-  /* ---- Save completed purchase to astro_history (localStorage) ---- */
+  /* ---- Save completed purchase to backend + localStorage ---- */
   function savePurchaseToHistory(purchase) {
     const history = JSON.parse(localStorage.getItem('astro_history') || '[]');
     if (!purchase.purchasedAt) purchase.purchasedAt = new Date().toISOString();
@@ -474,6 +526,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!exists && purchase.payment) {
       history.unshift(purchase);
       localStorage.setItem('astro_history', JSON.stringify(history));
+    }
+
+    // Enviar la compra al backend para guardarla en Neon
+    if (typeof Api !== "undefined" && purchase.payment) {
+      Api.crearOrden({
+        eventoId: purchase.event.id,
+        seats: purchase.seats,
+        pricing: purchase.pricing,
+        payment: {
+          method: purchase.payment.method,
+          cardBrand: purchase.payment.cardBrand,
+          cardLast4: purchase.payment.cardLast4,
+          cardHolder: purchase.payment.cardHolder,
+          transactionId: purchase.payment.transactionId,
+          reservationCode: purchase.payment.reservationCode
+        },
+        purchasedAt: purchase.purchasedAt
+      }).catch((err) => {
+        console.warn("No se pudo guardar la compra en el backend:", err.message);
+      });
     }
   }
 
@@ -532,10 +604,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ---- History page population ---- */
-  if (document.getElementById('purchase-list')) {
-    let history = JSON.parse(localStorage.getItem('astro_history') || '[]');
+  (async function loadHistory() {
+    if (!document.getElementById('purchase-list')) return;
 
-    // Seed demo data if empty
+    let history = [];
+
+    // Cargar compras reales desde el backend (Neon)
+    try {
+      if (typeof Api !== "undefined") {
+        const compras = await Api.getMisCompras();
+        if (compras.length) history = compras.map(p => ({
+          ...p,
+          event: {
+            ...p.event,
+            date: formatEventDate(p.event),
+          }
+        }));
+      }
+    } catch (_) { history = []; }
+
+    // Fallback a localStorage si no hay backend
+    if (!history.length) {
+      history = JSON.parse(localStorage.getItem('astro_history') || '[]');
+    }
+
+    function formatEventDate(evt) {
+      if (!evt || !evt.date) return evt && evt.date;
+      // El backend devuelve "YYYY-MM-DD"; lo mostramos en formato legible
+      if (/^\d{4}-\d{2}-\d{2}$/.test(evt.date)) {
+        const d = new Date(evt.date + 'T12:00:00');
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+      }
+      return evt.date;
+    }
+
+    // Seed demo data if empty (solo si no hay nada en ninguna parte)
     if (history.length === 0) {
       const now = new Date();
       const demoData = [
@@ -739,7 +844,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
     }
-  }
+  })();
 
   /* ---- Re-render history on language change ---- */
   const langBtn = document.getElementById('lang-btn');
@@ -1001,10 +1106,23 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ---- Catalog render (runs on any page) ----
-  function renderCatalogEvents() {
+  async function renderCatalogEvents() {
     const grid = document.getElementById("catalog-events");
     if (!grid) return;
-    const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+
+    // Intentar cargar desde el backend (Neon); si no está disponible,
+    // usar los eventos guardados en localStorage como respaldo.
+    let events = [];
+    try {
+      if (typeof Api !== "undefined") {
+        events = await Api.getEventos("published");
+      }
+    } catch (_) {
+      events = [];
+    }
+    if (!events.length) {
+      events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+    }
     const published = events.filter(e => e.status === "published" || !e.status);
 
     // Remove previously inserted dynamic cards
@@ -1078,7 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let editingEventId = null;
 
   // ---- Navigation ----
-  document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
+  document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach(a => {
     a.addEventListener("click", (e) => {
       const id = a.getAttribute("href").slice(1);
       if (id === "crear-evento") {
@@ -1591,6 +1709,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     localStorage.setItem("astro_events", JSON.stringify(events));
     renderAdminEvents();
+
+    // Guardar también en el backend (Neon)
+    if (typeof Api !== "undefined") {
+      const exists = idx !== -1;
+      const p = exists
+        ? Api.actualizarEvento(eventData.id, eventData)
+        : Api.crearEvento(eventData);
+      p.then(() => {
+        showToast(t('admin.ev_published_toast'));
+      }).catch((err) => {
+        console.warn("No se pudo guardar en el backend:", err.message);
+      });
+    }
   }
 
   if (ev.publishBtn) {
@@ -1669,10 +1800,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---- Render admin events ----
-  function renderAdminEvents() {
+  async function renderAdminEvents() {
     const grid = document.getElementById("events-grid");
     if (!grid) return;
-    const events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+
+    let events = [];
+    try {
+      if (typeof Api !== "undefined") {
+        events = await Api.getEventos();
+      }
+    } catch (_) {
+      events = [];
+    }
+    if (!events.length) {
+      events = JSON.parse(localStorage.getItem("astro_events") || "[]");
+    }
+
     const createBtn = grid.querySelector('[data-open-event-modal]:last-child');
     grid.querySelectorAll(".event-card").forEach(c => c.remove());
 
@@ -1893,10 +2036,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------- Navbar activo: highlight según scroll ---------- */
-  const sections = document.querySelectorAll("main section[id]");
+  const sections = document.querySelectorAll("#resumen, #eventos, #usuarios, #transacciones");
   if (sections.length) {
     const navLinksMap = {};
-    document.querySelectorAll('.nav-links a[href^="#"]').forEach((a) => {
+    document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach((a) => {
       navLinksMap[a.getAttribute("href")] = a;
     });
     window.addEventListener("scroll", () => {
@@ -1910,6 +2053,75 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navLinksMap[current]) navLinksMap[current].classList.add("active");
     }, { passive: true });
   }
+
+  /* ============================================================
+     FASE 3.1 — Tema claro/oscuro/auto + chip usuario (panel admin)
+     ============================================================ */
+  const isAdminPage = document.body.classList.contains("admin-page");
+  const themeRoot = document.documentElement;
+
+  const resolveTheme = (pref) => {
+    if (pref === "light" || pref === "dark") return pref;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  };
+  const persistTheme = (pref) => {
+    try { localStorage.setItem("astro_theme", pref); } catch (e) {}
+    themeRoot.setAttribute("data-theme", resolveTheme(pref));
+  };
+
+  const themeButtons = document.querySelectorAll(".theme-opt");
+  if (themeButtons.length) {
+    let current = (() => { try { return localStorage.getItem("astro_theme") || "auto"; } catch (e) { return "auto"; } })();
+    const sync = (pref) => {
+      themeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeValue === pref)));
+    };
+    sync(current);
+    themeButtons.forEach((b) => {
+      b.addEventListener("click", () => {
+        current = b.dataset.themeValue;
+        persistTheme(current);
+        sync(current);
+      });
+    });
+    const media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    if (media) {
+      const onSystemChange = () => { if (current === "auto") themeRoot.setAttribute("data-theme", resolveTheme("auto")); };
+      if (media.addEventListener) media.addEventListener("change", onSystemChange);
+      else if (media.addListener) media.addListener(onSystemChange);
+    }
+  }
+
+  /* Chip de usuario y bienvenida desde la sesión */
+  if (isAdminPage && typeof Auth !== "undefined") {
+    const session = Auth.getSession();
+    const nameEl = document.getElementById("admin-user-name");
+    const emailEl = document.getElementById("admin-user-email");
+    const avatarEl = document.getElementById("admin-user-avatar");
+    const welcomeEl = document.getElementById("admin-welcome-name");
+    if (session) {
+      if (nameEl) nameEl.textContent = session.nombre || "Admin";
+      if (emailEl) emailEl.textContent = session.email || "";
+      if (welcomeEl) welcomeEl.textContent = session.nombre || "Admin";
+      if (avatarEl) {
+        if (session.avatar && /^(https?:|data:|\/)/.test(session.avatar)) {
+          avatarEl.textContent = "";
+          avatarEl.style.backgroundImage = "url(" + session.avatar + ")";
+          avatarEl.style.backgroundSize = "cover";
+          avatarEl.style.backgroundPosition = "center";
+        } else {
+          avatarEl.textContent = ((session.nombre || "A")[0] || "A").toUpperCase();
+        }
+      }
+    }
+  }
+
+  /* Enlaces próximamente (Reportes / Configuración) */
+  document.querySelectorAll("[data-coming-soon]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      showToast(typeof I18n !== "undefined" ? I18n.t("admin.coming_soon") : "Disponible próximamente");
+    });
+  });
 
 });
 
@@ -1946,23 +2158,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .cursor-glow { display: none; }
     }
 
-    @media (max-width: 700px) {
-      .navbar .container {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-      }
-      .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 2px;
-        width: 100%;
-      }
-      .nav-links a {
-        font-size: 0.72rem;
-        padding: 6px 12px;
-      }
-    }
     @media (max-width: 560px) {
       .zone-row { flex-wrap: wrap; }
       .zone-row .field { flex: 1 1 calc(50% - 10px) !important; min-width: 0; }
