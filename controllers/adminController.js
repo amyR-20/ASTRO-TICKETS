@@ -123,7 +123,7 @@ async function reportePdf(req, res) {
         COUNT(*) FILTER (WHERE estado IN ('paid','completed','completada')) transacciones,
         (SELECT COUNT(*) FROM entradas) boletos,
         (SELECT COUNT(*) FROM usuarios) usuarios,
-        (SELECT COUNT(*) FROM eventos WHERE estado='published') eventos_activos`),
+        (SELECT COUNT(*) FROM eventos WHERE estado='published') eventos_activos FROM ordenes`),
       pool.query(`SELECT e.id,e.nombre,e.fecha,e.hora,e.lugar,e.estado,
         f.id funcion_id,f.fecha funcion_fecha,f.hora funcion_hora,f.sala,f.estado funcion_estado,
         COUNT(DISTINCT a.id)::int capacidad,

@@ -4283,6 +4283,8 @@ html[data-theme="dark"] .cvv-box {
 }
 
 /* ---------- Panel admin (adicionales) ---------- */
+html[data-theme="dark"] body.admin-page .ev-creator {
+  background: #0f1326;}
 html[data-theme="dark"] body.admin-page .admin-sidebar {
   background: rgba(15, 19, 38, 0.92);
   border-color: rgba(148, 163, 184, 0.12);

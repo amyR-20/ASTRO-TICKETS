@@ -15,7 +15,7 @@ async function crearIntento(req, res) {
     const pago = await stripeService.crearIntento({ usuarioId: req.usuario.id, funcionId, email: usuario?.email });
     return res.status(201).json(pago);
   } catch (error) {
-    console.error("Error creando PaymentIntent:", error.type || error.message);
+    console.error("Error creando PaymentIntent:", error.type, "-", error.message);
     return res.status(error.status || 500).json({ error: error.status ? error.message : "Stripe no pudo preparar el pago." });
   }
 }

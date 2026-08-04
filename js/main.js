@@ -2278,7 +2278,7 @@ document.addEventListener("DOMContentLoaded", () => {
       events = JSON.parse(localStorage.getItem("astro_events") || "[]");
     }
 
-    const createBtn = grid.querySelector('[data-open-event-modal]:last-child');
+    const createBtn = grid.querySelector(':scope > [data-open-event-modal]');
     grid.querySelectorAll(".event-card").forEach(c => c.remove());
 
     events.forEach(evt => {
@@ -2331,6 +2331,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const revealTargets = document.querySelectorAll(
     ".card, .glass-panel, .stat-card, .event-card, .section-head, .email-preview, .steps"
   );
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (revealTargets.length && !reduceMotion) {
     const viewportH = window.innerHeight || document.documentElement.clientHeight;
@@ -2424,7 +2425,7 @@ document.addEventListener("DOMContentLoaded", () => {
   glow.className = "cursor-glow";
   document.body.appendChild(glow);
 
-  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  
   let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
   let glowRaf = 0;
   let glowIdleTimer = 0;
@@ -2569,7 +2570,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------- Navbar activo: highlight según scroll (throttle + offsets cacheados) ---------- */
-  const sections = document.querySelectorAll("#resumen, #eventos, #usuarios, #transacciones");
+  const sections = document.querySelectorAll("#resumen, #eventos, #usuarios, #transacciones, #reembolsos, #validar, #reportes");
   if (sections.length) {
     const navLinksMap = {};
     document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach((a) => {
@@ -2580,6 +2581,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     let sectionOffsets = [];
     refreshOffsets();
+    setTimeout(refreshOffsets, 1500);
     window.addEventListener("resize", refreshOffsets, { passive: true });
 
     let navRaf = 0;
