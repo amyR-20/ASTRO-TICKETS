@@ -117,7 +117,7 @@ async function reportePdfLegacy(req,res) {
 
 async function reportePdf(req, res) {
   try {
-    const [statsResult, eventosResult, usuariosResult, txnsResult] = await Promise.all([
+    const [statsResult, eventosResult, usuariosResult, txnsResult, listadoResult, resumenResult] = await Promise.all([
       pool.query(`SELECT
         COALESCE(SUM(total) FILTER (WHERE estado IN ('paid','completed','completada')),0) ingresos,
         COUNT(*) FILTER (WHERE estado IN ('paid','completed','completada')) transacciones,
@@ -133,18 +133,46 @@ async function reportePdf(req, res) {
         FROM eventos e LEFT JOIN funciones_evento f ON f.evento_id=e.id
         LEFT JOIN asientos a ON a.funcion_id=f.id
         GROUP BY e.id,f.id ORDER BY e.fecha,e.nombre,f.fecha,f.hora`),
-      pool.query(`SELECT username,nombre,email,role,estado,ultimo_login FROM usuarios ORDER BY ultimo_login DESC NULLS LAST LIMIT 18`),
+      pool.query(`SELECT id,username,nombre,email,role,estado,ultimo_login FROM usuarios ORDER BY ultimo_login DESC NULLS LAST LIMIT 18`),
       pool.query(`SELECT o.transaccion,e.nombre evento,u.username,o.total,o.estado,o.creada_en
         FROM ordenes o JOIN eventos e ON e.id=o.evento_id LEFT JOIN usuarios u ON u.id=o.usuario_id
-        ORDER BY o.creada_en DESC LIMIT 18`)
+        ORDER BY o.creada_en DESC LIMIT 18`),
+      pool.query(`SELECT e.id AS evento_id, e.nombre, e.lugar, e.ciudad, e.estado AS evento_estado,
+        COALESCE((SELECT f.fecha FROM funciones_evento f WHERE f.evento_id = e.id ORDER BY f.fecha, f.hora LIMIT 1), e.fecha) AS fecha,
+        COALESCE((SELECT f.hora FROM funciones_evento f WHERE f.evento_id = e.id ORDER BY f.fecha, f.hora LIMIT 1), e.hora) AS hora,
+        en.asiento_id, en.zona, en.precio, en.estado AS boleto_estado, en.codigo,
+        a.fila, a.columna
+        FROM eventos e
+        LEFT JOIN entradas en ON en.evento_id = e.id
+        LEFT JOIN asientos a ON a.asiento_id = en.asiento_id AND a.funcion_id = en.funcion_id
+        ORDER BY e.nombre, e.fecha, a.fila, a.columna`),
+      pool.query(`SELECT e.id AS evento_id, e.nombre,
+        COALESCE((SELECT COUNT(*) FROM asientos a JOIN funciones_evento f ON f.id = a.funcion_id
+                  WHERE f.evento_id = e.id), 0)::int AS boletos_totales,
+        COALESCE((SELECT COUNT(*) FROM asientos a JOIN funciones_evento f ON f.id = a.funcion_id
+                  WHERE f.evento_id = e.id AND a.estado = 'available'), 0)::int AS disponibles,
+        COALESCE((SELECT COUNT(*) FROM asientos a JOIN funciones_evento f ON f.id = a.funcion_id
+                  WHERE f.evento_id = e.id AND a.estado = 'sold'), 0)::int AS boletos,
+        COUNT(DISTINCT en.id) FILTER (WHERE o.estado IN ('paid','completed','completada'))::int AS pagados,
+        COALESCE(ROUND(AVG(en.precio) FILTER (WHERE o.estado IN ('paid','completed','completada')), 2), 0)::numeric AS precio_promedio,
+        COALESCE((SELECT SUM(o2.total) FROM ordenes o2
+                  WHERE o2.evento_id = e.id AND o2.estado IN ('paid','completed','completada')), 0)::numeric AS ingresos
+        FROM eventos e
+        LEFT JOIN entradas en ON en.evento_id = e.id
+        LEFT JOIN ordenes o ON o.id = en.orden_id
+        GROUP BY e.id, e.nombre
+        ORDER BY ingresos DESC, e.nombre`)
     ]);
     const stats = statsResult.rows[0];
     const eventos = eventosResult.rows;
     const usuarios = usuariosResult.rows;
     const txns = txnsResult.rows;
-    const qrBuffers = new Map();
-    for (const item of eventos) {
-      if (item.funcion_id) qrBuffers.set(String(item.funcion_id), await QRCode.toBuffer(`ASTRO-FUNCION:${item.funcion_id}`, { width: 180, margin: 1, color: { dark: '#24134f', light: '#ffffff' } }));
+    const listadoEventos = listadoResult.rows;
+    const resumenIngresos = resumenResult.rows;
+    const qrEventos = new Map();
+    for (const item of listadoEventos) {
+      const evId = String(item.evento_id);
+      if (!qrEventos.has(evId)) qrEventos.set(evId, await QRCode.toBuffer(`ASTRO-EVENTO:${evId}`, { width: 180, margin: 1, color: { dark: '#24134f', light: '#ffffff' } }));
     }
 
     res.set({ "Content-Type":"application/pdf", "Content-Disposition":"attachment; filename=astro-tickets_reporte-ejecutivo.pdf", "Cache-Control":"private, no-store" });
@@ -169,27 +197,90 @@ async function reportePdf(req, res) {
     cards.forEach((card,i)=>{const x=42+i*128;doc.save().roundedRect(x,cardY,116,60,10).fill(i===0?purple:pale).restore();doc.fillColor(i===0?'#ded5ff':muted).font('Helvetica-Bold').fontSize(7).text(card[0],x+12,cardY+13,{width:92});doc.fillColor(i===0?'#fff':dark).fontSize(i===0?12:16).text(String(card[1]),x+12,cardY+29,{width:94});});
     doc.y=cardY+82;
 
-    sectionTitle('Eventos y funciones', 'Cada QR identifica la función dentro del reporte operativo.');
+    sectionTitle('Eventos y funciones', 'Reporte de boletos disponibles por evento y su estado operativo.');
     if (!eventos.length) doc.fillColor(muted).fontSize(9).text('No hay funciones registradas.');
-    for (const item of eventos) {
-      ensure(112); const y=doc.y;
-      doc.save().roundedRect(42,y,W,98,10).lineWidth(1).strokeColor(line).stroke().restore();
-      doc.fillColor(dark).font('Helvetica-Bold').fontSize(11).text(item.nombre,56,y+13,{width:330});
-      doc.fillColor(muted).font('Helvetica').fontSize(8).text(`${date(item.funcion_fecha||item.fecha)}  |  ${String(item.funcion_hora||item.hora||'').slice(0,5)}  |  ${item.sala||item.lugar||'-'}`,56,y+31,{width:350});
-      doc.fillColor(purple).font('Helvetica-Bold').fontSize(7.5).text(`FUNCIÓN #${item.funcion_id||'-'}`,56,y+49);
-      doc.fillColor(dark).font('Helvetica').fontSize(8).text(`Capacidad: ${item.capacidad}    Vendidos: ${item.vendidos}    Disponibles: ${item.disponibles}`,56,y+65,{width:330});
-      doc.fillColor(green).font('Helvetica-Bold').fontSize(9).text(money(item.ingresos),56,y+80,{width:180});
-      const qr=qrBuffers.get(String(item.funcion_id)); if(qr) doc.image(qr,461,y+12,{fit:[76,76]});
-      doc.y=y+110;
+    const efWidths=[96,115,72,66,82,62];
+    ensure(34);
+    {
+      const y=doc.y;
+      doc.save().roundedRect(42,y,W,24,6).fill(purple).restore();
+      let hx=48;
+      ['CÓDIGO','EVENTO','CAPACIDAD','VENDIDOS','DISPONIBLES','ESTADO'].forEach((c,i)=>{doc.fillColor('#fff').font('Helvetica-Bold').fontSize(6.5).text(c,hx,y+8,{width:efWidths[i]-8,height:10,lineBreak:false});hx+=efWidths[i];});
+      doc.y=y+30;
     }
+    eventos.forEach((item,i)=>{
+      ensure(42); const y=doc.y;
+      if(i%2===0) doc.save().rect(42,y-3,W,36).fill('#faf9fd').restore();
+      let x=48;
+      doc.fillColor(purple).font('Helvetica-Bold').fontSize(6.5).text(String(item.id||item.evento_id||'-').toUpperCase(),x,y+10,{width:efWidths[0]-8,height:12,ellipsis:true,lineBreak:false});
+      x+=efWidths[0];
+      doc.fillColor(dark).font('Helvetica-Bold').fontSize(6.5).text(item.nombre,x,y+4,{width:efWidths[1]-8,height:9,ellipsis:true,lineBreak:false});
+      doc.fillColor(muted).font('Helvetica').fontSize(5.8).text(`${date(item.funcion_fecha||item.fecha)} ${String(item.funcion_hora||item.hora||'').slice(0,5)} | F#${item.funcion_id||'-'}`,x,y+15,{width:efWidths[1]-8,height:8,ellipsis:true,lineBreak:false});
+      x+=efWidths[1];
+      [item.capacidad,item.vendidos,item.disponibles].forEach((v,vi)=>{doc.fillColor(dark).font('Helvetica').fontSize(6.5).text(String(v??'-'),x,y+10,{width:efWidths[2+vi]-8,height:12,ellipsis:true,lineBreak:false});x+=efWidths[2+vi];});
+      const estado=item.disponibles>0?'ACTIVO':'AGOTADO';
+      doc.fillColor(estado==='ACTIVO'?green:'#c0392b').font('Helvetica-Bold').fontSize(6.5).text(estado,x,y+10,{width:efWidths[5]-8,height:12,ellipsis:true,lineBreak:false});
+      doc.y=y+36;
+    });
+
+    sectionTitle('Listado de Eventos','Presenta el detalle de los eventos registrados en el sistema junto con la información necesaria para su identificación y control.');
+    const porEvento = new Map();
+    for (const t of listadoEventos) {
+      if (!porEvento.has(t.evento_id)) porEvento.set(t.evento_id, []);
+      porEvento.get(t.evento_id).push(t);
+    }
+    for (const [evId, boletos] of porEvento) {
+      const ev = boletos[0];
+      ensure(150);
+      const ey=doc.y;
+      doc.save().roundedRect(42,ey,W,92,10).lineWidth(1).strokeColor(line).stroke().restore();
+      doc.fillColor(purple).font('Helvetica-Bold').fontSize(8.5).text(String(ev.evento_id).toUpperCase(),56,ey+11,{width:330});
+      doc.fillColor(dark).font('Helvetica-Bold').fontSize(11).text(ev.nombre,56,ey+23,{width:330});
+      doc.fillColor(muted).font('Helvetica').fontSize(8).text(`${date(ev.fecha)}  |  ${String(ev.hora||'').slice(0,5)}  |  ${[ev.lugar,ev.ciudad].filter(Boolean).join(' · ')}`,56,ey+40,{width:350});
+      doc.fillColor(green).font('Helvetica-Bold').fontSize(7.5).text(`ESTADO: ${String(ev.evento_estado||'').toUpperCase()}`,56,ey+56);
+      doc.fillColor(dark).font('Helvetica').fontSize(8).text(`Boletos emitidos: ${boletos.length}`,56,ey+68,{width:200});
+      const qrEv=qrEventos.get(String(evId)); if(qrEv) doc.image(qrEv,461,ey+8,{fit:[76,76]});
+      doc.y=ey+104;
+      const leWidths=[70,50,90,80,70];
+      tableHeader(['SECCIÓN','FILA','PRECIO','ESTADO','CÓDIGO'],leWidths);
+      boletos.forEach((b,i)=>tableRow([b.zona||'-',b.fila||'-',money(b.precio),b.boleto_estado||'-',b.codigo||'-'],leWidths,i));
+    }
+
+    sectionTitle('Resumen de Ingresos','Presenta un resumen consolidado de las ventas e ingresos generados por los eventos registrados en el sistema.');
+    const totBoletos = resumenIngresos.reduce((a,r)=>a+Number(r.boletos),0);
+    const totTotales = resumenIngresos.reduce((a,r)=>a+Number(r.boletos_totales),0);
+    const totDisp = resumenIngresos.reduce((a,r)=>a+Number(r.disponibles),0);
+    const totIngresos = resumenIngresos.reduce((a,r)=>a+Number(r.ingresos),0);
+    const totPagados = resumenIngresos.reduce((a,r)=>a+Number(r.pagados),0);
+    const totPrecio = totPagados ? (totIngresos/totPagados) : 0;
+    const incCards=[['EVENTOS REGISTRADOS',resumenIngresos.length],['BOLETOS VENDIDOS',totBoletos],['DISPONIBLES',totDisp],['INGRESO ACUMULADO',money(totIngresos)],['PRECIO PROMEDIO',money(totPrecio)]];
+    const incY=doc.y;
+    incCards.forEach((card,i)=>{const x=42+i*103;doc.save().roundedRect(x,incY,97,60,10).fill(i===3?purple:pale).restore();doc.fillColor(i===3?'#ded5ff':muted).font('Helvetica-Bold').fontSize(6.5).text(card[0],x+10,incY+13,{width:77});doc.fillColor(i===3?'#fff':dark).fontSize(i===3||i===4?10:13).text(String(card[1]),x+10,incY+28,{width:77});});
+    doc.y=incY+82;
+    const riWidths=[100,116,70,53,42,73,57];
+    ensure(34);
+    {
+      const y=doc.y;
+      doc.save().roundedRect(42,y,W,24,6).fill(purple).restore();
+      let hx=48;
+      ['CÓDIGO','EVENTO','BOLETOS TOTALES','DISPONIBLES','VENDIDOS','PRECIO PROMEDIO','INGRESOS'].forEach((c,i)=>{doc.fillColor('#fff').font('Helvetica-Bold').fontSize(6.5).text(c,hx,y+8,{width:riWidths[i]-6,height:10,lineBreak:false});hx+=riWidths[i];});
+      doc.y=y+30;
+    }
+    resumenIngresos.forEach((r,i)=>tableRow([String(r.evento_id).toUpperCase(),r.nombre,r.boletos_totales,r.disponibles,r.boletos,money(r.precio_promedio),money(r.ingresos)],riWidths,i));
+    ensure(30);
+    const ty=doc.y;
+    doc.save().roundedRect(42,ty,W,26,6).fill(dark).restore();
+    let tx=48;
+    ['TOTAL GENERAL','',totTotales,totDisp,totBoletos,money(totPrecio),money(totIngresos)].forEach((v,i)=>{doc.fillColor('#fff').font('Helvetica-Bold').fontSize(8).text(String(v),tx,ty+8,{width:riWidths[i]-8,height:12,lineBreak:false});tx+=riWidths[i];});
+    doc.y=ty+32;
 
     sectionTitle('Transacciones recientes','Pagos y órdenes más recientes del sistema.',70+Math.min(txns.length,20)*24);
     const txWidths=[86,145,72,70,70,68]; tableHeader(['TRANSACCIÓN','EVENTO','USUARIO','TOTAL','ESTADO','FECHA'],txWidths);
     txns.forEach((t,i)=>tableRow([t.transaccion,t.evento,t.username,money(t.total),t.estado,date(t.creada_en)],txWidths,i));
 
     sectionTitle('Usuarios y administradores','Actividad reciente y estado de las cuentas.',70+Math.min(usuarios.length,20)*24);
-    const userWidths=[74,100,157,56,56,68]; tableHeader(['USUARIO','NOMBRE','CORREO','ROL','ESTADO','ACCESO'],userWidths);
-    usuarios.forEach((u,i)=>tableRow([u.username,u.nombre,u.email,u.role,u.estado,date(u.ultimo_login)],userWidths,i));
+    const userWidths=[60,56,90,130,50,50,75]; tableHeader(['CÓDIGO','USUARIO','NOMBRE','CORREO','ROL','ESTADO','ACCESO'],userWidths);
+    usuarios.forEach((u,i)=>tableRow([`USR-${String(u.id).padStart(4,'0')}`,u.username,u.nombre,u.email,u.role,u.estado,date(u.ultimo_login)],userWidths,i));
 
     const range=doc.bufferedPageRange();
     for(let i=0;i<range.count;i++){doc.switchToPage(i);doc.save().moveTo(42,783).lineTo(553,783).strokeColor(line).stroke();doc.fillColor(muted).font('Helvetica').fontSize(7).text('Astro Tickets - reporte interno confidencial',42,790,{width:360,lineBreak:false});doc.text(`${i+1} / ${range.count}`,480,790,{width:70,align:'right',lineBreak:false});doc.restore();}

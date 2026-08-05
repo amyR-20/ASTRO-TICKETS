@@ -28686,3 +28686,741 @@ SQL ejecutado {
   duration: 528,
   rows: 1
 }
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 479,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 137,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 62,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 864,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 947,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 942,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 101,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 595,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 426,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 700,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 64,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 65,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1019,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1065,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1042,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 83,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 288,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 557,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 1424,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 84,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 104,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1890,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 2156,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 2166,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 93,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 287,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 503,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 830,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 69,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 74,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1098,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1115,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1180,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 68,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 157,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 294,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 62,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 62,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 69,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 426,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 412,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 413,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 86,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 293,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 380,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 1211,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 121,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 100,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 103,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 457,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 459,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 494,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 651,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 73,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 134,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 707,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 699,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 77,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 106,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 87,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 549,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 566,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 573,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, estado, ultimo_login, creado_en\n' +
+    '    FROM usuarios\n' +
+    '    ORDER BY creado_en DESC\n' +
+    '    LIMIT $1\n' +
+    '  ',
+  duration: 246,
+  rows: 20
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 373,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, password_hash, role, avatar, avatar_url, bio, estado, creado_en, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE email = $1\n' +
+    '  ',
+  duration: 509,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    INSERT INTO accesos_usuarios (usuario_id, email_intentado, exitoso, metodo, motivo_fallo, ip, user_agent)\n' +
+    '    VALUES ($1, $2, $3, $4, $5, $6, $7)\n' +
+    '  ',
+  duration: 116,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    UPDATE usuarios SET ultimo_login = now(), updated_at = now() WHERE id = $1\n' +
+    '  ',
+  duration: 104,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 97,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 71,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 130,
+  rows: 7
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 704,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 122,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 106,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 102,
+  rows: 7
+}
+SQL ejecutado { text: 'SELECT * FROM eventos WHERE id = $1', duration: 165, rows: 1 }
+SQL ejecutado {
+  text: 'SELECT * FROM zonas WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY id',
+  duration: 98,
+  rows: 3
+}
+SQL ejecutado {
+  text: 'SELECT * FROM asientos WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY fila, columna',
+  duration: 209,
+  rows: 144
+}
+SQL ejecutado {
+  text: 'SELECT ar.id, ar.nombre, ar.genero\n' +
+    '     FROM evento_artistas ea\n' +
+    '     JOIN artistas ar ON ar.id = ea.artista_id\n' +
+    '     WHERE ea.evento_id = $1\n' +
+    '     ORDER BY ea.posicion ASC, ar.nombre ASC',
+  duration: 101,
+  rows: 0
+}
+SQL ejecutado { text: 'SELECT * FROM eventos WHERE id = $1', duration: 70, rows: 1 }
+SQL ejecutado {
+  text: 'SELECT * FROM zonas WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY id',
+  duration: 129,
+  rows: 3
+}
+SQL ejecutado {
+  text: 'SELECT * FROM asientos WHERE evento_id = $1 AND funcion_id IS NULL ORDER BY fila, columna',
+  duration: 205,
+  rows: 144
+}
+SQL ejecutado {
+  text: 'SELECT ar.id, ar.nombre, ar.genero\n' +
+    '     FROM evento_artistas ea\n' +
+    '     JOIN artistas ar ON ar.id = ea.artista_id\n' +
+    '     WHERE ea.evento_id = $1\n' +
+    '     ORDER BY ea.posicion ASC, ar.nombre ASC',
+  duration: 103,
+  rows: 0
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 617,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 516,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 554,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT id, username, nombre, email, role, avatar, avatar_url, bio, estado, ultimo_login, creado_en, updated_at, idioma_pref, tema_pref\n' +
+    '    FROM usuarios\n' +
+    '    WHERE id = $1\n' +
+    '  ',
+  duration: 646,
+  rows: 1
+}
+SQL ejecutado {
+  text: '\n' +
+    '    SELECT * FROM eventos\n' +
+    '    WHERE ($1::text IS NULL OR estado = $1)\n' +
+    '    ORDER BY fecha ASC, hora ASC\n' +
+    '  ',
+  duration: 83,
+  rows: 7
+}
+SQL ejecutado {
+  text: 'SELECT * FROM zonas\n' +
+    '     WHERE evento_id = ANY($1::text[]) AND funcion_id IS NULL\n' +
+    '     ORDER BY id',
+  duration: 134,
+  rows: 24
+}
+SQL ejecutado {
+  text: 'SELECT * FROM funciones_evento\n' +
+    '     WHERE evento_id = ANY($1::text[])\n' +
+    '     ORDER BY evento_id, fecha ASC, hora ASC',
+  duration: 102,
+  rows: 7
+}
