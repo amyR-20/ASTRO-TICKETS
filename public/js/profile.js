@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("profile-name").value = usuario.nombre || ""; $("profile-username").value = usuario.username || ""; $("profile-email").value = usuario.email || ""; $("profile-bio").value = usuario.bio || "";
     $("profile-heading").textContent = usuario.nombre; $("profile-role").textContent = usuario.role === "admin" ? "Administrador" : "Usuario"; renderAvatar(usuario);
 
+<<<<<<< HEAD
     if ($("profile-email-chip")) $("profile-email-chip").textContent = usuario.email || "—";
     if ($("profile-username-chip")) $("profile-username-chip").textContent = "@" + (usuario.username || "usuario");
     if ($("profile-since")) {
@@ -35,6 +36,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       $("profile-since").textContent = f ? "Miembro desde " + f : (usuario.role === "admin" ? "Miembro del equipo" : "Miembro de Astro Tickets");
     }
     if ($("profile-bio-view") && usuario.bio) $("profile-bio-view").textContent = usuario.bio;
+=======
+    if (usuario.role === "admin") {
+      const seccion = $("reembolsos-seccion");
+      if (seccion) seccion.hidden = true;
+    }
+>>>>>>> 063cbcc71ddbfa039f42ba412aabef1962673a47
 
     const langSel = $("prefs-lang"), themeSel = $("prefs-theme");
     if (langSel) langSel.value = usuario.idioma_pref || "es";
