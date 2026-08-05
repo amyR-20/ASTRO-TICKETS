@@ -13,6 +13,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("profile-name").value = usuario.nombre || ""; $("profile-username").value = usuario.username || ""; $("profile-email").value = usuario.email || ""; $("profile-bio").value = usuario.bio || "";
     $("profile-heading").textContent = usuario.nombre; $("profile-role").textContent = usuario.role === "admin" ? "Administrador" : "Usuario"; renderAvatar(usuario);
 
+    if (usuario.role === "admin") {
+      const seccion = $("reembolsos-seccion");
+      if (seccion) seccion.hidden = true;
+    }
+
     const langSel = $("prefs-lang"), themeSel = $("prefs-theme");
     if (langSel) langSel.value = usuario.idioma_pref || "es";
     if (themeSel) themeSel.value = usuario.tema_pref || "auto";

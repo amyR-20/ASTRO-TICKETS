@@ -81,29 +81,32 @@ async function generarPdfEntrada(entrada) {
   doc.moveTo(40, yBoleta).lineTo(pageW - 40, yBoleta)
     .lineWidth(1.5).strokeColor(VIOLETA).stroke();
 
+  // ---- Código QR (geometría definida antes para ajustar el texto) ----
+  const qrSize = 150;
+  const qrX = pageW - 40 - qrSize;
+  const anchoEvento = qrX - 40 - 16;
+
   // ---- Bloque del evento ----
   doc.fillColor(INDIGO).font("Helvetica-Bold").fontSize(17)
-    .text(entrada.evento_nombre, 40, 128, { width: pageW - 200 });
+    .text(entrada.evento_nombre, 40, 128, { width: anchoEvento });
   doc.font("Helvetica").fontSize(10).fillColor(GRIS)
     .text(
       `${entrada.evento_categoria || "Evento"} · ${formatFecha(entrada.evento_fecha)} · ${formatHora(entrada.evento_hora)}`,
-      40, 154, { width: pageW - 200 }
+      40, 154, { width: anchoEvento }
     );
-  doc.text(`Lugar: ${entrada.evento_lugar || "Por confirmar"}`, 40, 172, { width: pageW - 200 });
-  doc.text(`Sala: ${entrada.funcion_sala || "Por confirmar"}`, 40, 188, { width: pageW - 200 });
+  doc.text(`Lugar: ${entrada.evento_lugar || "Por confirmar"}`, 40, 172, { width: anchoEvento });
+  doc.text(`Sala: ${entrada.funcion_sala || "Por confirmar"}`, 40, 188, { width: anchoEvento });
 
   // ---- Código QR ----
-  const qrSize = 150;
-  const qrX = pageW - 40 - qrSize;
   const qrY = 128;
   doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
   doc.font("Helvetica").fontSize(7).fillColor(GRIS)
     .text("ESCANEAR EN ACCESO", qrX, qrY + qrSize + 4, { width: qrSize, align: "center" });
 
-  // ---- Detalle del asiento ----
-  const yDetalle = 210;
+  // ---- Detalle del asiento (debajo del QR para no taparlo) ----
+  const yDetalle = qrY + qrSize + 18;
   doc.roundedRect(40, yDetalle, pageW - 80, 150, 8).fill("#FFFFFF");
-  doc.fillColor(VIOLETA).font("Helvetica-Bold").fontSize(10).text("DETALLE DEL ASIENTO", 58, 228);
+  doc.fillColor(VIOLETA).font("Helvetica-Bold").fontSize(10).text("DETALLE DEL ASIENTO", 58, yDetalle + 18);
 
   const detalleRows = [
     ["Zona", entrada.zona || "General"],
@@ -111,7 +114,7 @@ async function generarPdfEntrada(entrada) {
     ["Precio", formatRD(entrada.precio)],
     ["Estado", entrada.estado === "usada" ? "Ya utilizada" : "Válida"],
   ];
-  let yRow = 250;
+  let yRow = yDetalle + 40;
   for (const [label, valor] of detalleRows) {
     doc.fillColor(GRIS).font("Helvetica").fontSize(10).text(label, 58, yRow);
     doc.fillColor(INDIGO).font("Helvetica-Bold").fontSize(10.5).text(String(valor), 200, yRow);

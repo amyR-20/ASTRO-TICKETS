@@ -7,6 +7,7 @@
 const ordenModel = require("../models/ordenModel");
 const entradaModel = require("../models/entradaModel");
 const entradaService = require("../services/entradaService");
+const comprobanteService = require("../services/comprobanteService");
 const stripeService = require("../services/stripeService");
 
 /** POST /api/ordenes — crea una compra (requiere sesión). */
@@ -73,6 +74,35 @@ async function obtener(req, res) {
   }
 }
 
+/** GET /api/ordenes/:id/comprobante.pdf — descarga el comprobante de pago de la orden propia. */
+async function comprobantePdf(req, res) {
+  try {
+    const compras = await ordenModel.listarPorUsuario(req.usuario.id);
+    const orden = compras.find((compra) => String(compra.orderId) === String(req.params.id));
+    if (!orden) {
+      const todas = await ordenModel.listarTodas();
+      if (todas.some((o) => String(o.id) === String(req.params.id))) {
+        return res.status(403).json({ error: "No tienes acceso a esta orden." });
+      }
+      return res.status(404).json({ error: "Orden no encontrada para este usuario." });
+    }
+
+    let buffer;
+    try {
+      buffer = await comprobanteService.generarPdfComprobante(orden);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${comprobanteService.nombreArchivoComprobante(orden)}"`);
+    return res.send(buffer);
+  } catch (err) {
+    console.error("Error generando PDF del comprobante:", err);
+    return res.status(500).json({ error: "Error interno al generar el comprobante." });
+  }
+}
+
 /** POST /api/ordenes/:id/reenviar — reenvía todas las entradas de la orden propia. */
 async function reenviar(req, res) {
   try {
@@ -108,4 +138,4 @@ async function listar(req, res) {
   }
 }
 
-module.exports = { crear, misCompras, obtener, reenviar, listar };
+module.exports = { crear, misCompras, obtener, comprobantePdf, reenviar, listar };

@@ -563,7 +563,11 @@ document.addEventListener("DOMContentLoaded", () => {
      PURCHASE FLOW — pago.html & comprobante.html
      ============================================================ */
   const storedRaw = sessionStorage.getItem('astro_purchase');
-  if (storedRaw && !window.__stableFlow) {
+  // El flujo operativo (stable-flow.js) siempre lleva ?orden= (comprobante) o
+  // ?funcion= (pago). Si la URL lo indica, este bloque legacy no debe correr,
+  // aunque haya quedado un astro_purchase en sessionStorage de un flujo viejo.
+  const stableFlowUrl = /(^|[?&])(orden|funcion)=/.test(window.location.search);
+  if (storedRaw && !window.__stableFlow && !stableFlowUrl) {
     try {
       const purchase = JSON.parse(storedRaw);
 
@@ -1022,8 +1026,8 @@ document.addEventListener("DOMContentLoaded", () => {
               </span>
             </div>
             <div class="purchase-actions">
-              <button class="btn-purchase-download" data-action="download" data-index="${idx}">
-                <span class="material-symbols-outlined">download</span> ${I18n.t('history.download_pdf')}
+              <button class="btn-purchase-download" data-action="download" data-index="${idx}" data-order-id="${orderId}">
+                <span class="material-symbols-outlined">download</span> ${I18n.t('history.download_comprobante')}
               </button>
               <button class="btn-purchase-details" data-action="ticket" data-order-id="${orderId}">
                 <span class="material-symbols-outlined">confirmation_number</span> ${t('history.view_ticket')}
@@ -1068,16 +1072,15 @@ document.addEventListener("DOMContentLoaded", () => {
       listEl.querySelectorAll('[data-action="download"]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          const p = history[parseInt(btn.dataset.index)];
-          const codigos = (p.seats || []).map(s => s.codigo).filter(Boolean);
-          if (!codigos.length) {
-            alert(I18n.t('history.no_tickets_to_download') || 'No hay entradas para descargar.');
+          const orderId = btn.dataset.orderId;
+          if (!orderId) {
+            alert(I18n.t('history.no_tickets_to_download') || 'No hay comprobante para descargar.');
             return;
           }
           try {
-            for (const codigo of codigos) await Api.descargarPdfEntrada(codigo);
+            await Api.descargarPdfComprobante(orderId);
           } catch (err) {
-            alert(err.message || 'Error al descargar la entrada.');
+            alert(err.message || 'Error al descargar el comprobante.');
           }
         });
       });
@@ -1205,7 +1208,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       <div class="detail-actions">
         <button class="btn-purchase-download" data-detail-download>
-          <span class="material-symbols-outlined">download</span> ${t('history.download_pdf')}
+          <span class="material-symbols-outlined">download</span> ${t('history.download_comprobante')}
         </button>
         <button class="btn-purchase-details" data-detail-comprobante>
           <span class="material-symbols-outlined">confirmation_number</span> ${t('history.view_ticket')}
@@ -1213,15 +1216,14 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // Descargar los PDFs de esta compra
+    // Descargar el comprobante de pago de esta compra
     const dlBtn = detailContent.querySelector('[data-detail-download]');
     if (dlBtn) {
       dlBtn.addEventListener('click', async () => {
-        const codigos = (p.seats || []).map((s) => s.codigo).filter(Boolean);
-        if (!codigos.length) { alert('No hay entradas para descargar.'); return; }
+        if (!p.orderId) { alert('No se pudo identificar la orden. Actualiza tu historial.'); return; }
         try {
-          for (const codigo of codigos) await Api.descargarPdfEntrada(codigo);
-        } catch (err) { alert(err.message || 'Error al descargar las entradas.'); }
+          await Api.descargarPdfComprobante(p.orderId);
+        } catch (err) { alert(err.message || 'Error al descargar el comprobante.'); }
       });
     }
 
@@ -1566,6 +1568,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let evSelectedSeats = new Set();
   let evSeatTypes = JSON.parse(JSON.stringify(DEFAULT_TYPES));
   let editingEventId = null;
+  let recommendedQtysDone = false;
 
   // ---- Navigation ----
   document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach(a => {
@@ -1632,6 +1635,7 @@ document.addEventListener("DOMContentLoaded", () => {
     evSeats = [];
     evSelectedSeats.clear();
     evSeatTypes = JSON.parse(JSON.stringify(DEFAULT_TYPES));
+    recommendedQtysDone = false;
     setStatus("draft");
     ev.previewImg.src = "multimedia/logo.svg";
     ev.seatGrid.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
@@ -1661,6 +1665,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     ev.previewImg.src = event.image || "multimedia/logo.svg";
     setStatus(event.status || "draft");
+    // Al editar se conservan las cantidades guardadas; no se re-sugieren.
+    recommendedQtysDone = true;
     if (event.zones && event.zones.length) {
       evSeatTypes = event.zones.map(z => ({
         name: z.name,
@@ -1767,6 +1773,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderSeatGrid(ev.seatGrid, evSeats, numCols);
     renderSeatGrid(ev.assignGrid, evSeats, numCols);
+    if (!recommendedQtysDone && evSeatTypes.length) {
+      sugerirCantidades();
+      recommendedQtysDone = true;
+    }
     updateCapacity();
     updatePreview();
     updateProgress();
@@ -1847,6 +1857,47 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateCapacity() {
     const total = evSeats.length;
     if (ev.capacity) ev.capacity.value = total;
+    if (total > 0) {
+      const suma = evSeatTypes.reduce((s, t) => s + t.qty, 0);
+      if (suma > total) {
+        recortarZonas();
+        showToast("La capacidad cambió: las cantidades de zona se ajustaron a la capacidad total (" + total + " asientos).");
+      }
+    }
+  }
+
+  function recortarZonas() {
+    const limite = evSeats.length;
+    let usado = 0;
+    evSeatTypes.forEach((tipo) => {
+      if (usado >= limite) { tipo.qty = 0; return; }
+      if (tipo.qty > limite - usado) tipo.qty = limite - usado;
+      usado += tipo.qty;
+    });
+    renderTypes();
+  }
+
+  // Distribuye la capacidad total entre los tipos de asiento como cantidades
+  // recomendadas (proporcional a la cantidad original de cada zona).
+  function sugerirCantidades() {
+    const limite = evSeats.length;
+    if (!limite || !evSeatTypes.length) return;
+    const totalOriginal = evSeatTypes.reduce((s, t) => s + t.qty, 0);
+    if (totalOriginal <= 0) {
+      const base = Math.floor(limite / evSeatTypes.length);
+      const resto = limite - base * evSeatTypes.length;
+      evSeatTypes.forEach((t, i) => { t.qty = base + (i < resto ? 1 : 0); });
+    } else {
+      let asignado = 0;
+      evSeatTypes.forEach((t, i) => {
+        if (i === evSeatTypes.length - 1) { t.qty = limite - asignado; return; }
+        t.qty = Math.max(0, Math.floor((t.qty / totalOriginal) * limite));
+        asignado += t.qty;
+      });
+    }
+    renderTypes();
+    updatePricing();
+    updatePreview();
   }
 
   if (ev.genBtn) {
@@ -1890,7 +1941,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const priceInput = card.querySelector(".st-price-input");
       priceInput.addEventListener("input", () => { evSeatTypes[i].price = parseInt(priceInput.value) || 0; updatePricing(); updatePreview(); });
       const qtyInput = card.querySelector(".st-qty-input");
-      qtyInput.addEventListener("input", () => { evSeatTypes[i].qty = parseInt(qtyInput.value) || 0; updatePricing(); updatePreview(); });
+      qtyInput.addEventListener("input", () => {
+        let valor = parseInt(qtyInput.value) || 0;
+        if (valor < 0) valor = 0;
+        evSeatTypes[i].qty = valor;
+        if (evSeats.length > 0) {
+          const limite = evSeats.length;
+          const otras = evSeatTypes.reduce((sum, t, idx) => sum + (idx === i ? 0 : t.qty), 0);
+          const resto = Math.max(0, limite - otras);
+          if (evSeatTypes[i].qty > resto) {
+            evSeatTypes[i].qty = resto;
+            qtyInput.value = resto;
+            showToast("La cantidad no puede superar la capacidad total (" + limite + " asientos).");
+          }
+        }
+        updatePricing();
+        updatePreview();
+      });
       const descInput = card.querySelector(".st-desc-input");
       descInput.addEventListener("input", () => { evSeatTypes[i].desc = descInput.value; });
       card.querySelector(".st-remove").addEventListener("click", () => {
@@ -1922,7 +1989,7 @@ document.addEventListener("DOMContentLoaded", () => {
         name: "Nuevo Tipo",
         color: COLOR_PRESETS[evSeatTypes.length % COLOR_PRESETS.length],
         price: 30,
-        qty: 50,
+        qty: evSeats.length ? Math.max(0, evSeats.length - evSeatTypes.reduce((s, t) => s + t.qty, 0)) : 50,
         desc: ""
       });
       renderTypes();
@@ -2178,6 +2245,11 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Asigna al menos una zona a los asientos antes de publicar.");
         return;
       }
+      const sumaZonas = evSeatTypes.reduce((s, t) => s + t.qty, 0);
+      if (sumaZonas > evSeats.length) {
+        alert(`La cantidad total de asientos (${sumaZonas}) no puede superar la capacidad del evento (${evSeats.length}).`);
+        return;
+      }
       const data = collectEventData("published");
       ev.publishBtn.disabled = true;
       try {
@@ -2278,7 +2350,7 @@ document.addEventListener("DOMContentLoaded", () => {
       events = JSON.parse(localStorage.getItem("astro_events") || "[]");
     }
 
-    const createBtn = grid.querySelector('[data-open-event-modal]:last-child');
+    const createBtn = grid.querySelector(':scope > [data-open-event-modal]');
     grid.querySelectorAll(".event-card").forEach(c => c.remove());
 
     events.forEach(evt => {
@@ -2331,6 +2403,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const revealTargets = document.querySelectorAll(
     ".card, .glass-panel, .stat-card, .event-card, .section-head, .email-preview, .steps"
   );
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (revealTargets.length && !reduceMotion) {
     const viewportH = window.innerHeight || document.documentElement.clientHeight;
@@ -2424,7 +2497,6 @@ document.addEventListener("DOMContentLoaded", () => {
   glow.className = "cursor-glow";
   document.body.appendChild(glow);
 
-  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
   let glowRaf = 0;
   let glowIdleTimer = 0;
@@ -2569,7 +2641,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------- Navbar activo: highlight según scroll (throttle + offsets cacheados) ---------- */
-  const sections = document.querySelectorAll("#resumen, #eventos, #usuarios, #transacciones");
+  const sections = document.querySelectorAll("#resumen, #eventos, #usuarios, #transacciones, #reembolsos, #validar, #reportes");
   if (sections.length) {
     const navLinksMap = {};
     document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach((a) => {
@@ -2580,6 +2652,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     let sectionOffsets = [];
     refreshOffsets();
+    setTimeout(refreshOffsets, 1500);
     window.addEventListener("resize", refreshOffsets, { passive: true });
 
     let navRaf = 0;
@@ -2660,6 +2733,36 @@ document.addEventListener("DOMContentLoaded", () => {
           avatarEl.textContent = ((session.nombre || "A")[0] || "A").toUpperCase();
         }
       }
+    }
+  }
+
+  /* Menú de perfil del admin (chip avatar) */
+  const adminChip = document.getElementById("admin-user-chip");
+  const adminDropdown = document.getElementById("admin-user-dropdown");
+  if (adminChip && adminDropdown) {
+    adminChip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = adminDropdown.classList.toggle("show");
+      adminChip.classList.toggle("open", open);
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".admin-user-chip")) {
+        adminDropdown.classList.remove("show");
+        adminChip.classList.remove("open");
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        adminDropdown.classList.remove("show");
+        adminChip.classList.remove("open");
+      }
+    });
+    const adminLogoutBtn = document.getElementById("admin-user-logout");
+    if (adminLogoutBtn) {
+      adminLogoutBtn.addEventListener("click", () => {
+        if (typeof Auth !== "undefined" && Auth.logout) Auth.logout();
+        window.location.href = "index.html";
+      });
     }
   }
 

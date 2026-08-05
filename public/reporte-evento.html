@@ -17,7 +17,7 @@
 })();
 </script>
 <link rel="icon" type="image/svg+xml" href="multimedia/favicon.svg" />
-<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/styles.css?v=5" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -50,12 +50,18 @@
           <span class="txt" data-i18n="theme.auto">Auto</span>
         </button>
       </div>
-      <div class="admin-user-chip" id="admin-user-chip" aria-label="Administrador">
+      <div class="admin-user-chip" id="admin-user-chip" aria-label="Administrador" role="button" tabindex="0">
         <span class="admin-user-avatar" id="admin-user-avatar">A</span>
         <span class="admin-user-info">
           <span class="admin-user-name" id="admin-user-name">—</span>
           <span class="admin-user-email" id="admin-user-email">—</span>
         </span>
+        <span class="admin-user-chevron material-symbols-outlined">expand_more</span>
+        <div class="admin-user-dropdown" id="admin-user-dropdown">
+          <a href="perfil.html"><span class="material-symbols-outlined">manage_accounts</span><span>Configuración de perfil</span></a>
+          <div class="admin-user-dropdown-sep"></div>
+          <button type="button" class="admin-user-dropdown-logout" id="admin-user-logout"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></button>
+        </div>
       </div>
     </div>
     <button class="btn-ghost btn nav-toggle" id="nav-toggle" aria-label="Menú" aria-expanded="false">
@@ -169,7 +175,7 @@
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 
-<script src="js/main.js"></script>
+<script src="js/main.js?v=5"></script>
 <script src="js/reporte-evento.js"></script>
 </body>
 </html>

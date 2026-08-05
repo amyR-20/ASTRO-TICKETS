@@ -15,7 +15,7 @@
   })();
   </script>
   <title>Astro Tickets · Mi perfil</title>
-  <link rel="icon" href="multimedia/favicon.svg"><link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="multimedia/favicon.svg"><link rel="stylesheet" href="css/styles.css?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -27,16 +27,22 @@
 <main class="container section profile-page">
   <section class="profile-hero glass-panel">
     <div class="profile-photo" id="profile-preview">AT</div>
-    <div><p class="eyebrow">CUENTA ASTRO</p><h1 id="profile-heading">Mi perfil</h1><p class="text-muted">Actualiza tu identidad, foto y preferencias personales.</p><span class="badge badge-success" id="profile-role">Usuario</span></div>
+    <div class="profile-hero-info">
+      <p class="eyebrow">CUENTA ASTRO</p>
+      <h1 id="profile-heading">Mi perfil</h1>
+      <p class="text-muted profile-sub">Actualiza tu identidad, foto y preferencias personales.</p>
+      <span class="badge badge-success" id="profile-role">Usuario</span>
+    </div>
   </section>
   <form class="profile-grid" id="profile-form">
     <section class="glass-panel profile-card">
-      <h2>Foto de perfil</h2><p class="text-muted">JPG, PNG o WebP; máximo 700 KB.</p>
-      <label class="profile-upload"><span class="material-symbols-outlined">add_a_photo</span><span>Elegir una foto</span><input id="profile-photo" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
-      <button class="btn btn-ghost" type="button" id="profile-photo-remove">Quitar foto</button>
+      <h2 class="profile-card-title"><span class="material-symbols-outlined">add_a_photo</span> Foto de perfil</h2>
+      <p class="text-muted">JPG, PNG o WebP; máximo 700 KB.</p>
+      <label class="profile-upload"><span class="material-symbols-outlined">add_photo_alternate</span><span>Elegir una foto</span><input id="profile-photo" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+      <button class="btn btn-ghost" type="button" id="profile-photo-remove"><span class="material-symbols-outlined">delete</span> Quitar foto</button>
     </section>
     <section class="glass-panel profile-card">
-      <h2>Información personal</h2>
+      <h2 class="profile-card-title"><span class="material-symbols-outlined">badge</span> Información personal</h2>
       <label class="field">Nombre completo<input class="input" id="profile-name" maxlength="100" required></label>
       <label class="field">Nombre de usuario<input class="input" id="profile-username" maxlength="24" pattern="[a-z0-9_]{3,24}" required></label>
       <label class="field">Correo electrónico<input class="input" id="profile-email" disabled></label>
@@ -46,7 +52,7 @@
   </form>
   <form class="profile-grid" id="prefs-form">
     <section class="glass-panel profile-card">
-      <h2>Preferencias</h2>
+      <h2 class="profile-card-title"><span class="material-symbols-outlined">tune</span> Preferencias</h2>
       <p class="text-muted">Se guardan en tu cuenta y se aplican en todos los dispositivos donde inicies sesión.</p>
       <label class="field">Idioma
         <select class="input" id="prefs-lang">
@@ -65,7 +71,7 @@
     </section>
   </form>
   <section class="glass-panel profile-card" id="reembolsos-seccion" style="margin-top:28px;">
-    <h2 data-i18n="reembolsos.title">Mis reembolsos</h2>
+    <h2 class="profile-card-title"><span class="material-symbols-outlined">currency_exchange</span> <span data-i18n="reembolsos.title">Mis reembolsos</span></h2>
     <p class="text-muted" data-i18n="reembolsos.sub">Solicita la devolución de una compra; el administrador la revisará y te notificará el resultado.</p>
     <div id="reembolsos-container" class="refunds-user">
       <p class="text-muted">Cargando…</p>
@@ -101,5 +107,5 @@
     <p class="bottom">© <span class="footer-year">2026</span> <span data-i18n="footer.full">Astro Tickets. Tu viaje comienza aquí. Proyecto académico — Ingeniería de Software II, UNPHU.</span></p>
   </div>
 </footer>
-<script src="js/i18n.js"></script><script src="js/main.js"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/api.js"></script><script src="js/profile.js"></script>
+<script src="js/i18n.js"></script><script src="js/main.js?v=5"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script src="js/api.js"></script><script src="js/profile.js?v=5"></script>
 </body></html>

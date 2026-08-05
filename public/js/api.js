@@ -190,6 +190,32 @@ const Api = (() => {
     return request("/entradas/" + encodeURIComponent(codigo) + "/reenviar", { method: "POST" });
   }
 
+  /** Descarga el PDF del comprobante de pago de una orden. */
+  async function descargarPdfComprobante(orderId) {
+    const headers = {};
+    if (typeof Auth !== "undefined" && Auth.getToken) {
+      const token = Auth.getToken();
+      if (token) headers["Authorization"] = "Bearer " + token;
+    }
+    const res = await fetch(API_BASE + "/ordenes/" + encodeURIComponent(orderId) + "/comprobante.pdf", { headers });
+    if (!res.ok) {
+      let msg = "Error al descargar el comprobante.";
+      try { const d = await res.json(); msg = d.error || msg; } catch (_) {}
+      if (res.status === 401 && typeof Auth !== "undefined" && Auth.clearSession) Auth.clearSession();
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "comprobante-" + orderId + ".pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return true;
+  }
+
   /** Transfiere una entrada a otra persona por correo. */
   async function transferirEntrada(codigo, email) {
     return request(
@@ -334,6 +360,7 @@ const Api = (() => {
     retirarseListaEspera,
     descargarPdfEntrada,
     reenviarPdfEntrada,
+    descargarPdfComprobante,
     transferirEntrada,
     qrDataUrl,
     validarEntrada,
