@@ -14,7 +14,7 @@
     } catch (e) {}
   })();
   </script>
-  <title>Astro Tickets · Mi perfil</title>
+  <title>Astro Tickets · Perfil de administrador</title>
   <link rel="icon" href="multimedia/favicon.svg"><link rel="stylesheet" href="css/styles.css?v=6">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,22 +23,35 @@
 </head>
 <body>
 <div class="atmosphere"><span class="glow-a"></span><span class="glow-b"></span></div>
-<header class="navbar"><div class="container"><a class="brand" href="catalogo.html"><img src="multimedia/logo.svg" class="brand-logo" alt="Astro Tickets"></a><a class="btn btn-ghost" href="catalogo.html">Volver</a></div></header>
+<header class="navbar"><div class="container"><a class="brand" href="admin.html"><img src="multimedia/logo.svg" class="brand-logo" alt="Astro Tickets"></a><a class="btn btn-ghost" href="admin.html">Volver</a></div></header>
 <main class="container section profile-page">
-  <section class="profile-hero glass-panel">
+  <section class="profile-hero glass-panel profile-hero-admin">
     <div class="profile-photo" id="profile-preview">AT</div>
     <div class="profile-hero-info">
-      <p class="eyebrow" id="profile-eyebrow">CUENTA ASTRO</p>
+      <p class="eyebrow" id="profile-eyebrow">PANEL ADMINISTRADOR</p>
       <div class="profile-heading-row">
         <h1 id="profile-heading">Mi perfil</h1>
-        <span class="badge badge-success" id="profile-role">Usuario</span>
+        <span class="badge badge-info" id="profile-role">Administrador</span>
       </div>
-      <p class="text-muted profile-sub" id="profile-bio-view">Actualiza tu identidad, foto y preferencias personales.</p>
+      <p class="text-muted profile-sub" id="profile-bio-view">Administra los eventos, ventas y reembolsos de la plataforma.</p>
       <div class="profile-meta-row" id="profile-meta-row">
         <span class="profile-chip"><span class="material-symbols-outlined">mail</span><span id="profile-email-chip">—</span></span>
-        <span class="profile-chip"><span class="material-symbols-outlined">alternate_email</span><span id="profile-username-chip">@usuario</span></span>
-        <span class="profile-chip"><span class="material-symbols-outlined">calendar_month</span><span id="profile-since">Miembro de Astro Tickets</span></span>
+        <span class="profile-chip"><span class="material-symbols-outlined">alternate_email</span><span id="profile-username-chip">@admin</span></span>
+        <span class="profile-chip"><span class="material-symbols-outlined">calendar_month</span><span id="profile-since">Miembro del equipo</span></span>
       </div>
+    </div>
+  </section>
+  <section class="glass-panel profile-card profile-admin-shortcuts">
+    <h2 class="profile-card-title"><span class="material-symbols-outlined">admin_panel_settings</span> Accesos rápidos</h2>
+    <div class="profile-admin-links">
+      <a class="profile-admin-link" href="admin.html">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span><strong>Panel de administración</strong><small>Gestiona eventos, ventas y reportes</small></span>
+      </a>
+      <a class="profile-admin-link" href="reporte-evento.html">
+        <span class="material-symbols-outlined">insights</span>
+        <span><strong>Reporte de eventos</strong><small>Boletas vendidas, ingresos y resumen general</small></span>
+      </a>
     </div>
   </section>
   <form class="profile-grid" id="profile-form">
@@ -79,13 +92,6 @@
       <div class="profile-save-row"><span id="prefs-status" class="text-muted"></span><button class="btn btn-primary" type="submit"><span class="material-symbols-outlined">palette</span> Guardar preferencias</button></div>
     </section>
   </form>
-  <section class="glass-panel profile-card" id="reembolsos-seccion" style="margin-top:28px;">
-    <h2 class="profile-card-title"><span class="material-symbols-outlined">currency_exchange</span> <span data-i18n="reembolsos.title">Mis reembolsos</span></h2>
-    <p class="text-muted" data-i18n="reembolsos.sub">Solicita la devolución de una compra; el administrador la revisará y te notificará el resultado.</p>
-    <div id="reembolsos-container" class="refunds-user">
-      <p class="text-muted">Cargando…</p>
-    </div>
-  </section>
 </main>
 <footer class="site-footer">
   <div class="container">

@@ -17,7 +17,7 @@
 })();
 </script>
 <link rel="icon" type="image/svg+xml" href="multimedia/favicon.svg" />
-<link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/styles.css?v=6" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -50,12 +50,18 @@
           <span class="txt" data-i18n="theme.auto">Auto</span>
         </button>
       </div>
-      <div class="admin-user-chip" id="admin-user-chip" aria-label="Administrador">
+      <div class="admin-user-chip" id="admin-user-chip" aria-label="Administrador" role="button" tabindex="0">
         <span class="admin-user-avatar" id="admin-user-avatar">A</span>
         <span class="admin-user-info">
           <span class="admin-user-name" id="admin-user-name">—</span>
           <span class="admin-user-email" id="admin-user-email">—</span>
         </span>
+        <span class="admin-user-chevron material-symbols-outlined">expand_more</span>
+        <div class="admin-user-dropdown" id="admin-user-dropdown">
+          <a href="perfil-admin.html"><span class="material-symbols-outlined">manage_accounts</span><span>Configuración de perfil</span></a>
+          <div class="admin-user-dropdown-sep"></div>
+          <button type="button" class="admin-user-dropdown-logout" id="admin-user-logout"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></button>
+        </div>
       </div>
     </div>
     <button class="btn-ghost btn nav-toggle" id="nav-toggle" aria-label="Menú" aria-expanded="false">
@@ -67,6 +73,7 @@
       <a href="#crear-evento" data-i18n="admin.crearevento">Crear evento</a>
       <a href="#usuarios" data-i18n="admin.usuarios">Usuarios</a>
       <a href="#transacciones" data-i18n="admin.ventas">Transacciones</a>
+      <a href="#reembolsos" data-i18n="admin.refunds_title">Reembolsos</a>
       <a href="reporte-evento.html" data-i18n="admin.report_event">Reporte por evento</a>
       <a href="index.html" data-i18n="admin.salir">Salir</a>
     </nav>
@@ -88,10 +95,11 @@
         <a href="#crear-evento"><span class="material-symbols-outlined">add_circle</span><span class="txt" data-i18n="admin.crearevento">Crear evento</span></a>
         <a href="#usuarios"><span class="material-symbols-outlined">group</span><span class="txt" data-i18n="admin.usuarios">Usuarios</span></a>
         <a href="#transacciones"><span class="material-symbols-outlined">receipt_long</span><span class="txt" data-i18n="admin.ventas">Transacciones</span></a>
+        <a href="#reembolsos"><span class="material-symbols-outlined">currency_exchange</span><span class="txt" data-i18n="admin.refunds_title">Reembolsos</span></a>
         <a href="#validar"><span class="material-symbols-outlined">qr_code_scanner</span><span class="txt" data-i18n="admin.validate_qr">Validar QR</span></a>
         <a href="#reportes"><span class="material-symbols-outlined">bar_chart</span><span class="txt" data-i18n="admin.reportes">Reportes</span></a>
         <a href="reporte-evento.html"><span class="material-symbols-outlined">monitoring</span><span class="txt" data-i18n="admin.report_event">Reporte por evento</span></a>
-        <a href="perfil.html"><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
+        <a href="perfil-admin.html"><span class="material-symbols-outlined">settings</span><span class="txt" data-i18n="admin.configuracion">Configuración</span></a>
       </nav>
       <div class="admin-sidebar-foot">
         <a href="index.html"><span class="material-symbols-outlined">logout</span><span class="txt" data-i18n="admin.salir">Salir</span></a>
@@ -686,7 +694,7 @@
       <div class="footer-col">
         <h4 data-i18n="footer.session">Sesión</h4>
         <a href="#validar" data-i18n="admin.validate_qr">Validar QR</a>
-        <a href="perfil.html" data-i18n="admin.configuracion">Configuración</a>
+        <a href="perfil-admin.html" data-i18n="admin.configuracion">Configuración</a>
         <a href="admin-login.html" data-i18n="footer.switch">Cambiar perfil</a>
       </div>
     </div>
@@ -723,10 +731,10 @@
 
 <script src="js/i18n.js?v=2"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/auth.js?v=2"></script>
+<script src="js/auth.js?v=6"></script>
 <script src="js/api.js?v=2"></script>
 
-<script src="js/main.js?v=2"></script>
+<script src="js/main.js?v=6"></script>
 <script>
 /* ============================================================
    Panel admin — datos reales del backend + validación de QR
@@ -738,7 +746,7 @@
   document.querySelectorAll('[data-admin-card]').forEach((card) => {
     if (currentAdmin && card.dataset.adminCard.toLowerCase() === String(currentAdmin.email || '').toLowerCase()) {
       card.classList.add('current');
-      const link = card.querySelector('a'); link.href = 'perfil.html'; link.textContent = I18n.t('admin.edit_profile');
+      const link = card.querySelector('a'); link.href = 'perfil-admin.html'; link.textContent = I18n.t('admin.edit_profile');
       card.insertAdjacentHTML('beforeend','<span class="admin-current-badge">' + I18n.t('admin.current_badge') + '</span>');
     }
   });

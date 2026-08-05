@@ -1,17 +1,40 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (!Auth.getToken()) return location.replace("index.html");
+
+  const sesion = Auth.getSession();
+  const page = (location.pathname.split("/").pop() || "").toLowerCase();
+  const esAdmin = !!(sesion && sesion.role === "admin");
+  if (page === "perfil-admin.html" && !esAdmin) return location.replace("perfil.html");
+  if (page === "perfil.html" && esAdmin) return location.replace("perfil-admin.html");
+
   const $ = (id) => document.getElementById(id);
   let avatarUrl = null;
   const renderAvatar = (usuario) => {
     const preview = $("profile-preview");
+    if (!preview) return;
     if (avatarUrl) preview.innerHTML = `<img src="${avatarUrl}" alt="Foto de ${usuario.nombre}">`;
     else preview.textContent = usuario.avatar || usuario.nombre.split(/\s+/).map(x => x[0]).join("").slice(0,2).toUpperCase();
+  };
+  const fmtFecha = (d) => {
+    if (!d) return "";
+    try {
+      if (typeof I18n !== "undefined" && I18n.date) return I18n.date(d);
+      return new Date(d).toLocaleDateString("es-DO", { year: "numeric", month: "long", day: "numeric" });
+    } catch { return ""; }
   };
   try {
     const { usuario } = await Api.perfil();
     avatarUrl = usuario.avatar_url || null;
     $("profile-name").value = usuario.nombre || ""; $("profile-username").value = usuario.username || ""; $("profile-email").value = usuario.email || ""; $("profile-bio").value = usuario.bio || "";
     $("profile-heading").textContent = usuario.nombre; $("profile-role").textContent = usuario.role === "admin" ? "Administrador" : "Usuario"; renderAvatar(usuario);
+
+    if ($("profile-email-chip")) $("profile-email-chip").textContent = usuario.email || "—";
+    if ($("profile-username-chip")) $("profile-username-chip").textContent = "@" + (usuario.username || "usuario");
+    if ($("profile-since")) {
+      const f = fmtFecha(usuario.creado_en);
+      $("profile-since").textContent = f ? "Miembro desde " + f : (usuario.role === "admin" ? "Miembro del equipo" : "Miembro de Astro Tickets");
+    }
+    if ($("profile-bio-view") && usuario.bio) $("profile-bio-view").textContent = usuario.bio;
 
     const langSel = $("prefs-lang"), themeSel = $("prefs-theme");
     if (langSel) langSel.value = usuario.idioma_pref || "es";
@@ -49,6 +72,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const data = await Api.actualizarPerfil({ nombre: $("profile-name").value, username: $("profile-username").value, bio: $("profile-bio").value, avatarUrl });
         Auth.setSession(data.usuario, Auth.getToken()); $("profile-status").textContent = "Cambios guardados correctamente."; $("profile-heading").textContent = data.usuario.nombre;
+        if ($("profile-username-chip")) $("profile-username-chip").textContent = "@" + (data.usuario.username || "");
+        if ($("profile-bio-view")) $("profile-bio-view").textContent = data.usuario.bio || $("profile-bio-view").textContent;
       } catch (error) { $("profile-status").textContent = error.message; }
       finally { button.disabled = false; }
     });

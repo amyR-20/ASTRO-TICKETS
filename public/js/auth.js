@@ -189,7 +189,7 @@ const Auth = (() => {
             <span class="material-symbols-outlined">receipt_long</span>
             <span>Mis compras</span>
           </a>
-          <a href="perfil.html" class="user-panel-action">
+          <a href="${session.role === "admin" ? "perfil-admin.html" : "perfil.html"}" class="user-panel-action">
             <span class="material-symbols-outlined">manage_accounts</span>
             <span>Perfil y configuración</span>
           </a>
@@ -294,7 +294,7 @@ const Auth = (() => {
             <a href="historial.html" class="user-panel-action">
               <span class="material-symbols-outlined">receipt_long</span> Mis compras
             </a>
-            <a href="perfil.html" class="user-panel-action">
+            <a href="${session.role === "admin" ? "perfil-admin.html" : "perfil.html"}" class="user-panel-action">
               <span class="material-symbols-outlined">manage_accounts</span> Perfil y configuración
             </a>
             ${session.role === "admin" ? `
