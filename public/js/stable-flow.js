@@ -169,10 +169,10 @@
       const detailedTickets = document.getElementById("receipt-tickets"); detailedTickets.innerHTML = "";
       purchase.seats.forEach((seat, index) => {
         const card = document.createElement("article"); card.className = "receipt-ticket"; card.dataset.ticketCode = seat.codigo;
-        card.innerHTML = `<div class="receipt-ticket-poster" style="background-image:linear-gradient(90deg, rgba(20,12,45,.2), rgba(20,12,45,.75)), url('${purchase.event.img || ""}')"><span>ASTRO TICKETS</span><strong>${I18n.eventName(purchase.event.name)}</strong><small>${purchase.funcion.fecha || purchase.event.date} / ${I18n.time(purchase.funcion.hora)}</small></div><div class="receipt-ticket-main"><div class="receipt-ticket-info"><span class="receipt-ticket-label">${I18n.t("receipt.ticket")} ${index + 1}</span><strong class="receipt-ticket-seat">${I18n.t("history.seat")} ${seat.id} / ${seat.zone}</strong><span>${purchase.funcion.sala || purchase.event.venue || ""}</span><code class="receipt-ticket-code">${seat.codigo}</code></div><div class="receipt-ticket-qr" aria-label="Codigo QR del boleto"></div><button type="button" class="btn-ticket-download">${I18n.t("history.download_comprobante")}</button></div>`;
+        card.innerHTML = `<div class="receipt-ticket-poster" style="background-image:linear-gradient(90deg, rgba(20,12,45,.2), rgba(20,12,45,.75)), url('${purchase.event.img || ""}')"><span>ASTRO TICKETS</span><strong>${I18n.eventName(purchase.event.name)}</strong><small>${purchase.funcion.fecha || purchase.event.date} / ${I18n.time(purchase.funcion.hora)}</small></div><div class="receipt-ticket-main"><div class="receipt-ticket-info"><span class="receipt-ticket-label">${I18n.t("receipt.ticket")} ${index + 1}</span><strong class="receipt-ticket-seat">${I18n.t("history.seat")} ${seat.id} / ${seat.zone}</strong><span>${purchase.funcion.sala || purchase.event.venue || ""}</span><code class="receipt-ticket-code">${seat.codigo}</code></div><div class="receipt-ticket-qr" aria-label="Codigo QR del boleto"></div><button type="button" class="btn-ticket-download">${I18n.t("history.download_pdf")}</button></div>`;
         card.querySelector(".receipt-ticket-info").insertAdjacentHTML("beforeend", `<span>${I18n.t("history.price")}: ${money(seat.price)}</span><span>${I18n.t("history.status")}: ${purchase.status || "paid"}</span>`);
-        card.querySelector(".btn-ticket-download").onclick = () => Api.descargarPdfComprobante(orderId).catch((e) => alert(e.message));
-        const printTicket = document.createElement("button"); printTicket.type = "button"; printTicket.className = "btn-ticket-download"; printTicket.textContent = I18n.t("history.print_ticket"); printTicket.onclick = () => { document.body.classList.add("printing-one-ticket"); card.classList.add("print-ticket-only"); window.addEventListener("afterprint", () => { document.body.classList.remove("printing-one-ticket"); card.classList.remove("print-ticket-only"); }, { once: true }); window.print(); }; card.querySelector(".receipt-ticket-main").appendChild(printTicket);
+        card.querySelector(".btn-ticket-download").onclick = () => Api.descargarPdfEntrada(seat.codigo).catch((e) => alert(e.message));
+        const printTicket = document.createElement("button"); printTicket.type = "button"; printTicket.className = "btn-ticket-download"; printTicket.textContent = I18n.t("history.print_ticket"); printTicket.onclick = () => { document.body.classList.add("printing-one-ticket"); card.classList.add("print-ticket-only"); window.addEventListener("afterprint", () => { document.body.classList.remove("printing-one-ticket"); card.classList.remove("print-ticket-only"); }, { once: true }); requestAnimationFrame(() => window.print()); }; card.querySelector(".receipt-ticket-main").appendChild(printTicket);
         Api.qrDataUrl(seat.codigo).then((url) => { card.querySelector(".receipt-ticket-qr").innerHTML = `<img class="receipt-qr-img" src="${url}" alt="QR del asiento ${seat.id}">`; }).catch((e) => { card.querySelector(".receipt-ticket-qr").textContent = e.message; }); detailedTickets.appendChild(card);
       });
       document.getElementById("btn-view-ticket")?.addEventListener("click", async () => {
@@ -181,9 +181,17 @@
         try { for (const codigo of codigos) await Api.descargarPdfEntrada(codigo); }
         catch (err) { alert(err.message || "Error al descargar el boleto."); }
       });
-      document.getElementById("btn-print-ticket")?.addEventListener("click", () => window.print());
+      document.getElementById("btn-print-ticket")?.addEventListener("click", () => {
+        document.body.classList.add("printing-tickets");
+        window.addEventListener("afterprint", () => document.body.classList.remove("printing-tickets"), { once: true });
+        requestAnimationFrame(() => window.print());
+      });
       document.getElementById("btn-resend")?.addEventListener("click", async (event) => { const button = event.currentTarget; const label = button.querySelector("span:last-child"); const original = label?.textContent; button.disabled = true; if (label) label.textContent = "Enviando..."; try { await Api.reenviarOrden(orderId); alert(`Confirmación enviada a ${purchase.comprador.email}.`); } catch (error) { alert(error.message); } finally { button.disabled = false; if (label) label.textContent = original; } });
-      if (query.get("print") === "1") requestAnimationFrame(() => window.print());
+      if (query.get("print") === "1") {
+        document.body.classList.add("printing-tickets");
+        window.addEventListener("afterprint", () => document.body.classList.remove("printing-tickets"), { once: true });
+        requestAnimationFrame(() => window.print());
+      }
       return;
       const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
       set("receipt-event-name", purchase.event.name); set("receipt-order-number", `#${purchase.payment.transactionId}`); set("receipt-reservation-code", purchase.payment.reservationCode); set("receipt-price", money(purchase.pricing.total)); set("receipt-qty-type", `${purchase.seats.length}x Entradas`); set("receipt-payment-method", purchase.payment.method); set("receipt-transaction-id", purchase.payment.transactionId); set("receipt-date", purchase.funcion.fecha || purchase.event.date); set("receipt-time-value", purchase.funcion.hora || "—"); set("receipt-venue-name", purchase.funcion.sala || purchase.event.venue); set("receipt-email-sent", purchase.comprador.email || "—");

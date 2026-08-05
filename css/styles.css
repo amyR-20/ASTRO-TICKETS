@@ -4502,9 +4502,120 @@ html[data-theme="dark"] .receipt-ticket-seat { color: #f4f2ff; }
 
 @media print {
   .receipt-actions, .btn-ticket, .progress-steps, .site-footer, .navbar { display: none !important; }
-  .receipt-ticket { break-inside: avoid; box-shadow: none; }
-  .receipt-container { max-width: none; padding: 0; }
-  body.printing-one-ticket .receipt-ticket:not(.print-ticket-only) { display: none; }
+
+  body.printing-tickets,
+  body.printing-one-ticket {
+    margin: 0 !important;
+    background: #f5f3ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body.printing-tickets > *:not(.receipt-bg),
+  body.printing-one-ticket > *:not(.receipt-bg) {
+    display: none !important;
+  }
+  body.printing-tickets > .receipt-bg,
+  body.printing-one-ticket > .receipt-bg {
+    display: block !important;
+    padding: 0 !important;
+    background: #f5f3ff !important;
+  }
+  body.printing-tickets .receipt-card,
+  body.printing-one-ticket .receipt-card {
+    width: 100% !important;
+    max-width: 760px !important;
+    margin: 0 auto !important;
+    padding: 26px !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  body.printing-tickets .receipt-card > *,
+  body.printing-one-ticket .receipt-card > * {
+    display: none !important;
+  }
+  body.printing-tickets .receipt-card > .receipt-tickets,
+  body.printing-one-ticket .receipt-card > .receipt-tickets {
+    display: flex !important;
+    gap: 18px !important;
+    margin: 0 !important;
+  }
+  body.printing-tickets .receipt-tickets::before,
+  body.printing-one-ticket .receipt-tickets::before {
+    content: "TUS ENTRADAS";
+    display: block;
+    padding: 0 0 12px;
+    border-bottom: 2px solid #7c3aed;
+    color: #1e1b4b;
+    font: 800 24px/1.2 "Plus Jakarta Sans", sans-serif;
+    letter-spacing: -.02em;
+  }
+  body.printing-tickets .receipt-ticket,
+  body.printing-one-ticket .receipt-ticket {
+    display: grid !important;
+    grid-template-columns: 230px minmax(0, 1fr) !important;
+    min-height: 220px;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #ddd6fe !important;
+    border-left: 8px solid #7c3aed !important;
+    border-radius: 16px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  body.printing-one-ticket .receipt-ticket:not(.print-ticket-only) {
+    display: none !important;
+  }
+  body.printing-tickets .receipt-ticket-poster,
+  body.printing-one-ticket .receipt-ticket-poster {
+    display: flex !important;
+    min-height: 220px;
+    padding: 24px !important;
+    color: #fff !important;
+    background-color: #1e1b4b !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body.printing-tickets .receipt-ticket-main,
+  body.printing-one-ticket .receipt-ticket-main {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 140px !important;
+    gap: 18px !important;
+    padding: 24px !important;
+    align-items: center !important;
+  }
+  body.printing-tickets .receipt-ticket-info,
+  body.printing-one-ticket .receipt-ticket-info {
+    display: flex !important;
+    gap: 9px !important;
+  }
+  body.printing-tickets .receipt-ticket-label,
+  body.printing-one-ticket .receipt-ticket-label {
+    color: #7c3aed !important;
+    font-size: 10px !important;
+  }
+  body.printing-tickets .receipt-ticket-seat,
+  body.printing-one-ticket .receipt-ticket-seat {
+    color: #1e1b4b !important;
+    font-size: 18px !important;
+  }
+  body.printing-tickets .receipt-ticket-qr,
+  body.printing-one-ticket .receipt-ticket-qr {
+    width: 140px !important;
+    height: 140px !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+  }
+  body.printing-tickets .receipt-ticket-code,
+  body.printing-one-ticket .receipt-ticket-code {
+    color: #6b7280 !important;
+    font-size: 9px !important;
+  }
+  body.printing-tickets .btn-ticket-download,
+  body.printing-one-ticket .btn-ticket-download {
+    display: none !important;
+  }
 }
 
 .stripe-element-shell { padding: 16px; border: 1px solid rgba(108,63,209,.18); border-radius: 16px; background: var(--color-surface-container-lowest); margin-bottom: 20px; }
