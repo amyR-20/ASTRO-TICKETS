@@ -6,7 +6,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { dashboard, resumen, auditoria, reservasPorVencer, reporteCsv, reportePdf, reporteEvento } = require("../controllers/adminController");
+const { dashboard, resumen, auditoria, reservasPorVencer, reporteCsv, reportePdf, reporteEvento, reporteEventoPdf } = require("../controllers/adminController");
 const { listar: listarReembolsos, crear: crearReembolso, aprobar: aprobarReembolso, rechazar: rechazarReembolso } = require("../controllers/reembolsoController");
 const { verificarToken, soloAdmin } = require("../middleware/authMiddleware");
 
@@ -15,6 +15,7 @@ router.get("/admin/resumen", verificarToken, soloAdmin, resumen);
 router.get("/admin/auditoria", verificarToken, soloAdmin, auditoria);
 router.get("/admin/reservas-por-vencer", verificarToken, soloAdmin, reservasPorVencer);
 router.get("/admin/reportes/general.pdf", verificarToken, soloAdmin, reportePdf);
+router.get("/admin/reportes/evento/:id.pdf", verificarToken, soloAdmin, reporteEventoPdf);
 router.get("/admin/reportes/evento/:id", verificarToken, soloAdmin, reporteEvento);
 router.get("/admin/reportes/:tipo.csv", verificarToken, soloAdmin, reporteCsv);
 

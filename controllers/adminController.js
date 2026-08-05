@@ -349,10 +349,8 @@ async function reservasPorVencer(req, res) {
  * transacciones en una sola llamada. Incluye eventos nuevos: la
  * consulta corre contra la BD real (ordenes/entradas/asientos).
  */
-async function reporteEvento(req, res) {
-  try {
-    const { id } = req.params;
-    const PAGADO = "'paid','completada'";
+async function getReporteEventoData(id) {
+  const PAGADO = "'paid','completada'";
 
     const [evento, resumen, porFuncion, porZona, tendencia, compradores, transacciones, reembolsos] = await Promise.all([
       pool.query(
@@ -459,15 +457,13 @@ async function reporteEvento(req, res) {
       ),
     ]);
 
-    if (!evento.rows.length) {
-      return res.status(404).json({ error: "Evento no encontrado." });
-    }
+    if (!evento.rows.length) return null;
 
     const ev = evento.rows[0];
     const resumenRow = resumen.rows[0];
     const capacidad = Number(resumenRow.capacidad);
 
-    return res.json({
+    return {
       evento: {
         id: ev.id,
         nombre: ev.nombre,
@@ -541,11 +537,157 @@ async function reporteEvento(req, res) {
         email: r.email,
         adminNombre: r.admin_nombre,
       })),
-    });
+    };
+}
+
+/**
+ * GET /api/admin/reportes/evento/:id — reporte completo por evento (JSON).
+ */
+async function reporteEvento(req, res) {
+  try {
+    const data = await getReporteEventoData(req.params.id);
+    if (!data) return res.status(404).json({ error: "Evento no encontrado." });
+    return res.json(data);
   } catch (err) {
     console.error("Error generando reporte por evento:", err);
     return res.status(500).json({ error: "Error interno al generar el reporte." });
   }
 }
 
-module.exports = { dashboard, resumen, auditoria, reservasPorVencer, reporteCsv, reportePdf, reporteEvento };
+/**
+ * GET /api/admin/reportes/evento/:id.pdf — PDF por evento con el mismo
+ * formato del reporte ejecutivo general, limitado a un solo evento.
+ */
+async function reporteEventoPdf(req, res) {
+  try {
+    const data = await getReporteEventoData(req.params.id);
+    if (!data) return res.status(404).json({ error: "Evento no encontrado." });
+
+    const { evento, resumen, porFuncion, porZona, compradores, transacciones, reembolsos } = data;
+
+    const slug = String(evento.nombre || evento.id)
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "evento";
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename=astro-tickets_reporte-${slug}.pdf`,
+      "Cache-Control": "private, no-store",
+    });
+
+    const doc = new PDFDocument({
+      size: "A4", margin: 42, bufferPages: true,
+      info: { Title: `Reporte por evento - ${evento.nombre}`, Author: "Astro Tickets" },
+    });
+    doc.pipe(res);
+
+    const W = 511;
+    const purple = "#6c3fd1", dark = "#17132b", muted = "#6b7280", pale = "#f4f0ff", green = "#0f9f78", line = "#e9e5f2";
+    const num = (v) => Number(v || 0).toLocaleString("es-DO");
+    const money = (value) => `RD$ ${Number(value || 0).toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const date = (value) => value ? new Date(value).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+    const datetime = (value) => value ? new Date(value).toLocaleString("es-DO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "-";
+    const time = (value) => value ? String(value).slice(0, 5) : "-";
+    const ensure = (height = 80) => { if (doc.y + height > 760) doc.addPage(); };
+    const sectionTitle = (title, subtitle, required = 70) => { ensure(required); const y = doc.y + 6; doc.fillColor(dark).font("Helvetica-Bold").fontSize(15).text(title, 42, y, { width: W }); if (subtitle) doc.fillColor(muted).font("Helvetica").fontSize(8.5).text(subtitle, 42, y + 22, { width: W }); doc.y = y + (subtitle ? 43 : 28); };
+    const tableHeader = (columns, widths) => { ensure(34); const y = doc.y; doc.save().roundedRect(42, y, W, 24, 6).fill(purple).restore(); let x = 48; columns.forEach((c, i) => { doc.fillColor("#fff").font("Helvetica-Bold").fontSize(7.2).text(c, x, y + 8, { width: widths[i] - 8, height: 10, lineBreak: false }); x += widths[i]; }); doc.y = y + 30; };
+    const tableRow = (values, widths, index) => { ensure(28); const y = doc.y; if (index % 2 === 0) doc.save().rect(42, y - 3, W, 24).fill("#faf9fd").restore(); let x = 48; values.forEach((v, i) => { doc.fillColor(dark).font("Helvetica").fontSize(7.2).text(String(v ?? "-"), x, y + 4, { width: widths[i] - 8, height: 14, ellipsis: true, lineBreak: false }); x += widths[i]; }); doc.y = y + 24; };
+
+    // Encabezado
+    doc.save().rect(0, 0, 595, 150).fill(dark).restore();
+    doc.fillColor("#fff").font("Helvetica-Bold").fontSize(23).text("ASTRO TICKETS", 42, 36);
+    doc.fillColor("#d8ccff").font("Helvetica").fontSize(10).text("REPORTE POR EVENTO", 42, 70);
+    doc.fillColor("#fff").font("Helvetica-Bold").fontSize(14).text(String(evento.nombre || "-"), 42, 88, { width: 400 });
+    doc.fillColor("#b7afc9").fontSize(8).text(`${evento.lugar || "-"}  |  ${date(evento.fecha)}  |  Generado ${new Date().toLocaleString("es-DO")}`, 42, 114);
+    if (evento.id) {
+      const qr = await QRCode.toBuffer(`ASTRO-EVENTO:${evento.id}`, { width: 180, margin: 1, color: { dark: "#24134f", light: "#ffffff" } });
+      doc.save().roundedRect(455, 26, 96, 96, 10).fill("#ffffff").restore();
+      doc.image(qr, 461, 32, { fit: [84, 84] });
+    }
+    doc.y = 174;
+
+    // Tarjetas resumen
+    const pct = Math.max(0, Math.min(100, Number(resumen.pctVendido) || 0));
+    const cards = [
+      ["INGRESOS", money(resumen.ingresos)],
+      ["BOLETOS VENDIDOS", num(resumen.boletos)],
+      ["TRANSACCIONES", num(resumen.transacciones)],
+      ["COMPRADORES", num(resumen.compradores)],
+      ["OCUPACIÓN", `${pct}%`],
+    ];
+    const cardY = doc.y;
+    cards.forEach((card, i) => {
+      const x = 42 + i * 100;
+      doc.save().roundedRect(x, cardY, 94, 60, 10).fill(i === 0 ? purple : pale).restore();
+      doc.fillColor(i === 0 ? "#ded5ff" : muted).font("Helvetica-Bold").fontSize(6).text(card[0], x + 9, cardY + 12, { width: 76 });
+      doc.fillColor(i === 0 ? "#fff" : dark).font("Helvetica-Bold").fontSize(11).text(String(card[1]), x + 9, cardY + 28, { width: 78 });
+    });
+    doc.y = cardY + 82;
+
+    // Ventas por función
+    sectionTitle("Ventas por función", "Detalle de cada función del evento con su ocupación e ingresos.");
+    if (!porFuncion.length) {
+      doc.fillColor(muted).font("Helvetica").fontSize(9).text("No hay funciones registradas para este evento.");
+    } else {
+      const widths = [62, 44, 68, 62, 52, 52, 52, 84];
+      tableHeader(["FECHA", "HORA", "SALA", "ESTADO", "CAPACIDAD", "VENDIDOS", "DISPONIBLES", "INGRESOS"], widths);
+      porFuncion.forEach((f, i) => tableRow([date(f.fecha), time(f.hora), f.sala, String(f.estado || "-").toUpperCase(), num(f.capacidad), num(f.vendidos), num(f.disponibles), money(f.ingresos)], widths, i));
+    }
+
+    // Ventas por zona
+    sectionTitle("Ventas por zona", "Distribución de boletos e ingresos por zona del recinto.");
+    if (!porZona.length) {
+      doc.fillColor(muted).font("Helvetica").fontSize(9).text("No hay boletos vendidos por zona.");
+    } else {
+      const widths = [170, 90, 160, 70];
+      tableHeader(["ZONA", "BOLETOS", "INGRESOS", "% DEL TOTAL"], widths);
+      const totalZonaBoletos = porZona.reduce((a, z) => a + Number(z.boletos), 0) || 1;
+      porZona.forEach((z, i) => tableRow([z.zona || "-", num(z.boletos), money(z.ingresos), `${Math.round((Number(z.boletos) / totalZonaBoletos) * 100)}%`], widths, i));
+    }
+
+    // Compradores
+    sectionTitle("Compradores", "Clientes que compraron boletos para este evento, ordenados por gasto.");
+    if (!compradores.length) {
+      doc.fillColor(muted).font("Helvetica").fontSize(9).text("Aún no hay compradores para este evento.");
+    } else {
+      const widths = [95, 120, 62, 55, 95, 78];
+      tableHeader(["COMPRADOR", "EMAIL", "TRANSACCIONES", "BOLETOS", "GASTADO", "ÚLTIMA COMPRA"], widths);
+      compradores.forEach((c, i) => tableRow([c.nombre || "-", c.email || "-", num(c.transacciones), num(c.boletos), money(c.gastado), datetime(c.ultima)], widths, i));
+    }
+
+    // Reembolsos
+    sectionTitle("Reembolsos", "Solicitudes y devoluciones procesadas para este evento.");
+    if (!reembolsos.length) {
+      doc.fillColor(muted).font("Helvetica").fontSize(9).text("No hay reembolsos registrados para este evento.");
+    } else {
+      const widths = [70, 80, 95, 60, 78, 55, 70];
+      tableHeader(["FECHA", "TRANSACCIÓN", "COMPRADOR", "MONTO", "MOTIVO", "ESTADO", "AUTORIZADO POR"], widths);
+      reembolsos.forEach((r, i) => tableRow([datetime(r.creadoEn), r.transaccion || "-", r.comprador || r.email || "-", money(r.monto), r.motivo || "-", String(r.estado || "-").toUpperCase(), r.adminNombre || "-"], widths, i));
+    }
+
+    // Transacciones recientes
+    sectionTitle("Transacciones recientes", "Últimos pagos registrados para este evento.");
+    if (!transacciones.length) {
+      doc.fillColor(muted).font("Helvetica").fontSize(9).text("No hay transacciones registradas para este evento.");
+    } else {
+      const widths = [88, 112, 50, 58, 72, 80];
+      tableHeader(["TRANSACCIÓN", "COMPRADOR", "BOLETOS", "MÉTODO", "TOTAL", "FECHA"], widths);
+      transacciones.forEach((tr, i) => tableRow([tr.transaccion || tr.codigoReserva || "-", tr.comprador || tr.email || "-", num(tr.boletos), tr.metodoPago || "-", money(tr.total), datetime(tr.creadaEn)], widths, i));
+    }
+
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+      doc.switchToPage(i);
+      doc.save().moveTo(42, 783).lineTo(553, 783).strokeColor(line).stroke();
+      doc.fillColor(muted).font("Helvetica").fontSize(7).text("Astro Tickets - reporte interno confidencial", 42, 790, { width: 360, lineBreak: false });
+      doc.text(`${i + 1} / ${range.count}`, 480, 790, { width: 70, align: "right", lineBreak: false });
+      doc.restore();
+    }
+    doc.end();
+  } catch (err) {
+    console.error("Error generando PDF por evento:", err);
+    if (!res.headersSent) return res.status(500).json({ error: "Error interno al generar el PDF." });
+    return res.end();
+  }
+}
+
+module.exports = { dashboard, resumen, auditoria, reservasPorVencer, reporteCsv, reportePdf, reporteEvento, reporteEventoPdf };

@@ -12,6 +12,7 @@
   const empty = document.getElementById("reporte-empty");
   const body = document.getElementById("reporte-body");
   const printBtn = document.getElementById("report-print-btn");
+  const pdfBtn = document.getElementById("report-pdf-btn");
 
   if (!select || !area || !body) return;
 
@@ -78,12 +79,14 @@
     area.hidden = true;
     empty.hidden = false;
     if (printBtn) printBtn.disabled = true;
+    if (pdfBtn) pdfBtn.disabled = true;
   }
 
   function showLoading() {
     area.hidden = false;
     empty.hidden = true;
     if (printBtn) printBtn.disabled = true;
+    if (pdfBtn) pdfBtn.disabled = true;
     body.innerHTML = '<div class="card" style="padding:48px;text-align:center;color:var(--color-on-surface-variant)">' +
       '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;display:block;margin-bottom:12px;">progress_activity</span>' +
       esc(t("report.loading")) + "</div>";
@@ -93,6 +96,7 @@
     area.hidden = false;
     empty.hidden = true;
     if (printBtn) printBtn.disabled = true;
+    if (pdfBtn) pdfBtn.disabled = true;
     body.innerHTML = '<div class="card" style="padding:48px;text-align:center;color:var(--color-on-surface-variant)">' +
       '<span class="material-symbols-outlined" style="display:block;margin-bottom:12px;">error</span>' + esc(msg) + "</div>";
   }
@@ -102,6 +106,7 @@
     area.hidden = false;
     empty.hidden = true;
     if (printBtn) printBtn.disabled = false;
+    if (pdfBtn) pdfBtn.disabled = false;
     body.innerHTML = renderStats() + renderTendencia() + renderFunciones() + renderCompradores() + renderReembolsos() + renderTransacciones();
   }
 
@@ -357,6 +362,25 @@
   }
   if (printBtn) {
     printBtn.addEventListener("click", () => window.print());
+  }
+  if (pdfBtn) {
+    pdfBtn.addEventListener("click", async () => {
+      if (!currentId) return;
+      pdfBtn.disabled = true;
+      const original = pdfBtn.innerHTML;
+      pdfBtn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;">progress_activity</span>';
+      try {
+        const ev = current && current.evento ? current.evento : {};
+        const nombre = (ev.nombre || "evento").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "evento";
+        const result = await Api.descargarReporte("/admin/reportes/evento/" + encodeURIComponent(currentId) + ".pdf", "astro-tickets_reporte-" + nombre + ".pdf");
+        showToast(t("report.downloaded") + " " + result.filename);
+      } catch (err) {
+        alert(err.message || "No se pudo descargar el reporte.");
+      } finally {
+        pdfBtn.innerHTML = original;
+        pdfBtn.disabled = false;
+      }
+    });
   }
 
   window.addEventListener("astro:langchange", () => {
