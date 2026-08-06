@@ -1563,14 +1563,31 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "Front Stage", color: "#8b5cf6", price: 150, qty: 30, desc: "Primeras filas frente al escenario" },
     { name: "Backstage", color: "#0ea5e9", price: 250, qty: 10, desc: "Acceso backstage incluido" }
   ];
-  const VENUE_PRESETS = [
-    { match: /teatro nacional|carlos piantini/i, capacity: 1578, cols: 30, city: "Santo Domingo" },
-    { match: /sala ravelo|jos[eé] de jes[uú]s ravelo/i, capacity: 190, cols: 19, city: "Santo Domingo" },
-    { match: /a[ií]da bonnelly/i, capacity: 228, cols: 19, city: "Santo Domingo" },
-    { match: /caf[eé] teatro juan lockward/i, capacity: 150, cols: 15, city: "Santo Domingo" },
-    { match: /hard rock/i, capacity: 800, cols: 25, city: "Santo Domingo" },
-    { match: /quisqueya|juan marichal/i, capacity: 13186, cols: 100, city: "Santo Domingo" }
-  ];
+  const VENUES_BY_CATEGORY = {
+    Concierto: [
+      { name: "Estadio Quisqueya Juan Marichal", capacity: 13186, cols: 100, city: "Santo Domingo", address: "Av. Tiradentes, Ensanche La Fe" },
+      { name: "Estadio Olímpico Félix Sánchez", capacity: 50000, cols: 100, city: "Santo Domingo", address: "Centro Olímpico Juan Pablo Duarte" },
+      { name: "Palacio de los Deportes Virgilio Travieso Soto", capacity: 7300, cols: 100, city: "Santo Domingo", address: "Centro Olímpico Juan Pablo Duarte" },
+      { name: "Hard Rock Café Santo Domingo", capacity: 800, cols: 25, city: "Santo Domingo", address: "BlueMall, Av. Winston Churchill" }
+    ],
+    Teatro: [
+      { name: "Teatro Nacional - Sala Carlos Piantini", capacity: 1578, cols: 30, city: "Santo Domingo", address: "Av. Máximo Gómez 35, Plaza de la Cultura" },
+      { name: "Teatro Nacional - Sala José de Jesús Ravelo", capacity: 190, cols: 19, city: "Santo Domingo", address: "Av. Máximo Gómez 35, Plaza de la Cultura" },
+      { name: "Teatro Nacional - Sala Aída Bonnelly", capacity: 228, cols: 19, city: "Santo Domingo", address: "Av. Máximo Gómez 35, Plaza de la Cultura" },
+      { name: "Teatro Nacional - Café Teatro Juan Lockward", capacity: 150, cols: 15, city: "Santo Domingo", address: "Av. Máximo Gómez 35, Plaza de la Cultura" }
+    ],
+    Deportes: [
+      { name: "Estadio Quisqueya Juan Marichal", capacity: 13186, cols: 100, city: "Santo Domingo", address: "Av. Tiradentes, Ensanche La Fe" },
+      { name: "Estadio Olímpico Félix Sánchez", capacity: 24863, cols: 100, city: "Santo Domingo", address: "Centro Olímpico Juan Pablo Duarte" },
+      { name: "Palacio de los Deportes Virgilio Travieso Soto", capacity: 7300, cols: 100, city: "Santo Domingo", address: "Centro Olímpico Juan Pablo Duarte" }
+    ],
+    Conferencia: [
+      { name: "Hotel Jaragua - Gran Salón Anacaona", capacity: 800, cols: 25, city: "Santo Domingo", address: "Av. George Washington 367" },
+      { name: "Hotel Jaragua - Teatro La Fiesta", capacity: 1152, cols: 32, city: "Santo Domingo", address: "Av. George Washington 367" },
+      { name: "Teatro Nacional - Sala Aída Bonnelly", capacity: 228, cols: 19, city: "Santo Domingo", address: "Av. Máximo Gómez 35, Plaza de la Cultura" },
+      { name: "Sambil Santo Domingo - Salón de Eventos", capacity: 100, cols: 10, city: "Santo Domingo", address: "Av. John F. Kennedy" }
+    ]
+  };
 
   let evSeats = [];
   let evSelectedSeats = new Set();
@@ -1589,15 +1606,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function applyVenuePreset() {
     const venue = ev.venue.value.trim();
-    const preset = VENUE_PRESETS.find((item) => item.match.test(venue));
+    const preset = Object.values(VENUES_BY_CATEGORY).flat().find((item) => item.name === venue);
     if (!preset) { venueCapacityTarget = 0; return; }
     venueCapacityTarget = preset.capacity;
     ev.cols.value = preset.cols;
     ev.rows.value = Math.ceil(preset.capacity / preset.cols);
     ev.capacity.value = preset.capacity;
-    if (!ev.city.value.trim()) ev.city.value = preset.city;
+    ev.city.value = preset.city;
+    ev.address.value = preset.address;
     showToast(`Capacidad sugerida para ${venue}: ${preset.capacity.toLocaleString("es-DO")} personas.`);
     updatePreview();
+  }
+
+  function populateVenueOptions(selectedVenue = "") {
+    const venues = VENUES_BY_CATEGORY[ev.category.value] || [];
+    const list = document.getElementById("ce-venue-options");
+    if (list) {
+      list.innerHTML = venues.map((venue) =>
+        `<option value="${venue.name}" label="${venue.capacity.toLocaleString("es-DO")} personas"></option>`
+      ).join("");
+    }
+    ev.venue.value = selectedVenue || venues[0]?.name || "";
+    applyVenuePreset();
   }
 
   // ---- Navigation ----
@@ -1656,9 +1686,9 @@ document.addEventListener("DOMContentLoaded", () => {
     ev.category.value = "Concierto";
     ev.date.value = "";
     ev.time.value = "20:00";
-    ev.venue.value = "";
     ev.city.value = "";
     ev.address.value = "";
+    populateVenueOptions();
     ev.rows.value = 8;
     ev.cols.value = 10;
     ev.capacity.value = "";
@@ -1687,11 +1717,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawVenue = event.venue || "";
     if (event.city) {
       const suffix = ", " + event.city;
-      ev.venue.value = rawVenue.endsWith(suffix) ? rawVenue.slice(0, -suffix.length) : rawVenue;
+      populateVenueOptions(rawVenue.endsWith(suffix) ? rawVenue.slice(0, -suffix.length) : rawVenue);
       ev.city.value = event.city;
     } else {
       const parts = rawVenue.split(",").map(s => s.trim());
-      ev.venue.value = parts[0] || "";
+      populateVenueOptions(parts[0] || "");
       ev.city.value = parts[1] || "";
     }
     ev.previewImg.src = event.image || "multimedia/logo.svg";
@@ -1808,7 +1838,6 @@ document.addEventListener("DOMContentLoaded", () => {
       sugerirCantidades();
       recommendedQtysDone = true;
     }
-    assignSeatsByQuantities();
     renderSeatGrid(ev.seatGrid, evSeats, numCols);
     renderSeatGrid(ev.assignGrid, evSeats, numCols);
     updateCapacity();
@@ -1934,20 +1963,12 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePreview();
   }
 
-  function assignSeatsByQuantities() {
-    let index = 0;
-    evSeatTypes.forEach((type) => {
-      const limit = Math.min(evSeats.length, index + Math.max(0, Number(type.qty) || 0));
-      while (index < limit) { evSeats[index].type = type.name; index += 1; }
-    });
-    const fallback = evSeatTypes[evSeatTypes.length - 1]?.name || null;
-    while (index < evSeats.length) { evSeats[index].type = fallback; index += 1; }
-  }
-
   if (ev.genBtn) {
     ev.genBtn.addEventListener("click", generateSeats);
   }
   if (ev.venue) ev.venue.addEventListener("change", applyVenuePreset);
+  if (ev.venue) ev.venue.addEventListener("input", applyVenuePreset);
+  if (ev.category) ev.category.addEventListener("change", () => populateVenueOptions());
 
   // ---- Seat Types ----
   function renderTypes() {
@@ -2287,12 +2308,10 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Primero genera el mapa de asientos del evento.");
         return;
       }
-      if (!evSeats.some((seat) => seat.type)) {
-        sugerirCantidades();
-        assignSeatsByQuantities();
-      }
-      if (evSeats.some((seat) => !seat.type)) {
-        assignSeatsByQuantities();
+      const sinAsignar = evSeats.filter((seat) => !seat.type).length;
+      if (sinAsignar > 0) {
+        alert(`Todavía tienes ${sinAsignar} asiento(s) en gris. Asígnales una zona antes de publicar.`);
+        return;
       }
       const sumaZonas = evSeatTypes.reduce((s, t) => s + t.qty, 0);
       if (sumaZonas > evSeats.length) {

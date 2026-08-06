@@ -468,7 +468,8 @@
           <div class="ev-row">
             <div class="ev-field">
               <label data-i18n="admin.ev_venue">Lugar</label>
-              <input class="ev-input" type="text" id="ce-venue" placeholder="Ej. Teatro Nacional" />
+              <input class="ev-input" type="text" id="ce-venue" list="ce-venue-options" placeholder="Escribe o selecciona un recinto" autocomplete="off" />
+              <datalist id="ce-venue-options"></datalist>
             </div>
             <div class="ev-field">
               <label data-i18n="admin.ev_city">Ciudad</label>
@@ -734,7 +735,7 @@
 <script src="js/auth.js?v=7"></script>
 <script src="js/api.js?v=3"></script>
 
-<script src="js/main.js?v=7"></script>
+<script src="js/main.js?v=10"></script>
 <script>
 /* ============================================================
    Panel admin — datos reales del backend + validación de QR
