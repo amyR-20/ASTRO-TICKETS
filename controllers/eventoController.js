@@ -82,6 +82,9 @@ async function crear(req, res) {
     if (err.code === "23505") {
       return res.status(409).json({ error: "El evento ya existe." });
     }
+    if (/sin asientos y zonas|zona sin precio/i.test(err.message || "")) {
+      return res.status(400).json({ error: err.message });
+    }
     console.error("Error creando evento:", err);
     return res.status(500).json({ error: "Error interno al crear el evento." });
   }

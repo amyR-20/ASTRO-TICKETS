@@ -1563,12 +1563,42 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "Front Stage", color: "#8b5cf6", price: 150, qty: 30, desc: "Primeras filas frente al escenario" },
     { name: "Backstage", color: "#0ea5e9", price: 250, qty: 10, desc: "Acceso backstage incluido" }
   ];
+  const VENUE_PRESETS = [
+    { match: /teatro nacional|carlos piantini/i, capacity: 1578, cols: 30, city: "Santo Domingo" },
+    { match: /sala ravelo|jos[eé] de jes[uú]s ravelo/i, capacity: 190, cols: 19, city: "Santo Domingo" },
+    { match: /a[ií]da bonnelly/i, capacity: 228, cols: 19, city: "Santo Domingo" },
+    { match: /caf[eé] teatro juan lockward/i, capacity: 150, cols: 15, city: "Santo Domingo" },
+    { match: /hard rock/i, capacity: 800, cols: 25, city: "Santo Domingo" },
+    { match: /quisqueya|juan marichal/i, capacity: 13186, cols: 100, city: "Santo Domingo" }
+  ];
 
   let evSeats = [];
   let evSelectedSeats = new Set();
   let evSeatTypes = JSON.parse(JSON.stringify(DEFAULT_TYPES));
   let editingEventId = null;
   let recommendedQtysDone = false;
+  let venueCapacityTarget = 0;
+
+  function rowLabel(index) {
+    let label = "";
+    for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+      label = String.fromCharCode(65 + ((n - 1) % 26)) + label;
+    }
+    return label;
+  }
+
+  function applyVenuePreset() {
+    const venue = ev.venue.value.trim();
+    const preset = VENUE_PRESETS.find((item) => item.match.test(venue));
+    if (!preset) { venueCapacityTarget = 0; return; }
+    venueCapacityTarget = preset.capacity;
+    ev.cols.value = preset.cols;
+    ev.rows.value = Math.ceil(preset.capacity / preset.cols);
+    ev.capacity.value = preset.capacity;
+    if (!ev.city.value.trim()) ev.city.value = preset.city;
+    showToast(`Capacidad sugerida para ${venue}: ${preset.capacity.toLocaleString("es-DO")} personas.`);
+    updatePreview();
+  }
 
   // ---- Navigation ----
   document.querySelectorAll('.nav-links a[href^="#"], .admin-sidebar a[href^="#"]').forEach(a => {
@@ -1636,6 +1666,7 @@ document.addEventListener("DOMContentLoaded", () => {
     evSelectedSeats.clear();
     evSeatTypes = JSON.parse(JSON.stringify(DEFAULT_TYPES));
     recommendedQtysDone = false;
+    venueCapacityTarget = 0;
     setStatus("draft");
     ev.previewImg.src = "multimedia/logo.svg";
     ev.seatGrid.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
@@ -1758,10 +1789,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function generateSeats() {
     const numRows = parseInt(ev.rows.value) || 8;
     const numCols = parseInt(ev.cols.value) || 10;
+    const requestedCapacity = venueCapacityTarget || (numRows * numCols);
     evSeats = [];
     for (let r = 0; r < numRows; r++) {
-      const rowLetter = String.fromCharCode(65 + r);
+      const rowLetter = rowLabel(r);
       for (let c = 1; c <= numCols; c++) {
+        if (evSeats.length >= requestedCapacity) break;
         evSeats.push({
           id: rowLetter + c,
           row: rowLetter,
@@ -1771,12 +1804,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
-    renderSeatGrid(ev.seatGrid, evSeats, numCols);
-    renderSeatGrid(ev.assignGrid, evSeats, numCols);
     if (!recommendedQtysDone && evSeatTypes.length) {
       sugerirCantidades();
       recommendedQtysDone = true;
     }
+    assignSeatsByQuantities();
+    renderSeatGrid(ev.seatGrid, evSeats, numCols);
+    renderSeatGrid(ev.assignGrid, evSeats, numCols);
     updateCapacity();
     updatePreview();
     updateProgress();
@@ -1784,7 +1818,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderSeatGrid(container, seats, cols) {
     if (!container) return;
-    const numRows = seats.length > 0 ? (seats[seats.length - 1].row.charCodeAt(0) - 65 + 1) : 0;
+    const rows = [...new Set(seats.map((seat) => seat.row))];
     container.innerHTML = '<div class="sg-stage">' + t('admin.ev_stage') + '</div>';
     const aisleAfter = Math.floor(cols / 2);
 
@@ -1816,8 +1850,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    for (let r = 0; r < numRows; r++) {
-      const rowLetter = String.fromCharCode(65 + r);
+    for (const rowLetter of rows) {
       const rowEl = document.createElement("div");
       rowEl.className = "sg-row";
       rowEl.innerHTML = `<span class="sg-row-label">${rowLetter}</span>`;
@@ -1830,6 +1863,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const seatId = rowLetter + c;
         const seatData = seatById.get(seatId);
+        if (!seatData) continue;
         const seat = document.createElement("div");
         seat.className = "sg-seat";
         seat.dataset.id = seatId;
@@ -1900,9 +1934,20 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePreview();
   }
 
+  function assignSeatsByQuantities() {
+    let index = 0;
+    evSeatTypes.forEach((type) => {
+      const limit = Math.min(evSeats.length, index + Math.max(0, Number(type.qty) || 0));
+      while (index < limit) { evSeats[index].type = type.name; index += 1; }
+    });
+    const fallback = evSeatTypes[evSeatTypes.length - 1]?.name || null;
+    while (index < evSeats.length) { evSeats[index].type = fallback; index += 1; }
+  }
+
   if (ev.genBtn) {
     ev.genBtn.addEventListener("click", generateSeats);
   }
+  if (ev.venue) ev.venue.addEventListener("change", applyVenuePreset);
 
   // ---- Seat Types ----
   function renderTypes() {
@@ -2107,7 +2152,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Mini map
     if (ev.previewMiniMap) {
       const numCols = parseInt(ev.cols.value) || 10;
-      const numRows = evSeats.length > 0 ? (evSeats[evSeats.length-1].row.charCodeAt(0) - 65 + 1) : 0;
+      const previewRows = [...new Set(evSeats.map((seat) => seat.row))];
+      const numRows = previewRows.length;
       ev.previewMiniMap.innerHTML = "";
       const seatById = new Map();
       for (let i = 0; i < evSeats.length; i++) seatById.set(evSeats[i].id, evSeats[i]);
@@ -2118,7 +2164,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const rowEl = document.createElement("div");
         rowEl.className = "pm-row";
         for (let c = 1; c <= Math.min(numCols, 16); c++) {
-          const seatId = String.fromCharCode(65 + r) + c;
+          const seatId = previewRows[r] + c;
           const seat = seatById.get(seatId);
           const pm = document.createElement("div");
           pm.className = "pm-seat";
@@ -2242,8 +2288,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       if (!evSeats.some((seat) => seat.type)) {
-        alert("Asigna al menos una zona a los asientos antes de publicar.");
-        return;
+        sugerirCantidades();
+        assignSeatsByQuantities();
+      }
+      if (evSeats.some((seat) => !seat.type)) {
+        assignSeatsByQuantities();
       }
       const sumaZonas = evSeatTypes.reduce((s, t) => s + t.qty, 0);
       if (sumaZonas > evSeats.length) {

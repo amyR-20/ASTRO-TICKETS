@@ -319,19 +319,22 @@ async function crearEnCliente(client, { eventoId, fecha, hora, sala, estado = "p
     }
   }
   if (plantilla.length) {
-    // Multi-row INSERT: un solo viaje a la BD en vez de uno por asiento.
-    const valores = [];
-    const params = [];
-    plantilla.forEach((a, i) => {
-      const base = i * 7;
-      params.push(eventoId, funcion.id, a.asiento_id, a.fila, a.columna, a.zona || null, "available");
-      valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7})`);
-    });
-    await client.query(
-      `INSERT INTO asientos (evento_id, funcion_id, asiento_id, fila, columna, zona, estado)
-       VALUES ${valores.join(", ")}`,
-      params
-    );
+    // Lotes: evita superar el límite de parámetros de PostgreSQL en recintos grandes.
+    for (let inicio = 0; inicio < plantilla.length; inicio += 1000) {
+      const lote = plantilla.slice(inicio, inicio + 1000);
+      const valores = [];
+      const params = [];
+      lote.forEach((a, i) => {
+        const base = i * 7;
+        params.push(eventoId, funcion.id, a.asiento_id, a.fila, a.columna, a.zona || null, "available");
+        valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7})`);
+      });
+      await client.query(
+        `INSERT INTO asientos (evento_id, funcion_id, asiento_id, fila, columna, zona, estado)
+         VALUES ${valores.join(", ")}`,
+        params
+      );
+    }
   }
 
   // Cada función recibe su propia copia de precios. Así editar la plantilla

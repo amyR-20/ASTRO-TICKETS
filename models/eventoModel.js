@@ -259,18 +259,21 @@ async function crear(datos, usuarioId = null, razon = null) {
     }
 
     if (datos.seats && datos.seats.length) {
-      const valores = [];
-      const params = [];
-      datos.seats.forEach((s, i) => {
-        const base = i * 6;
-        params.push(ev.id, s.id, s.row, s.col, s.type || null, s.status || "available");
-        valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`);
-      });
-      await client.query(
-        `INSERT INTO asientos (evento_id, asiento_id, fila, columna, zona, estado)
-         VALUES ${valores.join(", ")}`,
-        params
-      );
+      for (let inicio = 0; inicio < datos.seats.length; inicio += 1000) {
+        const lote = datos.seats.slice(inicio, inicio + 1000);
+        const valores = [];
+        const params = [];
+        lote.forEach((s, i) => {
+          const base = i * 6;
+          params.push(ev.id, s.id, s.row, s.col, s.type || null, s.status || "available");
+          valores.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`);
+        });
+        await client.query(
+          `INSERT INTO asientos (evento_id, asiento_id, fila, columna, zona, estado)
+           VALUES ${valores.join(", ")}`,
+          params
+        );
+      }
     }
 
     // Primera función por defecto (la fecha/hora del formulario)
